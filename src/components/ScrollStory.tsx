@@ -64,8 +64,8 @@ export default function ScrollStory() {
       if (!outerRef.current) return;
       const rect = outerRef.current.getBoundingClientRect();
       const scrollable = outerRef.current.offsetHeight - window.innerHeight;
-      // Start progress when section is 20% into view (earlier trigger)
-      const offset = window.innerHeight * 0.2;
+      // Start progress when section is 40% into view (early trigger)
+      const offset = window.innerHeight * 0.4;
       const scrolled = -rect.top + offset;
       const pct = Math.max(0, Math.min(1, scrolled / scrollable));
       setProgress(pct);
@@ -87,8 +87,7 @@ export default function ScrollStory() {
           style={{ background: 'radial-gradient(circle, #06B6D4, transparent)' }} />
       </div>
 
-      {/* 250vh = 1 screen visible + 1.5 screens of scroll for smooth phase transitions */}
-      <div ref={outerRef} style={{ height: '250vh' }}>
+      <div ref={outerRef} style={{ height: '180vh' }}>
         <div className="sticky top-0 h-screen flex flex-col justify-center overflow-hidden">
           <div className={`text-center mb-8 md:mb-10 transition-all duration-700 ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
             <div className="inline-block glass border border-[#2563EB]/30 rounded-full px-4 py-1.5 text-xs font-semibold text-[#60a5fa] mb-4">
@@ -215,7 +214,7 @@ export default function ScrollStory() {
       </div>
 
       {/* Final statement */}
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-16 md:pt-16 md:pb-24">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16 md:pb-24" style={{ marginTop: '-100vh' }}>
         <div className="text-center glass-card rounded-3xl p-8 sm:p-12 lg:p-16 border border-white/[0.06] relative overflow-hidden" style={{ background: 'rgba(8,12,20,0.88)' }}>
           <div className="absolute inset-0 bg-gradient-to-br from-[#8B2FE0]/5 via-transparent to-[#06B6D4]/5" />
           <div className="relative z-10">
