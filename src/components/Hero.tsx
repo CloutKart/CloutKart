@@ -193,7 +193,7 @@ export default function Hero() {
       <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#080C14] to-transparent pointer-events-none" />
 
       {/* Scroll indicator */}
-      <div className="absolute bottom-16 md:bottom-8 left-0 right-0 flex flex-col items-center gap-2 animate-bounce">
+      <div className="absolute bottom-2 left-0 right-0 flex flex-col items-center gap-2 animate-bounce">
         <div className="text-xs text-white/30 font-medium tracking-widest uppercase">Scroll</div>
         <div className="w-px h-8 bg-gradient-to-b from-white/30 to-transparent" />
       </div>
