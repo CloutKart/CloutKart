@@ -87,7 +87,7 @@ export default function ScrollStory() {
           style={{ background: 'radial-gradient(circle, #06B6D4, transparent)' }} />
       </div>
 
-      <div ref={outerRef} className="h-[130vh] md:h-[180vh]">
+      <div ref={outerRef} className="h-[150vh] md:h-[180vh]">
         <div className="sticky top-0 h-screen flex flex-col justify-center overflow-hidden">
           <div className={`text-center mb-5 md:mb-10 transition-all duration-700 ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
             <div className="inline-block glass border border-[#2563EB]/30 rounded-full px-4 py-1.5 text-xs font-semibold text-[#60a5fa] mb-3 md:mb-4">
@@ -214,7 +214,7 @@ export default function ScrollStory() {
       </div>
 
       {/* Final statement */}
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-10 md:pb-24" style={{ marginTop: '-60vh' }}>
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 md:pt-0 pb-10 md:pb-24" style={{ marginTop: '-60vh' }}>
         <div className="text-center glass-card rounded-3xl p-6 sm:p-12 lg:p-16 border border-white/[0.06] relative overflow-hidden" style={{ background: 'rgba(8,12,20,0.88)' }}>
           <div className="absolute inset-0 bg-gradient-to-br from-[#8B2FE0]/5 via-transparent to-[#06B6D4]/5" />
           <div className="relative z-10">
