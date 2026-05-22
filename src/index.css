@@ -225,17 +225,79 @@
   transform: scale(1);
 }
 
-/* Cursor glow */
-.cursor-glow {
+/* =============================================
+   PREMIUM CURSOR SYSTEM — desktop only
+   ============================================= */
+
+@media (pointer: fine) {
+  *, *::before, *::after {
+    cursor: none !important;
+  }
+}
+
+/* Aura — large ambient gradient halo */
+.cursor-aura {
   pointer-events: none;
   position: fixed;
-  width: 400px;
-  height: 400px;
+  width: 160px;
+  height: 160px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(139, 47, 224, 0.08) 0%, transparent 70%);
+  background: radial-gradient(circle,
+    rgba(139, 47, 224, 0.12) 0%,
+    rgba(37, 99, 235, 0.08) 40%,
+    transparent 70%
+  );
+  transform: translate(-50%, -50%) scale(1);
+  transition:
+    opacity 0.4s ease,
+    transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  z-index: 99997;
+  will-change: left, top, transform, opacity;
+  filter: blur(8px);
+}
+
+/* Ring — outer trailing circle with glass feel */
+.cursor-ring {
+  pointer-events: none;
+  position: fixed;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid rgba(139, 47, 224, 0.5);
+  background: transparent;
   transform: translate(-50%, -50%);
-  transition: opacity 0.3s ease;
-  z-index: 9999;
+  transition:
+    opacity 0.3s ease,
+    width 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+    height 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+    border-color 0.3s ease,
+    box-shadow 0.3s ease,
+    background 0.3s ease,
+    border-radius 0.25s ease;
+  z-index: 99998;
+  will-change: left, top, width, height, opacity;
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  box-shadow: 0 0 12px rgba(139, 47, 224, 0.3);
+}
+
+/* Dot — small fast inner glow point */
+.cursor-dot {
+  pointer-events: none;
+  position: fixed;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #e879f9, #818cf8, #38bdf8);
+  transform: translate(-50%, -50%) scale(1);
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+    background 0.3s ease,
+    box-shadow 0.3s ease;
+  z-index: 99999;
+  will-change: left, top, transform, opacity;
+  box-shadow: 0 0 8px rgba(139, 47, 224, 0.6), 0 0 16px rgba(37, 99, 235, 0.3);
 }
 
 /* Card hover gradient border */

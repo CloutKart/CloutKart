@@ -59,6 +59,7 @@ export default function Services() {
             <div
               key={service.title}
               className={`reveal-scale delay-${Math.min((i + 1) * 80, 800)} glass-card rounded-2xl p-4 sm:p-6 group hover-lift relative overflow-hidden cursor-default`}
+              data-cursor="card"
               style={{ border: `1px solid rgba(255,255,255,0.06)` }}
             >
               {/* Hover glow */}

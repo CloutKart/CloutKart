@@ -97,6 +97,7 @@ export default function Process() {
               <div
                 key={step.num}
                 className={`reveal delay-${(i + 1) * 100} glass-card rounded-2xl p-4 sm:p-8 group hover-lift relative overflow-hidden`}
+                data-cursor="card"
                 style={{ border: `1px solid rgba(255,255,255,0.06)` }}
               >
                 <div

@@ -92,6 +92,7 @@ export default function Portfolio() {
             <div
               key={item.title}
               className={`reveal-scale delay-${Math.min((i + 1) * 80, 600)} ${item.spanDesktop} relative group overflow-hidden rounded-xl sm:rounded-2xl cursor-pointer aspect-square lg:aspect-auto`}
+              data-cursor="card"
             >
               <img
                 src={item.image}
