@@ -1,0 +1,14 @@
+{
+  "name": "CloutKart — AI-Powered Creative Advertising",
+  "short_name": "CloutKart",
+  "icons": [
+    {
+      "src": "/app-icon-512.webp",
+      "sizes": "512x512",
+      "type": "image/webp"
+    }
+  ],
+  "theme_color": "#080C14",
+  "background_color": "#080C14",
+  "display": "standalone"
+}
