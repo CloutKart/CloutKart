@@ -58,9 +58,7 @@ export default function ScrollStory() {
       const rect = outerRef.current.getBoundingClientRect();
       const scrollable = outerRef.current.offsetHeight - window.innerHeight;
       if (scrollable <= 0) return;
-      // Start animation early: trigger when section is 60% of viewport height away from top
-      const earlyOffset = window.innerHeight * 0.6;
-      const scrolled = -rect.top + earlyOffset;
+      const scrolled = -rect.top;
       const pct = Math.max(0, Math.min(1, scrolled / scrollable));
       setProgress(pct);
 
@@ -90,7 +88,7 @@ export default function ScrollStory() {
           style={{ background: 'radial-gradient(circle, #06B6D4, transparent)' }} />
       </div>
 
-      <div ref={outerRef} className="h-[250vh] md:h-[280vh]">
+      <div ref={outerRef} className="h-[200vh] md:h-[220vh]">
         <div className="sticky top-0 h-screen flex flex-col justify-center overflow-hidden">
           {/* Phase cards view */}
           <div
