@@ -63,10 +63,10 @@ export default function ScrollStory() {
       const pct = Math.max(0, Math.min(1, scrolled / scrollable));
       setProgress(pct);
 
-      // 65% of scroll for the 4 phases, last 35% for final statement
-      if (pct < 0.65) {
+      // 80% of scroll for the 4 phases, last 20% for final statement
+      if (pct < 0.80) {
         setShowFinal(false);
-        const phasePct = pct / 0.65;
+        const phasePct = pct / 0.80;
         setActivePhase(Math.min(phases.length - 1, Math.floor(phasePct * phases.length)));
       } else {
         setShowFinal(true);
@@ -89,7 +89,7 @@ export default function ScrollStory() {
           style={{ background: 'radial-gradient(circle, #06B6D4, transparent)' }} />
       </div>
 
-      <div ref={outerRef} className="h-[170vh]">
+      <div ref={outerRef} className="h-[140vh]">
         <div className="sticky top-0 h-screen flex flex-col justify-center overflow-hidden">
           {/* Phase cards view */}
           <div
