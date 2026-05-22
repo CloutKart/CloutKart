@@ -3,9 +3,9 @@
   "short_name": "CloutKart",
   "icons": [
     {
-      "src": "/app-icon-512.webp",
+      "src": "/IMG_4598_(2)_(1).png",
       "sizes": "512x512",
-      "type": "image/webp"
+      "type": "image/png"
     }
   ],
   "theme_color": "#080C14",
