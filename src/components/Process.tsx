@@ -67,14 +67,14 @@ export default function Process() {
   }, []);
 
   return (
-    <section ref={sectionRef} className="relative py-10 md:py-16 bg-[#080C14] overflow-hidden" id="process">
+    <section ref={sectionRef} className="relative py-6 md:py-10 bg-[#080C14] overflow-hidden" id="process">
       <div className="orb w-[500px] h-[500px] -left-32 top-1/2 opacity-10"
         style={{ background: 'radial-gradient(circle, #8B2FE0, transparent)' }} />
       <div className="orb w-[400px] h-[400px] -right-20 bottom-1/4 opacity-8"
         style={{ background: 'radial-gradient(circle, #06B6D4, transparent)' }} />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-10 md:mb-20">
+        <div className="text-center mb-6 md:mb-12">
           <div className="reveal inline-block glass border border-[#8B2FE0]/30 rounded-full px-4 py-1.5 text-xs font-semibold text-[#a78bfa] mb-6">
             How We Work
           </div>
