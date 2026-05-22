@@ -1,0 +1,25 @@
+# robots.txt — CloutKart
+# https://clout-kart.com
+
+User-agent: *
+Allow: /
+
+# Block build artifacts and internal Vite paths
+Disallow: /src/
+Disallow: /.bolt/
+Disallow: /node_modules/
+
+# Block common admin/private patterns
+Disallow: /admin/
+Disallow: /private/
+Disallow: /api/
+
+# Crawl delay for non-Google crawlers
+User-agent: Bingbot
+Crawl-delay: 1
+
+User-agent: Googlebot
+Allow: /
+
+# Sitemap
+Sitemap: https://clout-kart.com/sitemap.xml

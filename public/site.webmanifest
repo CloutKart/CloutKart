@@ -1,14 +1,32 @@
 {
   "name": "CloutKart — AI-Powered Creative Advertising",
   "short_name": "CloutKart",
+  "description": "Premium AI creative advertising agency. Winning messages. High-converting ads.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#080C14",
+  "theme_color": "#080C14",
+  "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "/IMG_4598_(2)_(1).png",
+      "src": "/favicon.webp",
+      "sizes": "32x32",
+      "type": "image/webp",
+      "purpose": "any"
+    },
+    {
+      "src": "/app-icon-512.webp",
+      "sizes": "192x192",
+      "type": "image/webp",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/app-icon-512.webp",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/webp",
+      "purpose": "any maskable"
     }
   ],
-  "theme_color": "#080C14",
-  "background_color": "#080C14",
-  "display": "standalone"
+  "categories": ["business", "productivity"],
+  "lang": "en-US"
 }
