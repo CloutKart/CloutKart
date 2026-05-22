@@ -90,7 +90,7 @@ export default function ScrollStory() {
           style={{ background: 'radial-gradient(circle, #06B6D4, transparent)' }} />
       </div>
 
-      <div ref={outerRef} className="h-[400vh] md:h-[450vh]">
+      <div ref={outerRef} className="h-[250vh] md:h-[280vh]">
         <div className="sticky top-0 h-screen flex flex-col justify-center overflow-hidden">
           {/* Phase cards view */}
           <div
