@@ -46,7 +46,7 @@ export default function ScrollStory() {
   useEffect(() => {
     const obs = new IntersectionObserver(
       ([e]) => { if (e.isIntersecting) setVisible(true); },
-      { threshold: 0.05 }
+      { threshold: 0.02 }
     );
     if (outerRef.current) obs.observe(outerRef.current);
     return () => obs.disconnect();
@@ -58,14 +58,16 @@ export default function ScrollStory() {
       const rect = outerRef.current.getBoundingClientRect();
       const scrollable = outerRef.current.offsetHeight - window.innerHeight;
       if (scrollable <= 0) return;
-      const scrolled = -rect.top;
+      // Start animation early: trigger when section is 60% of viewport height away from top
+      const earlyOffset = window.innerHeight * 0.6;
+      const scrolled = -rect.top + earlyOffset;
       const pct = Math.max(0, Math.min(1, scrolled / scrollable));
       setProgress(pct);
 
-      // Use 80% of scroll for the 4 phases, last 20% for final statement
-      if (pct < 0.8) {
+      // 85% of scroll for the 4 phases, last 15% for final statement
+      if (pct < 0.85) {
         setShowFinal(false);
-        const phasePct = pct / 0.8;
+        const phasePct = pct / 0.85;
         setActivePhase(Math.min(phases.length - 1, Math.floor(phasePct * phases.length)));
       } else {
         setShowFinal(true);
@@ -88,12 +90,12 @@ export default function ScrollStory() {
           style={{ background: 'radial-gradient(circle, #06B6D4, transparent)' }} />
       </div>
 
-      <div ref={outerRef} className="h-[300vh] md:h-[350vh]">
+      <div ref={outerRef} className="h-[400vh] md:h-[450vh]">
         <div className="sticky top-0 h-screen flex flex-col justify-center overflow-hidden">
           {/* Phase cards view */}
           <div
             className="transition-all duration-700"
-            style={{ opacity: showFinal ? 0 : 1, transform: showFinal ? 'scale(0.95)' : 'scale(1)', position: showFinal ? 'absolute' : 'relative', inset: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}
+            style={{ opacity: showFinal ? 0 : 1, transform: showFinal ? 'scale(0.95) translateY(-20px)' : 'scale(1) translateY(0)', position: showFinal ? 'absolute' : 'relative', inset: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}
           >
             <div className={`text-center mb-5 md:mb-8 transition-all duration-700 ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
               <div className="inline-block glass border border-[#2563EB]/30 rounded-full px-4 py-1.5 text-xs font-semibold text-[#60a5fa] mb-3 md:mb-4">
@@ -195,7 +197,7 @@ export default function ScrollStory() {
                 <div
                   className="h-full rounded-full transition-all duration-150"
                   style={{
-                    width: `${Math.min(progress / 0.8, 1) * 100}%`,
+                    width: `${Math.min(progress / 0.85, 1) * 100}%`,
                     background: 'linear-gradient(90deg, #8B2FE0, #2563EB, #06B6D4)',
                     boxShadow: '0 0 8px rgba(139,47,224,0.6)',
                   }}
@@ -217,21 +219,21 @@ export default function ScrollStory() {
             </div>
           </div>
 
-          {/* Final statement - appears inside sticky */}
+          {/* Final statement - compact, inside sticky */}
           <div
-            className="absolute inset-0 flex items-center justify-center px-4 transition-all duration-700"
-            style={{ opacity: showFinal ? 1 : 0, transform: showFinal ? 'scale(1)' : 'scale(1.05)', pointerEvents: showFinal ? 'auto' : 'none' }}
+            className="absolute inset-0 flex items-center justify-center px-4 transition-all duration-600"
+            style={{ opacity: showFinal ? 1 : 0, transform: showFinal ? 'scale(1) translateY(0)' : 'scale(0.9) translateY(30px)', pointerEvents: showFinal ? 'auto' : 'none' }}
           >
-            <div className="text-center glass-card rounded-3xl p-6 sm:p-12 lg:p-16 border border-white/[0.06] relative overflow-hidden max-w-4xl w-full" style={{ background: 'rgba(8,12,20,0.88)' }}>
+            <div className="text-center glass-card rounded-2xl p-5 sm:p-8 lg:p-10 border border-white/[0.06] relative overflow-hidden max-w-3xl w-full" style={{ background: 'rgba(8,12,20,0.88)' }}>
               <div className="absolute inset-0 bg-gradient-to-br from-[#2563EB]/5 via-transparent to-[#06B6D4]/5" />
               <div className="relative z-10">
-                <p className="text-xl sm:text-3xl lg:text-5xl font-black text-white mb-2 sm:mb-4 leading-tight">
+                <p className="text-lg sm:text-2xl lg:text-4xl font-black text-white mb-1 sm:mb-2 leading-tight">
                   "IT'S NOT ABOUT THE AD."
                 </p>
-                <p className="text-xl sm:text-3xl lg:text-5xl font-black text-gradient mb-4 sm:mb-8 leading-tight">
+                <p className="text-lg sm:text-2xl lg:text-4xl font-black text-gradient mb-3 sm:mb-5 leading-tight">
                   "IT'S ABOUT THE MESSAGE."
                 </p>
-                <p className="text-white/50 text-sm sm:text-lg max-w-lg mx-auto">
+                <p className="text-white/50 text-xs sm:text-base max-w-md mx-auto">
                   CloutKart builds the message first. Everything else scales from there.
                 </p>
               </div>
