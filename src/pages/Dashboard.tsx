@@ -1,14 +1,24 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import {
   LayoutDashboard, Image, CreditCard, Settings, LogOut, ArrowRight,
-  Download, Clock, CheckCircle, Loader, ChevronRight, Upload
+  Download, Clock, CheckCircle, Loader, ChevronRight, AlertCircle
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 
 type Tab = 'overview' | 'creative' | 'plan' | 'settings';
-type CreativeStatus = 'none' | 'pending' | 'in_progress' | 'ready';
+
+interface CreativeRequest {
+  id: string;
+  brand_name: string;
+  niche: string;
+  ad_format: string;
+  description: string;
+  reference_url: string;
+  status: string;
+  created_at: string;
+}
 
 const planFeatures = {
   free: ['1 free creative', '48h delivery', 'Basic formats'],
@@ -25,26 +35,131 @@ const upgradePlans = [
 
 const timelineSteps = ['Submitted', 'In Review', 'In Production', 'Ready to Download'];
 
+const statusToStep: Record<string, number> = { pending: 0, in_progress: 2, completed: 3 };
+
 export default function Dashboard() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const [tab, setTab] = useState<Tab>('overview');
-  const [creativeStatus] = useState<CreativeStatus>('none');
+  const [creativeRequest, setCreativeRequest] = useState<CreativeRequest | null>(null);
+  const [loadingRequest, setLoadingRequest] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
+  const [form, setForm] = useState({ brandName: '', niche: '', adFormat: '', description: '', referenceUrl: '' });
   const [settingsForm, setSettingsForm] = useState({ fullName: user?.user_metadata?.full_name ?? '', company: '', phone: '' });
+  const [settingsSaving, setSettingsSaving] = useState(false);
+  const [settingsSaved, setSettingsSaved] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from('free_creative_requests')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+      .then(({ data }) => {
+        setCreativeRequest(data);
+        setLoadingRequest(false);
+      });
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from('profiles')
+      .select('full_name, company_name, phone')
+      .eq('id', user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data) {
+          setSettingsForm({
+            fullName: data.full_name ?? user?.user_metadata?.full_name ?? '',
+            company: data.company_name ?? '',
+            phone: data.phone ?? '',
+          });
+        }
+      });
+  }, [user]);
 
   const handleSignOut = async () => {
     await signOut();
     navigate('/');
   };
 
+  const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    setSubmitError('');
+  };
+
+  const handleSubmitCreative = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+    setSubmitting(true);
+    setSubmitError('');
+    try {
+      const { data: inserted, error: insertError } = await supabase
+        .from('free_creative_requests')
+        .insert({
+          user_id: user.id,
+          brand_name: form.brandName,
+          niche: form.niche,
+          ad_format: form.adFormat,
+          description: form.description,
+          reference_url: form.referenceUrl,
+          status: 'pending',
+        })
+        .select()
+        .single();
+
+      if (insertError) throw insertError;
+
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const { data: { session } } = await supabase.auth.getSession();
+      await fetch(`${supabaseUrl}/functions/v1/send-creative-email`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`,
+        },
+        body: JSON.stringify({
+          fullName: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
+          email: user.email,
+          brandName: form.brandName,
+          niche: form.niche,
+          adFormat: form.adFormat,
+          description: form.description,
+          referenceUrl: form.referenceUrl,
+        }),
+      });
+
+      setCreativeRequest(inserted);
+      setShowForm(false);
+    } catch (err: unknown) {
+      setSubmitError(err instanceof Error ? err.message : 'Failed to submit request');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const handleSaveSettings = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!user) return;
+    setSettingsSaving(true);
     await supabase.auth.updateUser({ data: { full_name: settingsForm.fullName } });
+    await supabase.from('profiles').update({
+      full_name: settingsForm.fullName,
+      company_name: settingsForm.company,
+      phone: settingsForm.phone,
+    }).eq('id', user.id);
+    setSettingsSaving(false);
+    setSettingsSaved(true);
+    setTimeout(() => setSettingsSaved(false), 2500);
   };
 
   const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'there';
-  const userPlan = 'Free Plan';
   const memberSince = user?.created_at ? new Date(user.created_at).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' }) : '—';
 
   const inputClass = "w-full rounded-xl px-4 py-3.5 text-sm text-white placeholder-[#6B7280] focus:outline-none transition-all duration-200 font-medium bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(168,85,247,0.5)] focus:bg-white/[0.07]";
@@ -57,21 +172,7 @@ export default function Dashboard() {
     { id: 'settings', icon: Settings, label: 'Settings' },
   ];
 
-  const StatusPill = ({ status }: { status: CreativeStatus }) => {
-    const map = {
-      none: null,
-      pending: { label: 'Pending', color: 'rgba(245,158,11,0.15)', border: 'rgba(245,158,11,0.3)', text: '#F59E0B' },
-      in_progress: { label: 'In Progress', color: 'rgba(59,130,246,0.15)', border: 'rgba(59,130,246,0.3)', text: '#3B82F6' },
-      ready: { label: 'Ready', color: 'rgba(16,185,129,0.15)', border: 'rgba(16,185,129,0.3)', text: '#10B981' },
-    };
-    const s = map[status];
-    if (!s) return null;
-    return (
-      <span className="text-xs font-semibold px-2.5 py-1 rounded-full" style={{ background: s.color, border: `1px solid ${s.border}`, color: s.text }}>
-        {s.label}
-      </span>
-    );
-  };
+  const activeStep = creativeRequest ? (statusToStep[creativeRequest.status] ?? 0) : -1;
 
   return (
     <div className="min-h-screen flex" style={{ background: '#080808', backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.04) 1px, transparent 1px)', backgroundSize: '28px 28px' }}>
@@ -83,7 +184,6 @@ export default function Dashboard() {
           </Link>
         </div>
         <div className="h-px mx-5 bg-white/[0.06]" />
-
         <nav className="flex-1 px-3 pt-4 space-y-1">
           {navItems.map(({ id, icon: Icon, label }) => {
             const active = tab === id;
@@ -93,21 +193,18 @@ export default function Dashboard() {
                 onClick={() => setTab(id)}
                 className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 text-left"
                 style={{
-                  color: active ? 'transparent' : '#D1D5DB',
                   background: active ? 'rgba(168,85,247,0.08)' : 'transparent',
                   borderLeft: active ? '2px solid #A855F7' : '2px solid transparent',
-                  backgroundClip: active ? undefined : undefined,
                 }}
               >
                 <Icon size={16} style={{ color: active ? '#A855F7' : '#9CA3AF' }} />
-                <span style={active ? { background: 'linear-gradient(135deg,#A855F7,#3B82F6,#06B6D4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' } : {}}>
+                <span style={active ? { background: 'linear-gradient(135deg,#A855F7,#3B82F6,#06B6D4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' } : { color: '#D1D5DB' }}>
                   {label}
                 </span>
               </button>
             );
           })}
         </nav>
-
         <div className="px-5 pb-6 pt-4 border-t border-white/[0.06]">
           <p className="text-[#6B7280] text-xs mb-3 truncate">{user?.email}</p>
           <button onClick={handleSignOut} className="flex items-center gap-2 text-[#9CA3AF] hover:text-white transition-colors text-sm">
@@ -150,25 +247,42 @@ export default function Dashboard() {
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <p className="text-[#9CA3AF] text-xs font-semibold uppercase tracking-widest mb-1">Your Free Creative</p>
-                  <h3 className="font-heading font-semibold text-white">Free Creative Request</h3>
+                  <h3 className="font-heading font-semibold text-white">
+                    {creativeRequest ? creativeRequest.brand_name : 'Free Creative Request'}
+                  </h3>
                 </div>
-                <StatusPill status={creativeStatus === 'none' ? 'pending' : creativeStatus} />
+                {creativeRequest && (
+                  <span className="text-xs font-semibold px-2.5 py-1 rounded-full capitalize"
+                    style={{
+                      background: creativeRequest.status === 'completed' ? 'rgba(16,185,129,0.1)' : creativeRequest.status === 'in_progress' ? 'rgba(59,130,246,0.1)' : 'rgba(245,158,11,0.1)',
+                      border: `1px solid ${creativeRequest.status === 'completed' ? 'rgba(16,185,129,0.25)' : creativeRequest.status === 'in_progress' ? 'rgba(59,130,246,0.25)' : 'rgba(245,158,11,0.25)'}`,
+                      color: creativeRequest.status === 'completed' ? '#10B981' : creativeRequest.status === 'in_progress' ? '#3B82F6' : '#F59E0B',
+                    }}>
+                    {creativeRequest.status.replace('_', ' ')}
+                  </span>
+                )}
               </div>
-              {creativeStatus === 'ready' ? (
+              {creativeRequest?.status === 'completed' ? (
                 <button className="btn-primary text-sm">
                   <Download size={14} />
                   Download Now
                   <ArrowRight size={14} />
                 </button>
+              ) : !creativeRequest && !loadingRequest ? (
+                <button onClick={() => setTab('creative')} className="btn-primary text-sm">
+                  Request Free Creative <ArrowRight size={14} />
+                </button>
               ) : (
-                <p className="text-[#6B7280] text-sm">Request a free creative from the My Creative tab.</p>
+                <p className="text-[#6B7280] text-sm">
+                  {loadingRequest ? 'Loading...' : 'Your creative is being worked on.'}
+                </p>
               )}
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {[
-                { label: 'Creatives Requested', value: '0' },
-                { label: 'Current Plan', value: userPlan },
+                { label: 'Creatives Requested', value: creativeRequest ? '1' : '0' },
+                { label: 'Current Plan', value: 'Free Plan' },
                 { label: 'Member Since', value: memberSince },
               ].map((s) => (
                 <div key={s.label} className="glass-card rounded-2xl p-5">
@@ -195,7 +309,13 @@ export default function Dashboard() {
           <div className="space-y-6">
             <h2 className="font-heading font-bold text-white text-2xl">My Creative</h2>
 
-            {creativeStatus === 'none' && !showForm && (
+            {loadingRequest && (
+              <div className="glass-card rounded-2xl p-10 flex items-center justify-center">
+                <Loader size={20} className="animate-spin text-[#A855F7]" />
+              </div>
+            )}
+
+            {!loadingRequest && !creativeRequest && !showForm && (
               <div className="glass-card rounded-2xl p-10 flex flex-col items-center text-center">
                 <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4" style={{ background: 'rgba(168,85,247,0.1)', border: '1px solid rgba(168,85,247,0.2)' }}>
                   <Image size={24} className="text-[#A855F7]" />
@@ -209,21 +329,21 @@ export default function Dashboard() {
               </div>
             )}
 
-            {(creativeStatus === 'none' && showForm) && (
+            {!loadingRequest && !creativeRequest && showForm && (
               <div className="glass-card rounded-2xl p-6 sm:p-8">
                 <h3 className="font-heading font-semibold text-white text-lg mb-6">Free Creative Request</h3>
-                <form className="space-y-4">
+                <form onSubmit={handleSubmitCreative} className="space-y-4">
                   <div>
                     <label className={labelClass}>Brand Name</label>
-                    <input type="text" placeholder="Your brand name" className={inputClass} />
+                    <input type="text" name="brandName" value={form.brandName} onChange={handleFormChange} placeholder="Your brand name" className={inputClass} required />
                   </div>
                   <div>
                     <label className={labelClass}>Industry / Niche</label>
-                    <input type="text" placeholder="e.g. Fashion, SaaS, Food" className={inputClass} />
+                    <input type="text" name="niche" value={form.niche} onChange={handleFormChange} placeholder="e.g. Fashion, SaaS, Food" className={inputClass} required />
                   </div>
                   <div>
                     <label className={labelClass}>Ad Format</label>
-                    <select className={inputClass} style={{ appearance: 'none' }}>
+                    <select name="adFormat" value={form.adFormat} onChange={handleFormChange} className={inputClass} style={{ appearance: 'none' }} required>
                       <option value="" style={{ background: '#111' }}>Select format</option>
                       <option style={{ background: '#111' }}>Static</option>
                       <option style={{ background: '#111' }}>Video</option>
@@ -233,27 +353,46 @@ export default function Dashboard() {
                   </div>
                   <div>
                     <label className={labelClass}>Brief Description</label>
-                    <textarea rows={4} placeholder="Describe your product, target audience, and what you want to convey..." className={`${inputClass} resize-none`} />
+                    <textarea name="description" value={form.description} onChange={handleFormChange} rows={4} placeholder="Describe your product, target audience, and what you want to convey..." className={`${inputClass} resize-none`} required />
                   </div>
                   <div>
                     <label className={labelClass}>Reference URL (optional)</label>
-                    <input type="url" placeholder="https://..." className={inputClass} />
+                    <input type="url" name="referenceUrl" value={form.referenceUrl} onChange={handleFormChange} placeholder="https://..." className={inputClass} />
                   </div>
-                  <button type="submit" className="btn-primary text-sm">
-                    Submit Request
-                    <ArrowRight size={14} />
+
+                  {submitError && (
+                    <div className="flex items-center gap-2 bg-red-500/[0.06] border border-red-500/20 rounded-xl p-3">
+                      <AlertCircle size={14} className="text-red-400 flex-shrink-0" />
+                      <span className="text-red-300 text-xs">{submitError}</span>
+                    </div>
+                  )}
+
+                  <button type="submit" disabled={submitting} className="btn-primary text-sm disabled:opacity-50 disabled:cursor-not-allowed">
+                    {submitting ? <Loader size={14} className="animate-spin" /> : <ArrowRight size={14} />}
+                    {submitting ? 'Submitting...' : 'Submit Request'}
                   </button>
                 </form>
               </div>
             )}
 
-            {creativeStatus !== 'none' && (
+            {!loadingRequest && creativeRequest && (
               <div className="glass-card rounded-2xl p-6 sm:p-8">
-                <h3 className="font-heading font-semibold text-white text-lg mb-8">Creative Status</h3>
+                <div className="flex items-start justify-between mb-8">
+                  <div>
+                    <h3 className="font-heading font-semibold text-white text-lg">{creativeRequest.brand_name}</h3>
+                    <p className="text-[#9CA3AF] text-sm mt-1">{creativeRequest.niche} · {creativeRequest.ad_format}</p>
+                  </div>
+                  <span className="text-xs font-semibold px-2.5 py-1 rounded-full capitalize flex-shrink-0"
+                    style={{
+                      background: creativeRequest.status === 'completed' ? 'rgba(16,185,129,0.1)' : creativeRequest.status === 'in_progress' ? 'rgba(59,130,246,0.1)' : 'rgba(245,158,11,0.1)',
+                      border: `1px solid ${creativeRequest.status === 'completed' ? 'rgba(16,185,129,0.25)' : creativeRequest.status === 'in_progress' ? 'rgba(59,130,246,0.25)' : 'rgba(245,158,11,0.25)'}`,
+                      color: creativeRequest.status === 'completed' ? '#10B981' : creativeRequest.status === 'in_progress' ? '#3B82F6' : '#F59E0B',
+                    }}>
+                    {creativeRequest.status.replace('_', ' ')}
+                  </span>
+                </div>
                 <div className="relative flex flex-col gap-0">
                   {timelineSteps.map((step, i) => {
-                    const statusMap: Record<CreativeStatus, number> = { none: -1, pending: 0, in_progress: 2, ready: 3 };
-                    const activeStep = statusMap[creativeStatus];
                     const done = i <= activeStep;
                     const active = i === activeStep;
                     return (
@@ -275,12 +414,19 @@ export default function Dashboard() {
                             style={active ? { background: 'linear-gradient(135deg,#A855F7,#3B82F6,#06B6D4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' } : {}}>
                             {step}
                           </p>
-                          {active && <Loader size={12} className="mt-1 text-[#A855F7] animate-spin" />}
+                          {active && creativeRequest.status !== 'completed' && <Loader size={12} className="mt-1 text-[#A855F7] animate-spin" />}
                         </div>
                       </div>
                     );
                   })}
                 </div>
+                {creativeRequest.status === 'completed' && (
+                  <button className="btn-primary text-sm mt-6">
+                    <Download size={14} />
+                    Download Creative
+                    <ArrowRight size={14} />
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -290,12 +436,11 @@ export default function Dashboard() {
         {tab === 'plan' && (
           <div className="space-y-6">
             <h2 className="font-heading font-bold text-white text-2xl">My Plan</h2>
-
             <div className="glass-card rounded-2xl p-6">
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <p className="text-[#9CA3AF] text-xs uppercase tracking-widest mb-1">Current Plan</p>
-                  <h3 className="font-heading font-bold text-white text-xl">{userPlan}</h3>
+                  <h3 className="font-heading font-bold text-white text-xl">Free Plan</h3>
                 </div>
                 <span className="text-xs px-3 py-1 rounded-full font-semibold" style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)', color: '#10B981' }}>Active</span>
               </div>
@@ -307,7 +452,6 @@ export default function Dashboard() {
                 ))}
               </div>
             </div>
-
             <div className="grid sm:grid-cols-3 gap-4">
               {upgradePlans.map((plan) => (
                 <div key={plan.id} className="glass-card rounded-2xl p-6 flex flex-col">
@@ -365,8 +509,9 @@ export default function Dashboard() {
                     className={inputClass}
                   />
                 </div>
-                <button type="submit" className="btn-primary text-sm">
-                  Save Changes <ArrowRight size={14} />
+                <button type="submit" disabled={settingsSaving} className="btn-primary text-sm disabled:opacity-50">
+                  {settingsSaving ? <Loader size={14} className="animate-spin" /> : <ArrowRight size={14} />}
+                  {settingsSaved ? 'Saved!' : settingsSaving ? 'Saving...' : 'Save Changes'}
                 </button>
               </form>
             </div>
