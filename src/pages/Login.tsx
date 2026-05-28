@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowRight, Eye, EyeOff, Loader, AlertCircle } from 'lucide-react';
+import { ArrowRight, Eye, EyeOff, Loader, AlertCircle, X } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useNavigate, Link } from 'react-router-dom';
 
@@ -45,7 +45,13 @@ export default function Login() {
   return (
     <div className="min-h-screen flex items-center justify-center px-4" style={{ background: '#080808', backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.07) 1px, transparent 1px)', backgroundSize: '28px 28px' }}>
       <div className="w-full max-w-md">
-        <div className="glass-card rounded-3xl p-8 sm:p-10" style={{ background: 'rgba(12,12,12,0.97)' }}>
+        <div className="relative glass-card rounded-3xl p-8 sm:p-10" style={{ background: 'rgba(12,12,12,0.97)' }}>
+          <Link
+            to="/"
+            className="absolute top-5 right-5 w-8 h-8 rounded-lg flex items-center justify-center border border-white/10 hover:border-white/20 text-white/40 hover:text-white/70 transition-all"
+          >
+            <X size={15} />
+          </Link>
           <div className="mb-8">
             <Link to="/">
               <img src="/logo.png" alt="CloutKart" className="h-9 w-auto object-contain mb-6 opacity-80" />
