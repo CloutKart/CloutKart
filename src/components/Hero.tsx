@@ -1,8 +1,16 @@
 import { useEffect, useRef } from 'react';
 import { ArrowRight, Play, Target, TrendingUp, Zap } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
-export default function Hero() {
+interface Props {
+  onSignupOpen: () => void;
+}
+
+export default function Hero({ onSignupOpen }: Props) {
   const heroRef = useRef<HTMLDivElement>(null);
+  const { isLoggedIn } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -20,6 +28,11 @@ export default function Hero() {
     if (heroRef.current) observer.observe(heroRef.current);
     return () => observer.disconnect();
   }, []);
+
+  const handlePrimary = () => {
+    if (isLoggedIn) navigate('/dashboard');
+    else onSignupOpen();
+  };
 
   return (
     <section
@@ -52,13 +65,13 @@ export default function Hero() {
             </p>
 
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 animate-fade-up delay-300">
-              <a href="#contact" className="btn-primary text-sm sm:text-base">
-                Get Started
+              <button onClick={handlePrimary} className="btn-primary text-sm sm:text-base">
+                Get Your Free Creative
                 <ArrowRight size={15} />
-              </a>
+              </button>
               <a href="#portfolio" className="btn-secondary text-sm sm:text-base">
                 <Play size={13} />
-                View Our Work
+                See Our Work
               </a>
             </div>
 
@@ -79,7 +92,6 @@ export default function Hero() {
 
           {/* Right: Hero visual */}
           <div className="relative h-[520px] hidden lg:block">
-            {/* Central card */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 glass-card rounded-3xl p-6 animate-float" style={{ zIndex: 2 }}>
               <div className="relative z-10">
                 <div className="flex items-center gap-3 mb-4">
@@ -108,7 +120,6 @@ export default function Hero() {
               </div>
             </div>
 
-            {/* AI processing card */}
             <div className="absolute top-8 right-4 glass-card rounded-2xl p-4 w-48 animate-float-delayed" style={{ zIndex: 1 }}>
               <div className="relative z-10">
                 <div className="flex items-center gap-2 mb-3">
@@ -128,7 +139,6 @@ export default function Hero() {
               </div>
             </div>
 
-            {/* ROAS card */}
             <div className="absolute bottom-20 right-0 glass-card rounded-2xl p-4 w-44 animate-float-slow" style={{ zIndex: 1 }}>
               <div className="relative z-10">
                 <TrendingUp size={15} className="text-brand-cyan mb-2" />
@@ -137,7 +147,6 @@ export default function Hero() {
               </div>
             </div>
 
-            {/* Formats card */}
             <div className="absolute top-24 left-0 glass-card rounded-2xl p-4 w-40 animate-float" style={{ zIndex: 1 }}>
               <div className="relative z-10">
                 <div className="text-[11px] text-[#9CA3AF] font-medium mb-2 font-mono">Formats</div>
@@ -152,7 +161,6 @@ export default function Hero() {
               </div>
             </div>
 
-            {/* Chart card */}
             <div className="absolute bottom-4 left-8 glass-card rounded-2xl p-3 w-52 animate-float-delayed" style={{ zIndex: 1 }}>
               <div className="relative z-10">
                 <div className="text-[11px] text-[#9CA3AF] font-medium mb-2 font-mono">Message Performance</div>
@@ -163,7 +171,7 @@ export default function Hero() {
                       className="flex-1 rounded-sm"
                       style={{
                         height: `${h * 10}%`,
-                        background: `linear-gradient(to top, #A855F7, #06B6D4)`,
+                        background: 'linear-gradient(to top, #A855F7, #06B6D4)',
                         opacity: 0.3 + i * 0.08,
                       }}
                     />
@@ -175,10 +183,8 @@ export default function Hero() {
         </div>
       </div>
 
-      {/* Bottom fade */}
       <div className="absolute bottom-0 left-0 right-0 h-24 pointer-events-none" style={{ background: 'linear-gradient(to top, #080808, transparent)' }} />
 
-      {/* Scroll indicator */}
       <div className="absolute bottom-6 left-0 right-0 flex flex-col items-center gap-2">
         <div className="text-[9px] text-white/20 font-medium tracking-[0.25em] uppercase animate-bounce font-mono">Scroll</div>
         <div className="w-px h-5 bg-gradient-to-b from-brand-purple/40 to-transparent" />

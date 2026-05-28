@@ -1,10 +1,18 @@
 import { useState, useEffect } from 'react';
-import { Menu, X, ArrowRight } from 'lucide-react';
+import { Menu, X, ArrowRight, LayoutDashboard, ShieldCheck, LogIn } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
-export default function Navbar() {
+interface Props {
+  onSignupOpen: () => void;
+}
+
+export default function Navbar({ onSignupOpen }: Props) {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrollProgress, setScrollProgress] = useState(0);
+  const { isLoggedIn, isAdmin } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -16,27 +24,57 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const links = [
+  const navLinks = [
     { label: 'About', href: '#about' },
     { label: 'Services', href: '#services' },
     { label: 'How We Work', href: '#process' },
+    { label: 'Portfolio', href: '#portfolio' },
     { label: 'Pricing', href: '#pricing' },
-    { label: 'Work', href: '#portfolio' },
   ];
+
+  const AuthButtons = () => {
+    if (!isLoggedIn) {
+      return (
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => navigate('/login')}
+            className="btn-secondary text-sm px-4 py-2 flex items-center gap-2"
+          >
+            <LogIn size={13} />
+            Log In
+          </button>
+          <button onClick={onSignupOpen} className="btn-primary text-sm px-5 py-2.5">
+            Get Started
+            <ArrowRight size={14} />
+          </button>
+        </div>
+      );
+    }
+    if (isAdmin) {
+      return (
+        <button onClick={() => navigate('/admin')} className="btn-primary text-sm px-5 py-2.5">
+          <ShieldCheck size={14} />
+          Admin Panel
+          <ArrowRight size={14} />
+        </button>
+      );
+    }
+    return (
+      <button onClick={() => navigate('/dashboard')} className="btn-primary text-sm px-5 py-2.5">
+        <LayoutDashboard size={14} />
+        Dashboard
+        <ArrowRight size={14} />
+      </button>
+    );
+  };
 
   return (
     <>
-      {/* Scroll progress bar */}
-      <div
-        className="scroll-progress-bar"
-        style={{ width: `${scrollProgress}%` }}
-      />
+      <div className="scroll-progress-bar" style={{ width: `${scrollProgress}%` }} />
 
       <nav
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-          scrolled
-            ? 'border-b border-white/[0.08] shadow-2xl shadow-black/60'
-            : ''
+          scrolled ? 'border-b border-white/[0.08] shadow-2xl shadow-black/60' : ''
         }`}
         style={{
           background: scrolled ? 'rgba(8, 8, 8, 0.72)' : 'transparent',
@@ -46,16 +84,12 @@ export default function Navbar() {
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-[68px]">
-            <a href="#" className="flex items-center gap-3 group flex-shrink-0">
-              <img
-                src="/logo.png"
-                alt="CloutKart"
-                className="h-8 sm:h-10 w-auto object-contain"
-              />
+            <a href="/" className="flex items-center gap-3 group flex-shrink-0">
+              <img src="/logo.png" alt="CloutKart" className="h-8 sm:h-10 w-auto object-contain" />
             </a>
 
             <div className="hidden md:flex items-center gap-6 lg:gap-8">
-              {links.map((link) => (
+              {navLinks.map((link) => (
                 <a
                   key={link.label}
                   href={link.href}
@@ -67,11 +101,8 @@ export default function Navbar() {
               ))}
             </div>
 
-            <div className="hidden md:flex items-center gap-3">
-              <a href="#contact" className="btn-primary text-sm px-5 py-2.5">
-                Get Started
-                <ArrowRight size={14} />
-              </a>
+            <div className="hidden md:flex items-center">
+              <AuthButtons />
             </div>
 
             <button
@@ -85,7 +116,6 @@ export default function Navbar() {
         </div>
       </nav>
 
-      {/* Mobile overlay */}
       <div
         className={`md:hidden fixed inset-0 z-40 transition-opacity duration-300 ${
           menuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
@@ -94,7 +124,6 @@ export default function Navbar() {
         onClick={() => setMenuOpen(false)}
       />
 
-      {/* Mobile drawer */}
       <div
         className={`md:hidden fixed top-0 right-0 z-50 h-full w-[78vw] max-w-[300px] flex flex-col transition-transform duration-300 ease-out ${
           menuOpen ? 'translate-x-0' : 'translate-x-full'
@@ -111,7 +140,6 @@ export default function Navbar() {
           <button
             onClick={() => setMenuOpen(false)}
             className="w-8 h-8 rounded-lg flex items-center justify-center touch-manipulation border border-white/10 hover:border-white/20 transition-colors"
-            aria-label="Close menu"
           >
             <X size={16} className="text-white/60" />
           </button>
@@ -120,7 +148,7 @@ export default function Navbar() {
         <div className="mx-6 h-px mb-4 bg-white/[0.06]" />
 
         <nav className="flex-1 px-4 flex flex-col gap-1 overflow-y-auto">
-          {links.map((link) => (
+          {navLinks.map((link) => (
             <a
               key={link.label}
               href={link.href}
@@ -132,16 +160,39 @@ export default function Navbar() {
           ))}
         </nav>
 
-        <div className="px-5 pb-10 pt-4">
-          <div className="h-px mb-5 bg-white/[0.06]" />
-          <a
-            href="#contact"
-            onClick={() => setMenuOpen(false)}
-            className="btn-primary w-full justify-center text-sm py-3.5"
-          >
-            Get Started
-            <ArrowRight size={14} />
-          </a>
+        <div className="px-5 pb-10 pt-4 space-y-3">
+          <div className="h-px mb-2 bg-white/[0.06]" />
+          {!isLoggedIn ? (
+            <>
+              <button
+                onClick={() => { setMenuOpen(false); navigate('/login'); }}
+                className="btn-secondary w-full justify-center text-sm py-3.5"
+              >
+                <LogIn size={13} />
+                Log In
+              </button>
+              <button
+                onClick={() => { setMenuOpen(false); onSignupOpen(); }}
+                className="btn-primary w-full justify-center text-sm py-3.5"
+              >
+                Get Started <ArrowRight size={14} />
+              </button>
+            </>
+          ) : isAdmin ? (
+            <button
+              onClick={() => { setMenuOpen(false); navigate('/admin'); }}
+              className="btn-primary w-full justify-center text-sm py-3.5"
+            >
+              <ShieldCheck size={14} /> Admin Panel <ArrowRight size={14} />
+            </button>
+          ) : (
+            <button
+              onClick={() => { setMenuOpen(false); navigate('/dashboard'); }}
+              className="btn-primary w-full justify-center text-sm py-3.5"
+            >
+              <LayoutDashboard size={14} /> Dashboard <ArrowRight size={14} />
+            </button>
+          )}
           <p className="text-center text-white/20 text-xs mt-4">clout-kart.com</p>
         </div>
       </div>

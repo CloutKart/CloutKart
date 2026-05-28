@@ -7,6 +7,7 @@ interface FormData {
   company: string;
   email: string;
   website: string;
+  subject: string;
   message: string;
 }
 
@@ -17,6 +18,7 @@ export default function Contact() {
     company: '',
     email: '',
     website: '',
+    subject: '',
     message: '',
   });
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
@@ -85,7 +87,7 @@ export default function Contact() {
       });
 
       setStatus('success');
-      setForm({ fullName: '', company: '', email: '', website: '', message: '' });
+      setForm({ fullName: '', company: '', email: '', website: '', subject: '', message: '' });
     } catch (err) {
       console.error(err);
       setStatus('error');
@@ -109,7 +111,7 @@ export default function Contact() {
                 <span className="gradient-text">Actually Convert?</span>
               </h2>
               <p className="text-[#D1D5DB] text-sm sm:text-lg max-w-lg mx-auto leading-relaxed">
-                Tell us about your brand. We'll reach out within 24 hours to start building.
+                For enterprise deals, custom briefs, partnership inquiries, or anything else — reach out here. Free creative requests are handled inside your dashboard after signing up.
               </p>
             </div>
           </div>
@@ -136,6 +138,24 @@ export default function Contact() {
               <div>
                 <label className={labelClass}>Website</label>
                 <input type="url" name="website" value={form.website} onChange={handleChange} placeholder="https://yourwebsite.com" className={inputClass} />
+              </div>
+
+              <div className="sm:col-span-2">
+                <label className={labelClass}>Subject</label>
+                <select
+                  name="subject"
+                  value={form.subject}
+                  onChange={(e) => setForm(prev => ({ ...prev, subject: e.target.value }))}
+                  className={inputClass}
+                  style={{ appearance: 'none' }}
+                >
+                  <option value="" style={{ background: '#111' }}>Select a subject</option>
+                  <option value="General Question" style={{ background: '#111' }}>General Question</option>
+                  <option value="Custom Project" style={{ background: '#111' }}>Custom Project</option>
+                  <option value="Partnership" style={{ background: '#111' }}>Partnership</option>
+                  <option value="Enterprise" style={{ background: '#111' }}>Enterprise</option>
+                  <option value="Other" style={{ background: '#111' }}>Other</option>
+                </select>
               </div>
 
               <div className="sm:col-span-2">
