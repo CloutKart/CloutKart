@@ -56,7 +56,6 @@ function LandingPage({ onSignupOpen }: { onSignupOpen: () => void }) {
   return (
     <>
       <LoadingScreen />
-      <CursorGlow />
       <div className="relative">
         <div className="noise-overlay" />
         <Navbar onSignupOpen={onSignupOpen} />
@@ -83,6 +82,7 @@ function AppRoutes() {
 
   return (
     <>
+      <CursorGlow />
       <SignupModal open={modalOpen} onClose={() => setModalOpen(false)} />
       <Routes>
         <Route path="/" element={<LandingPage onSignupOpen={() => setModalOpen(true)} />} />
