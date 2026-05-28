@@ -103,14 +103,12 @@ export default function Admin() {
   const [userSearch, setUserSearch] = useState('');
   const [planFilter, setPlanFilter] = useState('all');
 
-  // Add section modal
   const [showAddSection, setShowAddSection] = useState(false);
   const [newSectionName, setNewSectionName] = useState('');
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [addingSection, setAddingSection] = useState(false);
   const sectionFileRef = useRef<HTMLInputElement>(null);
 
-  // Image manager
   const [managingSection, setManagingSection] = useState<PortfolioSection | null>(null);
   const [sectionImages, setSectionImages] = useState<PortfolioImage[]>([]);
   const [loadingImages, setLoadingImages] = useState(false);
@@ -118,7 +116,6 @@ export default function Admin() {
   const [deletingImageId, setDeletingImageId] = useState<string | null>(null);
   const imageUploadRef = useRef<HTMLInputElement>(null);
 
-  // Real data
   const [overviewStats, setOverviewStats] = useState({ totalUsers: 0, requestsToday: 0, totalRevenue: 0, paidUsers: 0 });
   const [recentUsers, setRecentUsers] = useState<Profile[]>([]);
   const [requests, setRequests] = useState<CreativeRequest[]>([]);
@@ -127,10 +124,7 @@ export default function Admin() {
   const [portfolioSections, setPortfolioSections] = useState<PortfolioSection[]>([]);
   const [loadingTab, setLoadingTab] = useState(false);
 
-  const handleSignOut = async () => {
-    await signOut();
-    navigate('/');
-  };
+  const handleSignOut = async () => { await signOut(); navigate('/'); };
 
   useEffect(() => { loadOverview(); }, []);
 
@@ -157,23 +151,73 @@ export default function Admin() {
       supabase.from('profiles').select('*', { count: 'exact', head: true }).neq('plan', 'free'),
       supabase.from('profiles').select('id, full_name, company_name, plan, created_at').order('created_at', { ascending: false }).limit(10),
     ]);
-    const totalRevenue = paymentsData?.reduce((sum, p) => sum + p.amount, 0) ?? 0;
+    const totalRevenue = paymentsData?.reduce((sum: number, p: { amount: number }) => sum + p.amount, 0) ?? 0;
     setOverviewStats({ totalUsers: totalUsers ?? 0, requestsToday: requestsToday ?? 0, totalRevenue, paidUsers: paidUsers ?? 0 });
     setRecentUsers(recent ?? []);
     setLoadingTab(false);
   }
 
+  // KEY FIX: fetch requests without join, then manually attach profiles
   async function loadRequests() {
     setLoadingTab(true);
-    const { data } = await supabase.from('free_creative_requests').select('*, profiles(full_name, company_name)').order('created_at', { ascending: false });
-    setRequests((data as CreativeRequest[]) ?? []);
+    const { data: rawRequests } = await supabase
+      .from('free_creative_requests')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (!rawRequests || rawRequests.length === 0) {
+      setRequests([]);
+      setLoadingTab(false);
+      return;
+    }
+
+    const userIds = [...new Set(rawRequests.map((r: { user_id: string }) => r.user_id))];
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, full_name, company_name')
+      .in('id', userIds);
+
+    const profileMap: Record<string, { full_name: string | null; company_name: string | null }> = {};
+    (profiles ?? []).forEach((p: { id: string; full_name: string | null; company_name: string | null }) => {
+      profileMap[p.id] = { full_name: p.full_name, company_name: p.company_name };
+    });
+
+    setRequests(rawRequests.map((r: CreativeRequest) => ({
+      ...r,
+      profiles: profileMap[r.user_id] ?? null,
+    })));
     setLoadingTab(false);
   }
 
   async function loadPayments() {
     setLoadingTab(true);
-    const { data } = await supabase.from('payments').select('*, profiles(full_name)').eq('status', 'captured').order('created_at', { ascending: false });
-    setPayments((data as Payment[]) ?? []);
+    const { data: rawPayments } = await supabase
+      .from('payments')
+      .select('*')
+      .eq('status', 'captured')
+      .order('created_at', { ascending: false });
+
+    if (!rawPayments || rawPayments.length === 0) {
+      setPayments([]);
+      setLoadingTab(false);
+      return;
+    }
+
+    const userIds = [...new Set(rawPayments.map((p: { user_id: string }) => p.user_id))];
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, full_name')
+      .in('id', userIds);
+
+    const profileMap: Record<string, { full_name: string | null }> = {};
+    (profiles ?? []).forEach((p: { id: string; full_name: string | null }) => {
+      profileMap[p.id] = { full_name: p.full_name };
+    });
+
+    setPayments(rawPayments.map((p: Payment) => ({
+      ...p,
+      profiles: profileMap[p.user_id] ?? null,
+    })));
     setLoadingTab(false);
   }
 
@@ -568,11 +612,8 @@ export default function Admin() {
         {/* PORTFOLIO */}
         {tab === 'portfolio' && (
           <div className="space-y-6">
-
-            {/* IMAGE MANAGER VIEW */}
             {managingSection ? (
               <>
-                {/* Header */}
                 <div className="flex items-center gap-3">
                   <button onClick={() => setManagingSection(null)} className="flex items-center gap-1.5 text-sm text-[#9CA3AF] hover:text-white transition-colors">
                     <ChevronLeft size={16} /> Back
@@ -581,8 +622,6 @@ export default function Admin() {
                   <h2 className="font-heading font-bold text-white text-xl">{managingSection.title}</h2>
                   <span className="text-xs text-[#6B7280] font-mono ml-auto">{sectionImages.length} image{sectionImages.length !== 1 ? 's' : ''}</span>
                 </div>
-
-                {/* Upload zone */}
                 <div
                   className="border-2 border-dashed border-white/[0.10] rounded-2xl p-8 flex flex-col items-center gap-3 hover:border-white/20 transition-colors cursor-pointer"
                   onClick={() => imageUploadRef.current?.click()}
@@ -590,10 +629,7 @@ export default function Admin() {
                   onDrop={e => { e.preventDefault(); if (e.dataTransfer.files.length > 0) uploadImagesToSection(e.dataTransfer.files); }}
                 >
                   {uploadingImages ? (
-                    <>
-                      <Loader size={22} className="animate-spin text-[#818CF8]" />
-                      <p className="text-[#9CA3AF] text-sm">Uploading...</p>
-                    </>
+                    <><Loader size={22} className="animate-spin text-[#818CF8]" /><p className="text-[#9CA3AF] text-sm">Uploading...</p></>
                   ) : (
                     <>
                       <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'rgba(99,102,241,0.1)' }}>
@@ -606,37 +642,25 @@ export default function Admin() {
                   <input ref={imageUploadRef} type="file" accept="image/jpeg,image/png,image/webp" multiple className="hidden"
                     onChange={e => { if (e.target.files) uploadImagesToSection(e.target.files); }} />
                 </div>
-
-                {/* Images grid */}
                 {loadingImages ? (
                   <div className="flex items-center justify-center p-16"><Loader size={20} className="animate-spin text-[#818CF8]" /></div>
                 ) : sectionImages.length === 0 ? (
-                  <div className="glass-card rounded-2xl p-10 text-center">
-                    <p className="text-[#6B7280] text-sm">No images yet. Upload some above.</p>
-                  </div>
+                  <div className="glass-card rounded-2xl p-10 text-center"><p className="text-[#6B7280] text-sm">No images yet. Upload some above.</p></div>
                 ) : (
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
                     {sectionImages.map(img => (
                       <div key={img.id} className="relative group rounded-xl overflow-hidden aspect-square" style={{ background: 'rgba(255,255,255,0.04)' }}>
                         <img src={img.image_url} alt={img.caption || ''} className="w-full h-full object-cover" loading="lazy" />
-                        {/* Caption overlay */}
                         {img.caption && (
                           <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 to-transparent p-2">
                             <p className="text-white/70 text-[10px] font-mono line-clamp-2">{img.caption}</p>
                           </div>
                         )}
-                        {/* Delete button */}
                         <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
-                          <button
-                            onClick={() => deleteImage(img)}
-                            disabled={deletingImageId === img.id}
+                          <button onClick={() => deleteImage(img)} disabled={deletingImageId === img.id}
                             className="w-10 h-10 rounded-full flex items-center justify-center transition-all disabled:opacity-50"
-                            style={{ background: 'rgba(239,68,68,0.9)', border: '1px solid rgba(239,68,68,0.6)' }}
-                          >
-                            {deletingImageId === img.id
-                              ? <Loader size={14} className="animate-spin text-white" />
-                              : <Trash2 size={14} className="text-white" />
-                            }
+                            style={{ background: 'rgba(239,68,68,0.9)', border: '1px solid rgba(239,68,68,0.6)' }}>
+                            {deletingImageId === img.id ? <Loader size={14} className="animate-spin text-white" /> : <Trash2 size={14} className="text-white" />}
                           </button>
                         </div>
                       </div>
@@ -645,38 +669,24 @@ export default function Admin() {
                 )}
               </>
             ) : (
-              /* SECTIONS LIST VIEW */
               <>
                 <div className="flex items-center justify-between">
                   <h2 className="font-heading font-bold text-white text-2xl">Portfolio Manager</h2>
-                  <button onClick={() => setShowAddSection(true)} className="btn-primary text-sm">
-                    <Plus size={14} /> Add New Section
-                  </button>
+                  <button onClick={() => setShowAddSection(true)} className="btn-primary text-sm"><Plus size={14} /> Add New Section</button>
                 </div>
-
                 {loadingTab ? (
                   <div className="flex items-center justify-center p-20"><Loader size={20} className="animate-spin text-[#818CF8]" /></div>
                 ) : portfolioSections.length === 0 ? (
-                  <div className="glass-card rounded-2xl p-10 text-center">
-                    <p className="text-[#6B7280] text-sm">No portfolio sections yet. Add your first section above.</p>
-                  </div>
+                  <div className="glass-card rounded-2xl p-10 text-center"><p className="text-[#6B7280] text-sm">No portfolio sections yet.</p></div>
                 ) : (
                   <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     {portfolioSections.map(sec => (
                       <div key={sec.id} className="glass-card rounded-2xl overflow-hidden">
                         <div className="relative bg-white/[0.04] h-36 flex items-center justify-center border-b border-white/[0.06]">
-                          {sec.thumbnail_url ? (
-                            <img src={sec.thumbnail_url} alt={sec.title} className="w-full h-full object-cover" />
-                          ) : (
-                            <Image size={28} className="text-[#6B7280]" />
-                          )}
-                          {/* Visibility toggle */}
-                          <button
-                            onClick={() => toggleSectionVisibility(sec.id, sec.is_visible)}
+                          {sec.thumbnail_url ? <img src={sec.thumbnail_url} alt={sec.title} className="w-full h-full object-cover" /> : <Image size={28} className="text-[#6B7280]" />}
+                          <button onClick={() => toggleSectionVisibility(sec.id, sec.is_visible)}
                             className="absolute top-2 right-2 w-7 h-7 rounded-lg flex items-center justify-center transition-all"
-                            style={{ background: 'rgba(0,0,0,0.65)', border: '1px solid rgba(255,255,255,0.1)' }}
-                            title={sec.is_visible ? 'Hide from public' : 'Show on public site'}
-                          >
+                            style={{ background: 'rgba(0,0,0,0.65)', border: '1px solid rgba(255,255,255,0.1)' }}>
                             {sec.is_visible ? <Eye size={13} className="text-white/60" /> : <EyeOff size={13} className="text-white/30" />}
                           </button>
                         </div>
@@ -685,24 +695,14 @@ export default function Admin() {
                             <h3 className="font-heading font-semibold text-white text-sm">{sec.title}</h3>
                             <span className="text-xs text-[#9CA3AF] font-mono">{sec.image_count} imgs</span>
                           </div>
-                          {!sec.is_visible && (
-                            <p className="text-[10px] text-[#F59E0B] mb-2 font-semibold uppercase tracking-wider">Hidden from public</p>
-                          )}
+                          {!sec.is_visible && <p className="text-[10px] text-[#F59E0B] mb-2 font-semibold uppercase tracking-wider">Hidden from public</p>}
                           <div className="flex gap-2 mt-3">
-                            {/* Delete section */}
-                            <button
-                              onClick={() => deleteSection(sec.id)}
+                            <button onClick={() => deleteSection(sec.id)}
                               className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-all hover:scale-105"
-                              style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}
-                              title="Delete section"
-                            >
+                              style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}>
                               <Trash2 size={14} className="text-red-400" />
                             </button>
-                            {/* Manage images */}
-                            <button
-                              onClick={() => openImageManager(sec)}
-                              className="btn-primary flex-1 justify-center text-xs py-2"
-                            >
+                            <button onClick={() => openImageManager(sec)} className="btn-primary flex-1 justify-center text-xs py-2">
                               Manage Images <ArrowRight size={11} />
                             </button>
                           </div>
@@ -743,10 +743,8 @@ export default function Admin() {
                 <label className="block text-[11px] font-semibold text-[#9CA3AF] mb-2 uppercase tracking-[0.08em]">Section Name</label>
                 <input type="text" value={newSectionName} onChange={e => setNewSectionName(e.target.value)} placeholder="e.g. E-Commerce Ads" className={inputClass} />
               </div>
-              <div
-                className="border-2 border-dashed border-white/[0.10] rounded-2xl p-6 flex flex-col items-center gap-3 hover:border-white/20 transition-colors cursor-pointer"
-                onClick={() => sectionFileRef.current?.click()}
-              >
+              <div className="border-2 border-dashed border-white/[0.10] rounded-2xl p-6 flex flex-col items-center gap-3 hover:border-white/20 transition-colors cursor-pointer"
+                onClick={() => sectionFileRef.current?.click()}>
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'rgba(99,102,241,0.1)' }}>
                   <Upload size={18} className="text-[#818CF8]" />
                 </div>
