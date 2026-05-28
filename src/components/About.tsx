@@ -37,8 +37,6 @@ export default function About() {
 
   return (
     <section ref={sectionRef} className="relative py-20 md:py-36 [overflow-x:clip]" id="about" style={{ background: 'transparent' }}>
-      <div className="section-divider mb-20 md:mb-36" />
-
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
 

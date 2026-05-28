@@ -32,8 +32,6 @@ export default function Process() {
 
   return (
     <section ref={sectionRef} className="relative py-20 md:py-36 [overflow-x:clip]" id="process" style={{ background: 'transparent' }}>
-      <div className="section-divider mb-20 md:mb-36" />
-
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12 md:mb-16">
           <div className="reveal eyebrow-pill mb-7">

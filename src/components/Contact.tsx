@@ -99,8 +99,6 @@ export default function Contact() {
 
   return (
     <section ref={sectionRef} className="relative py-20 md:py-36 [overflow-x:clip]" id="contact" style={{ background: 'transparent' }}>
-      <div className="section-divider mb-20 md:mb-36" />
-
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* CTA Banner */}
         <div className="reveal mb-12 md:mb-16 gradient-border-wrap">

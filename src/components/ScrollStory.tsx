@@ -73,8 +73,6 @@ export default function ScrollStory() {
 
   return (
     <section id="story" className="relative" style={{ background: 'transparent' }}>
-      <div className="section-divider mb-0" />
-
       <div ref={outerRef} className="h-[140vh]">
         <div className="sticky top-0 h-screen flex flex-col justify-center overflow-hidden">
 

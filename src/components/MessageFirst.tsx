@@ -41,8 +41,6 @@ export default function MessageFirst() {
 
   return (
     <section ref={sectionRef} className="relative py-20 md:py-36 [overflow-x:clip]" id="message" style={{ background: 'transparent' }}>
-      <div className="section-divider mb-20 md:mb-36" />
-
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="text-center mb-14 md:mb-24">
