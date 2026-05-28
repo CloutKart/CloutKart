@@ -71,8 +71,7 @@ export default function MessageFirst() {
         <div className="reveal delay-200 mb-8 md:mb-14 gradient-border-wrap">
           <div className="glass-card rounded-[20px] p-8 sm:p-12 lg:p-16 relative" style={{ borderRadius: '20px', background: 'rgba(8,8,8,0.95)' }}>
             <div className="relative z-10 text-center">
-              <div className="absolute left-0 top-8 sm:top-12 w-1 h-16 rounded-full" style={{ background: 'linear-gradient(to bottom, #A855F7, #06B6D4)' }} />
-              <p className="text-xl sm:text-2xl lg:text-[2rem] font-semibold text-[#F3F4F6] leading-[1.45] max-w-4xl mx-auto italic">
+<p className="text-xl sm:text-2xl lg:text-[2rem] font-semibold text-[#F3F4F6] leading-[1.45] max-w-4xl mx-auto italic">
                 "A winning message can be translated into{' '}
                 <em className="not-italic gradient-text">anything.</em>"
               </p>
