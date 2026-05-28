@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Send, CheckCircle, AlertCircle, Loader } from 'lucide-react';
+import { Send, CheckCircle, AlertCircle, Loader, ArrowRight } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 interface FormData {
@@ -93,40 +93,35 @@ export default function Contact() {
     }
   };
 
-  const inputClass = "w-full bg-[#0e0e0e] border border-white/[0.08] rounded-xl px-4 py-3.5 text-sm text-white placeholder-white/18 focus:outline-none focus:border-white/22 focus:bg-[#121212] transition-all duration-200 font-medium";
-  const labelClass = "block text-[11px] font-semibold text-white/30 mb-2 uppercase tracking-[0.08em]";
+  const inputClass = "w-full rounded-xl px-4 py-3.5 text-sm text-white placeholder-[#6B7280] focus:outline-none transition-all duration-200 font-medium"
+    + " bg-white/[0.04] border border-white/[0.10] focus:border-brand-purple/50 focus:bg-white/[0.06]";
+  const labelClass = "block text-[11px] font-semibold text-[#9CA3AF] mb-2 uppercase tracking-[0.08em] font-heading";
 
   return (
-    <section ref={sectionRef} className="relative py-16 md:py-36 bg-[#080808] [overflow-x:clip]" id="contact">
-      <div className="orb w-[700px] h-[700px] left-1/2 -translate-x-1/2 -top-32 opacity-[0.04]"
-        style={{ background: 'radial-gradient(circle, #ffffff, transparent)' }} />
+    <section ref={sectionRef} className="relative py-20 md:py-36 [overflow-x:clip]" id="contact" style={{ background: 'transparent' }}>
+      <div className="section-divider mb-20 md:mb-36" />
 
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-10 md:mb-14">
-          <div className="reveal inline-flex items-center gap-2 glass border border-white/[0.08] rounded-full px-4 py-1.5 text-[11px] font-medium text-white/35 mb-7 tracking-wide uppercase">
-            Get Started
+        {/* CTA Banner */}
+        <div className="reveal mb-12 md:mb-16 gradient-border">
+          <div className="glass-card rounded-[20px] p-8 sm:p-12 text-center" style={{ background: 'rgba(168,85,247,0.04)' }}>
+            <div className="relative z-10">
+              <h2 className="font-heading font-bold leading-tight tracking-tight mb-4" style={{ fontSize: 'clamp(2rem, 5vw, 3.5rem)' }}>
+                <span className="text-white">Ready to Build Ads That </span>
+                <span className="gradient-text">Actually Convert?</span>
+              </h2>
+              <p className="text-[#D1D5DB] text-sm sm:text-lg max-w-lg mx-auto leading-relaxed">
+                Tell us about your brand. We'll reach out within 24 hours to start building.
+              </p>
+            </div>
           </div>
-          <h2 className="reveal delay-100 text-3xl sm:text-5xl lg:text-7xl font-bold text-white leading-[1.06] tracking-tight mb-3 sm:mb-4">
-            Let's Build Your
-            <br />
-            <span className="text-white/35">Winning Message</span>
-          </h2>
-          <p className="reveal delay-200 text-white/35 text-sm md:text-lg max-w-xl mx-auto leading-relaxed">
-            Tell us about your brand. We'll reach out within 24 hours to start building.
-          </p>
         </div>
 
-        <div className="reveal-scale delay-300 relative">
-          <div className="absolute -inset-px rounded-3xl bg-white/[0.055] blur-sm" />
-
-          <form
-            onSubmit={handleSubmit}
-            className="relative rounded-3xl p-6 sm:p-10 lg:p-12 overflow-hidden border border-white/[0.08]"
-            style={{ background: '#111111' }}
-          >
-            <div className="relative z-10 grid sm:grid-cols-2 gap-4 sm:gap-5">
+        <div className="reveal-scale delay-200 glass-card rounded-3xl p-6 sm:p-10 lg:p-12">
+          <form onSubmit={handleSubmit} className="relative z-10">
+            <div className="grid sm:grid-cols-2 gap-4 sm:gap-5">
               <div>
-                <label className={labelClass}>Full Name <span className="text-white/40">*</span></label>
+                <label className={labelClass}>Full Name <span className="text-brand-purple">*</span></label>
                 <input type="text" name="fullName" value={form.fullName} onChange={handleChange} placeholder="John Smith" className={inputClass} />
               </div>
 
@@ -136,7 +131,7 @@ export default function Contact() {
               </div>
 
               <div>
-                <label className={labelClass}>Email Address <span className="text-white/40">*</span></label>
+                <label className={labelClass}>Email Address <span className="text-brand-purple">*</span></label>
                 <input type="email" name="email" value={form.email} onChange={handleChange} placeholder="john@company.com" className={inputClass} />
               </div>
 
@@ -146,7 +141,7 @@ export default function Contact() {
               </div>
 
               <div className="sm:col-span-2">
-                <label className={labelClass}>Tell Us About Your Brand <span className="text-white/40">*</span></label>
+                <label className={labelClass}>Tell Us About Your Brand <span className="text-brand-purple">*</span></label>
                 <textarea
                   name="message"
                   value={form.message}
@@ -158,33 +153,34 @@ export default function Contact() {
               </div>
 
               {status === 'error' && (
-                <div className="sm:col-span-2 flex items-center gap-3 bg-white/[0.03] border border-white/[0.09] rounded-xl p-4">
-                  <AlertCircle size={15} className="text-white/45 flex-shrink-0" />
-                  <span className="text-white/55 text-sm">{errorMsg}</span>
+                <div className="sm:col-span-2 flex items-center gap-3 bg-red-500/[0.05] border border-red-500/20 rounded-xl p-4">
+                  <AlertCircle size={15} className="text-red-400 flex-shrink-0" />
+                  <span className="text-red-300 text-sm">{errorMsg}</span>
                 </div>
               )}
 
               <div className="sm:col-span-2">
                 {status === 'success' ? (
-                  <div className="flex items-center justify-center gap-3 py-4 bg-white/[0.04] border border-white/[0.10] rounded-2xl">
-                    <CheckCircle size={18} className="text-white/55" />
+                  <div className="flex items-center justify-center gap-3 py-4 rounded-2xl border border-brand-cyan/20 bg-brand-cyan/5">
+                    <CheckCircle size={18} className="text-brand-cyan" />
                     <div>
-                      <div className="text-white font-semibold text-sm">Message Received!</div>
-                      <div className="text-white/32 text-xs mt-0.5">We'll be in touch within 24 hours.</div>
+                      <div className="text-white font-semibold font-heading text-sm">Message Received!</div>
+                      <div className="text-[#9CA3AF] text-xs mt-0.5">We'll be in touch within 24 hours.</div>
                     </div>
                   </div>
                 ) : (
                   <button
                     type="submit"
                     disabled={status === 'loading'}
-                    className="group w-full inline-flex items-center justify-center gap-3 px-8 py-4 text-sm font-semibold text-black bg-white rounded-2xl hover:bg-white/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 active:scale-[0.99] hover:scale-[1.01] shadow-lg shadow-white/[0.08]"
+                    className="btn-primary w-full justify-center text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {status === 'loading' ? (
                       <Loader size={15} className="animate-spin" />
                     ) : (
-                      <Send size={14} className="group-hover:translate-x-0.5 transition-transform duration-200" />
+                      <Send size={14} />
                     )}
                     {status === 'loading' ? 'Sending...' : 'Send Inquiry'}
+                    {status !== 'loading' && <ArrowRight size={14} />}
                   </button>
                 )}
               </div>
@@ -192,9 +188,9 @@ export default function Contact() {
           </form>
         </div>
 
-        <p className="reveal delay-500 text-center text-white/22 text-sm mt-7">
+        <p className="reveal delay-400 text-center text-[#6B7280] text-sm mt-7">
           Prefer email?{' '}
-          <a href="mailto:inquiry@clout-kart.com" className="text-white/42 hover:text-white/70 transition-colors underline underline-offset-2">
+          <a href="mailto:inquiry@clout-kart.com" className="text-[#9CA3AF] hover:text-white transition-colors underline underline-offset-2">
             inquiry@clout-kart.com
           </a>
         </p>

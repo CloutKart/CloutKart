@@ -33,7 +33,7 @@ export default function App() {
     <>
       <LoadingScreen />
       <CursorGlow />
-      <div className="relative bg-[#080808]">
+      <div className="relative">
         <div className="noise-overlay" />
         <Navbar />
         <main>

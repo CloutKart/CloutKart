@@ -24,8 +24,8 @@ export default function MessageFirst() {
   const pillars = [
     {
       icon: MessageSquare,
-      title: 'The Message Comes First',
-      desc: "You're not trying to find a winning ad. You're trying to find the winning message.",
+      title: 'The Message-Led Flow',
+      desc: "You're not trying to find a winning ad. You're trying to find the winning message. The ad is just the vehicle.",
     },
     {
       icon: Layers,
@@ -40,41 +40,46 @@ export default function MessageFirst() {
   ];
 
   return (
-    <section ref={sectionRef} className="relative py-16 md:py-36 bg-[#0d0d0d] [overflow-x:clip]" id="message">
-      <div className="orb w-[700px] h-[700px] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-[0.035]"
-        style={{ background: 'radial-gradient(circle, #ffffff, transparent)' }} />
+    <section ref={sectionRef} className="relative py-20 md:py-36 [overflow-x:clip]" id="message" style={{ background: 'transparent' }}>
+      <div className="section-divider mb-20 md:mb-36" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Big statement */}
-        <div className="text-center mb-12 md:mb-24">
-          <div className="reveal inline-flex items-center gap-2 glass border border-white/[0.08] rounded-full px-4 py-1.5 text-[11px] font-medium text-white/35 mb-8 tracking-wide uppercase">
-            Our Philosophy
+        {/* Header */}
+        <div className="text-center mb-14 md:mb-24">
+          <div className="reveal eyebrow-pill mb-8">
+            <span className="w-1 h-1 rounded-full bg-brand-purple" />
+            The Philosophy
           </div>
 
           <div className="reveal delay-100 space-y-1 sm:space-y-2">
-            <h2 className="text-4xl sm:text-6xl lg:text-[6.5rem] font-bold tracking-tight leading-[1.03]">
-              <span className="text-white/15">It's Not About</span>
+            <h2 className="font-heading font-bold tracking-tight leading-[1.03]" style={{ fontSize: 'clamp(2.2rem, 6vw, 6.5rem)' }}>
+              <span className="text-white">It's Not About</span>
             </h2>
-            <h2 className="text-4xl sm:text-6xl lg:text-[6.5rem] font-bold tracking-tight leading-[1.03]">
+            <h2 className="font-heading font-bold tracking-tight leading-[1.03]" style={{ fontSize: 'clamp(2.2rem, 6vw, 6.5rem)' }}>
               <span className="text-white">The Ad.</span>
             </h2>
-            <h2 className="text-4xl sm:text-6xl lg:text-[6.5rem] font-bold tracking-tight leading-[1.03]">
-              <span className="text-white/50">It's About The Message.</span>
+            <h2 className="font-heading font-bold tracking-tight leading-[1.03]" style={{ fontSize: 'clamp(2.2rem, 6vw, 6.5rem)' }}>
+              <span className="text-[#9CA3AF]">It's About</span>
+            </h2>
+            <h2 className="font-heading font-bold tracking-tight leading-[1.03]" style={{ fontSize: 'clamp(2.2rem, 6vw, 6.5rem)' }}>
+              <span className="gradient-text-animated">The Message.</span>
             </h2>
           </div>
         </div>
 
-        {/* Big card */}
-        <div className="reveal delay-200 rounded-3xl p-8 sm:p-12 lg:p-16 mb-8 md:mb-14 relative overflow-hidden border border-white/[0.07]" style={{ background: '#111111' }}>
-          <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-96 h-48 bg-white/[0.015] blur-3xl pointer-events-none" />
-          <div className="relative z-10 text-center">
-            <p className="text-xl sm:text-3xl lg:text-[2.6rem] font-semibold text-white leading-[1.45] max-w-4xl mx-auto">
-              "A winning message can be translated into{' '}
-              <em className="not-italic text-white/45">anything.</em>"
-            </p>
-            <p className="text-sm sm:text-lg text-white/30 mt-6 max-w-2xl mx-auto leading-relaxed">
-              The message is the foundation. The format is just the container. CloutKart builds the message first — everything else scales from there.
-            </p>
+        {/* Quote card */}
+        <div className="reveal delay-200 mb-8 md:mb-14 gradient-border">
+          <div className="glass-card rounded-[20px] p-8 sm:p-12 lg:p-16 relative" style={{ borderRadius: '20px' }}>
+            <div className="relative z-10 text-center">
+              <div className="absolute left-0 top-8 sm:top-12 w-1 h-16 rounded-full" style={{ background: 'linear-gradient(to bottom, #A855F7, #06B6D4)' }} />
+              <p className="text-xl sm:text-2xl lg:text-[2rem] font-semibold text-[#F3F4F6] leading-[1.45] max-w-4xl mx-auto italic">
+                "A winning message can be translated into{' '}
+                <em className="not-italic gradient-text">anything.</em>"
+              </p>
+              <p className="text-sm sm:text-lg text-[#D1D5DB] mt-6 max-w-2xl mx-auto leading-relaxed">
+                The message is the foundation. The format is just the container. CloutKart builds the message first — everything else scales from there.
+              </p>
+            </div>
           </div>
         </div>
 
@@ -83,15 +88,15 @@ export default function MessageFirst() {
           {pillars.map((pillar, i) => (
             <div
               key={pillar.title}
-              className={`reveal delay-${(i + 3) * 100} rounded-2xl p-6 sm:p-8 hover-lift card-glow-border relative overflow-hidden group border border-white/[0.07]`}
-              style={{ background: '#111111' }}
+              className={`reveal delay-${(i + 3) * 100} glass-card rounded-2xl p-6 sm:p-8 group`}
             >
-              <div className="absolute inset-0 bg-white/[0.015] opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-              <div className="w-11 h-11 rounded-xl bg-white/[0.05] border border-white/[0.08] flex items-center justify-center mb-5">
-                <pillar.icon size={19} className="text-white/55" />
+              <div className="relative z-10">
+                <div className="w-11 h-11 rounded-xl icon-gradient flex items-center justify-center mb-5">
+                  <pillar.icon size={19} className="text-brand-purple" />
+                </div>
+                <h3 className="text-base sm:text-lg font-semibold font-heading text-white mb-3 leading-snug">{pillar.title}</h3>
+                <p className="text-[#D1D5DB] text-sm leading-relaxed">{pillar.desc}</p>
               </div>
-              <h3 className="text-base sm:text-lg font-semibold text-white mb-3 leading-snug">{pillar.title}</h3>
-              <p className="text-white/38 text-sm leading-relaxed">{pillar.desc}</p>
             </div>
           ))}
         </div>

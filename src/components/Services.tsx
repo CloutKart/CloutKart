@@ -2,16 +2,16 @@ import { useEffect, useRef } from 'react';
 import { Image as ImageIcon, Video, Smartphone, Film, Package, TrendingUp, Users, Palette, MessageSquare, FlaskConical } from 'lucide-react';
 
 const services = [
-  { icon: ImageIcon, title: 'AI Image Ads', desc: 'Scroll-stopping static visuals engineered for conversion.' },
-  { icon: Smartphone, title: 'Instagram & TikTok', desc: 'Platform-native content that drives engagement and sales.' },
-  { icon: Package, title: 'Product Ads', desc: 'Premium product showcases that make buyers act.' },
-  { icon: Video, title: 'Short-form Video', desc: 'Fast, punchy, conversion-focused video content.' },
-  { icon: Film, title: 'Concept Packs', desc: 'Full creative direction with multiple angles and formats.' },
-  { icon: TrendingUp, title: 'Performance Creative', desc: 'Direct-response assets built for measurable ROI.' },
-  { icon: Users, title: 'UGC-style Concepts', desc: 'Authentic-feeling content that converts like organic.' },
-  { icon: Palette, title: 'Campaign Visuals', desc: 'Cohesive campaign systems that build brand equity.' },
-  { icon: MessageSquare, title: 'Messaging Strategy', desc: 'The foundational docs that power every format.' },
-  { icon: FlaskConical, title: 'Testing Packages', desc: 'Rapid iteration frameworks to find what converts.' },
+  { icon: ImageIcon,    title: 'Static Ads',           desc: 'Scroll-stopping static visuals engineered for conversion.' },
+  { icon: Video,        title: 'Video Ads',             desc: 'Fast, punchy, conversion-focused video content.' },
+  { icon: Users,        title: 'UGC Style',             desc: 'Authentic-feeling content that converts like organic.' },
+  { icon: Smartphone,   title: 'Story Format',          desc: 'Platform-native stories that drive engagement and sales.' },
+  { icon: Film,         title: 'Concept Packs',         desc: 'Full creative direction with multiple angles and formats.' },
+  { icon: MessageSquare, title: 'Messaging Strategy',   desc: 'The foundational docs that power every format.' },
+  { icon: Package,      title: 'Product Ads',           desc: 'Premium product showcases that make buyers act.' },
+  { icon: TrendingUp,   title: 'Performance Creative',  desc: 'Direct-response assets built for measurable ROI.' },
+  { icon: Palette,      title: 'Campaign Visuals',      desc: 'Cohesive campaign systems that build brand equity.' },
+  { icon: FlaskConical, title: 'Testing Packages',      desc: 'Rapid iteration frameworks to find what converts.' },
 ];
 
 export default function Services() {
@@ -35,39 +35,39 @@ export default function Services() {
   }, []);
 
   return (
-    <section ref={sectionRef} className="relative py-12 md:py-20 bg-[#0d0d0d] [overflow-x:clip]" id="services">
-      <div className="orb w-[600px] h-[600px] left-1/2 -translate-x-1/2 top-0 opacity-[0.035]"
-        style={{ background: 'radial-gradient(circle, #ffffff, transparent)' }} />
+    <section ref={sectionRef} className="relative py-20 md:py-36 [overflow-x:clip]" id="services" style={{ background: 'transparent' }}>
+      <div className="section-divider mb-20 md:mb-36" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-10 md:mb-16">
-          <div className="reveal inline-flex items-center gap-2 glass border border-white/[0.08] rounded-full px-4 py-1.5 text-[11px] font-medium text-white/35 mb-7 tracking-wide uppercase">
-            What We Create
+        <div className="text-center mb-12 md:mb-16">
+          <div className="reveal eyebrow-pill mb-7">
+            <span className="w-1 h-1 rounded-full bg-brand-purple" />
+            Every Format
           </div>
-          <h2 className="reveal delay-100 text-3xl sm:text-5xl lg:text-7xl font-bold text-white leading-[1.06] tracking-tight mb-3 sm:mb-4">
+          <h2 className="reveal delay-100 font-heading font-bold leading-[1.06] tracking-tight mb-3 sm:mb-4" style={{ fontSize: 'clamp(2rem, 5vw, 4.5rem)' }}>
             Every Format.
             <br />
-            <span className="text-white/35">One Winning Message.</span>
+            <span className="gradient-text">One Winning Message.</span>
           </h2>
-          <p className="reveal delay-200 text-white/35 text-sm sm:text-lg max-w-xl mx-auto leading-relaxed">
+          <p className="reveal delay-200 text-[#D1D5DB] text-sm sm:text-lg max-w-xl mx-auto leading-relaxed">
             We translate your core message into every format that converts — across every platform that matters.
           </p>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-3.5">
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4">
           {services.map((service, i) => (
             <div
               key={service.title}
-              className={`reveal-scale delay-${Math.min((i + 1) * 70, 800)} rounded-2xl p-4 sm:p-5 group hover-lift relative overflow-hidden cursor-default border border-white/[0.07]`}
-              data-cursor="card"
-              style={{ background: '#111111' }}
+              className={`reveal-scale glass-card rounded-2xl p-4 sm:p-5 group cursor-default`}
+              style={{ animationDelay: `${Math.min(i * 70, 600)}ms` }}
             >
-              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-white/[0.02] rounded-2xl" />
-              <div className="relative z-10 w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white/[0.05] border border-white/[0.08] flex items-center justify-center mb-3 sm:mb-3.5 transition-transform duration-300 group-hover:scale-110">
-                <service.icon size={17} className="text-white/48" />
+              <div className="relative z-10">
+                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl icon-gradient flex items-center justify-center mb-3 sm:mb-3.5 transition-transform duration-300 group-hover:scale-110">
+                  <service.icon size={17} className="text-brand-purple" />
+                </div>
+                <h3 className="text-xs sm:text-[13px] font-semibold font-heading text-white mb-1.5 leading-snug">{service.title}</h3>
+                <p className="text-[11px] text-[#D1D5DB] leading-relaxed hidden sm:block">{service.desc}</p>
               </div>
-              <h3 className="relative z-10 text-xs sm:text-[13px] font-semibold text-white mb-1.5 leading-snug">{service.title}</h3>
-              <p className="relative z-10 text-[11px] text-white/30 leading-relaxed hidden sm:block">{service.desc}</p>
             </div>
           ))}
         </div>

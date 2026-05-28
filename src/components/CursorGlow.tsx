@@ -26,30 +26,30 @@ export default function CursorGlow() {
     if (state === 'button') {
       r.style.width = '48px';
       r.style.height = '48px';
-      r.style.borderColor = 'rgba(255,255,255,0.5)';
-      r.style.boxShadow = 'none';
-      r.style.background = 'rgba(255,255,255,0.04)';
-      d.style.background = '#ffffff';
-      d.style.boxShadow = '0 0 8px rgba(255,255,255,0.4)';
+      r.style.borderColor = 'rgba(168,85,247,0.6)';
+      r.style.boxShadow = '0 0 16px rgba(168,85,247,0.2)';
+      r.style.background = 'rgba(168,85,247,0.06)';
+      d.style.background = 'linear-gradient(135deg, #A855F7, #3B82F6, #06B6D4)';
+      d.style.boxShadow = '0 0 12px rgba(168,85,247,0.6)';
       a.style.opacity = '0.4';
       a.style.transform = 'translate(-50%, -50%) scale(1.3)';
     } else if (state === 'card') {
       r.style.width = '56px';
       r.style.height = '56px';
-      r.style.borderColor = 'rgba(255,255,255,0.3)';
-      r.style.boxShadow = 'none';
-      r.style.background = 'rgba(255,255,255,0.02)';
-      d.style.background = '#ffffff';
-      d.style.boxShadow = '0 0 6px rgba(255,255,255,0.3)';
+      r.style.borderColor = 'rgba(168,85,247,0.4)';
+      r.style.boxShadow = '0 0 20px rgba(168,85,247,0.15)';
+      r.style.background = 'rgba(168,85,247,0.03)';
+      d.style.background = 'linear-gradient(135deg, #A855F7, #3B82F6, #06B6D4)';
+      d.style.boxShadow = '0 0 10px rgba(168,85,247,0.5)';
       a.style.opacity = '0.3';
       a.style.transform = 'translate(-50%, -50%) scale(1.5)';
     } else if (state === 'text') {
       r.style.width = '2px';
       r.style.height = '24px';
       r.style.borderRadius = '1px';
-      r.style.borderColor = 'rgba(255,255,255,0.6)';
+      r.style.borderColor = 'rgba(168,85,247,0.7)';
       r.style.boxShadow = 'none';
-      r.style.background = 'rgba(255,255,255,0.6)';
+      r.style.background = 'rgba(168,85,247,0.7)';
       d.style.opacity = '0';
       a.style.opacity = '0';
       a.style.transform = 'translate(-50%, -50%) scale(0)';
@@ -57,12 +57,12 @@ export default function CursorGlow() {
       r.style.width = state === 'hover' ? '40px' : '32px';
       r.style.height = state === 'hover' ? '40px' : '32px';
       r.style.borderRadius = '50%';
-      r.style.borderColor = state === 'hover' ? 'rgba(255,255,255,0.45)' : 'rgba(255,255,255,0.3)';
+      r.style.borderColor = state === 'hover' ? 'rgba(168,85,247,0.5)' : 'rgba(168,85,247,0.4)';
       r.style.boxShadow = 'none';
       r.style.background = 'transparent';
       d.style.opacity = '1';
-      d.style.background = '#ffffff';
-      d.style.boxShadow = '0 0 5px rgba(255,255,255,0.4)';
+      d.style.background = 'linear-gradient(135deg, #A855F7, #3B82F6, #06B6D4)';
+      d.style.boxShadow = '0 0 12px rgba(168,85,247,0.6)';
       a.style.opacity = state === 'hover' ? '0.25' : '0.15';
       a.style.transform = `translate(-50%, -50%) scale(${state === 'hover' ? 1.1 : 1})`;
     }
