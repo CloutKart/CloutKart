@@ -213,8 +213,8 @@ export default function ScrollStory() {
               pointerEvents: showFinal ? 'auto' : 'none',
             }}
           >
-            <div className="gradient-border max-w-3xl w-full">
-              <div className="glass-card rounded-[20px] p-6 sm:p-10 lg:p-16 text-center">
+            <div className="gradient-border-wrap max-w-3xl w-full">
+              <div className="glass-card rounded-[20px] p-6 sm:p-10 lg:p-16 text-center" style={{ background: 'rgba(8,8,8,0.95)' }}>
                 <div className="relative z-10">
                   <p className="font-heading text-2xl sm:text-4xl lg:text-5xl font-bold text-white mb-2 sm:mb-3 leading-tight tracking-tight">
                     "IT'S NOT ABOUT THE AD."

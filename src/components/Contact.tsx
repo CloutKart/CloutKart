@@ -103,8 +103,8 @@ export default function Contact() {
 
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* CTA Banner */}
-        <div className="reveal mb-12 md:mb-16 gradient-border">
-          <div className="glass-card rounded-[20px] p-8 sm:p-12 text-center" style={{ background: 'rgba(168,85,247,0.04)' }}>
+        <div className="reveal mb-12 md:mb-16 gradient-border-wrap">
+          <div className="glass-card rounded-[20px] p-8 sm:p-12 text-center" style={{ background: 'rgba(8,8,8,0.95)' }}>
             <div className="relative z-10">
               <h2 className="font-heading font-bold leading-tight tracking-tight mb-4" style={{ fontSize: 'clamp(2rem, 5vw, 3.5rem)' }}>
                 <span className="text-white">Ready to Build Ads That </span>

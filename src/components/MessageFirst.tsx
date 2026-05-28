@@ -68,7 +68,7 @@ export default function MessageFirst() {
         </div>
 
         {/* Quote card */}
-        <div className="reveal delay-200 mb-8 md:mb-14 gradient-border">
+        <div className="reveal delay-200 mb-8 md:mb-14 gradient-border-wrap">
           <div className="glass-card rounded-[20px] p-8 sm:p-12 lg:p-16 relative" style={{ borderRadius: '20px' }}>
             <div className="relative z-10 text-center">
               <div className="absolute left-0 top-8 sm:top-12 w-1 h-16 rounded-full" style={{ background: 'linear-gradient(to bottom, #A855F7, #06B6D4)' }} />

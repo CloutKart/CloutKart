@@ -101,7 +101,7 @@ export default function Pricing() {
             return (
               <div
                 key={plan.name}
-                className={`reveal-scale ${isPopular ? 'gradient-border' : ''}`}
+                className={`reveal-scale ${isPopular ? 'gradient-border-wrap' : ''}`}
                 style={{ transitionDelay: `${(i + 1) * 120}ms` }}
               >
                 <div className={`glass-card rounded-[20px] p-6 sm:p-8 h-full flex flex-col ${isPopular ? 'relative' : ''}`}>
