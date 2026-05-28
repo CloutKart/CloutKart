@@ -116,29 +116,34 @@ export default function Dashboard() {
 
       if (insertError) throw insertError;
 
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const { data: { session } } = await supabase.auth.getSession();
-      await fetch(`${supabaseUrl}/functions/v1/send-creative-email`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token}`,
-        },
-        body: JSON.stringify({
-          fullName: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
-          email: user.email,
-          brandName: form.brandName,
-          niche: form.niche,
-          adFormat: form.adFormat,
-          description: form.description,
-          referenceUrl: form.referenceUrl,
-        }),
-      });
+      // Fire email notification but don't let it block or break the form submission
+      try {
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        const { data: { session } } = await supabase.auth.getSession();
+        await fetch(`${supabaseUrl}/functions/v1/send-creative-email`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session?.access_token}`,
+          },
+          body: JSON.stringify({
+            fullName: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
+            email: user.email,
+            brandName: form.brandName,
+            niche: form.niche,
+            adFormat: form.adFormat,
+            description: form.description,
+            referenceUrl: form.referenceUrl,
+          }),
+        });
+      } catch (emailErr) {
+        console.warn('Email notification failed (non-critical):', emailErr);
+      }
 
       setCreativeRequest(inserted);
       setShowForm(false);
     } catch (err: unknown) {
-      setSubmitError(err instanceof Error ? err.message : 'Failed to submit request');
+      setSubmitError(err instanceof Error ? err.message : 'Failed to submit request. Please try again.');
     } finally {
       setSubmitting(false);
     }
@@ -179,28 +184,17 @@ export default function Dashboard() {
       {/* Sidebar */}
       <aside className="hidden md:flex flex-col w-60 flex-shrink-0 border-r border-white/[0.06]" style={{ background: 'rgba(10,10,10,0.95)' }}>
         <div className="px-5 pt-6 pb-4">
-          <Link to="/">
-            <img src="/logo.png" alt="CloutKart" className="h-8 w-auto object-contain opacity-80" />
-          </Link>
+          <Link to="/"><img src="/logo.png" alt="CloutKart" className="h-8 w-auto object-contain opacity-80" /></Link>
         </div>
         <div className="h-px mx-5 bg-white/[0.06]" />
         <nav className="flex-1 px-3 pt-4 space-y-1">
           {navItems.map(({ id, icon: Icon, label }) => {
             const active = tab === id;
             return (
-              <button
-                key={id}
-                onClick={() => setTab(id)}
-                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 text-left"
-                style={{
-                  background: active ? 'rgba(168,85,247,0.08)' : 'transparent',
-                  borderLeft: active ? '2px solid #A855F7' : '2px solid transparent',
-                }}
-              >
+              <button key={id} onClick={() => setTab(id)} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 text-left"
+                style={{ background: active ? 'rgba(168,85,247,0.08)' : 'transparent', borderLeft: active ? '2px solid #A855F7' : '2px solid transparent' }}>
                 <Icon size={16} style={{ color: active ? '#A855F7' : '#9CA3AF' }} />
-                <span style={active ? { background: 'linear-gradient(135deg,#A855F7,#3B82F6,#06B6D4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' } : { color: '#D1D5DB' }}>
-                  {label}
-                </span>
+                <span style={active ? { background: 'linear-gradient(135deg,#A855F7,#3B82F6,#06B6D4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' } : { color: '#D1D5DB' }}>{label}</span>
               </button>
             );
           })}
@@ -208,8 +202,7 @@ export default function Dashboard() {
         <div className="px-5 pb-6 pt-4 border-t border-white/[0.06]">
           <p className="text-[#6B7280] text-xs mb-3 truncate">{user?.email}</p>
           <button onClick={handleSignOut} className="flex items-center gap-2 text-[#9CA3AF] hover:text-white transition-colors text-sm">
-            <LogOut size={14} />
-            Log Out
+            <LogOut size={14} /> Log Out
           </button>
         </div>
       </aside>
@@ -219,18 +212,9 @@ export default function Dashboard() {
         {/* Mobile nav */}
         <div className="md:hidden flex items-center gap-2 mb-6 overflow-x-auto pb-1">
           {navItems.map(({ id, icon: Icon, label }) => (
-            <button
-              key={id}
-              onClick={() => setTab(id)}
-              className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium whitespace-nowrap flex-shrink-0 transition-all"
-              style={{
-                background: tab === id ? 'rgba(168,85,247,0.12)' : 'rgba(255,255,255,0.04)',
-                border: tab === id ? '1px solid rgba(168,85,247,0.3)' : '1px solid rgba(255,255,255,0.08)',
-                color: tab === id ? '#A855F7' : '#9CA3AF',
-              }}
-            >
-              <Icon size={13} />
-              {label}
+            <button key={id} onClick={() => setTab(id)} className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium whitespace-nowrap flex-shrink-0 transition-all"
+              style={{ background: tab === id ? 'rgba(168,85,247,0.12)' : 'rgba(255,255,255,0.04)', border: tab === id ? '1px solid rgba(168,85,247,0.3)' : '1px solid rgba(255,255,255,0.08)', color: tab === id ? '#A855F7' : '#9CA3AF' }}>
+              <Icon size={13} />{label}
             </button>
           ))}
         </div>
@@ -242,43 +226,27 @@ export default function Dashboard() {
               <h2 className="font-heading font-bold text-white text-xl mb-1">Welcome back, {userName}</h2>
               <p className="text-[#9CA3AF] text-sm">Here's what's happening with your account.</p>
             </div>
-
             <div className="glass-card rounded-2xl p-6">
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <p className="text-[#9CA3AF] text-xs font-semibold uppercase tracking-widest mb-1">Your Free Creative</p>
-                  <h3 className="font-heading font-semibold text-white">
-                    {creativeRequest ? creativeRequest.brand_name : 'Free Creative Request'}
-                  </h3>
+                  <h3 className="font-heading font-semibold text-white">{creativeRequest ? creativeRequest.brand_name : 'Free Creative Request'}</h3>
                 </div>
                 {creativeRequest && (
                   <span className="text-xs font-semibold px-2.5 py-1 rounded-full capitalize"
-                    style={{
-                      background: creativeRequest.status === 'completed' ? 'rgba(16,185,129,0.1)' : creativeRequest.status === 'in_progress' ? 'rgba(59,130,246,0.1)' : 'rgba(245,158,11,0.1)',
-                      border: `1px solid ${creativeRequest.status === 'completed' ? 'rgba(16,185,129,0.25)' : creativeRequest.status === 'in_progress' ? 'rgba(59,130,246,0.25)' : 'rgba(245,158,11,0.25)'}`,
-                      color: creativeRequest.status === 'completed' ? '#10B981' : creativeRequest.status === 'in_progress' ? '#3B82F6' : '#F59E0B',
-                    }}>
+                    style={{ background: creativeRequest.status === 'completed' ? 'rgba(16,185,129,0.1)' : creativeRequest.status === 'in_progress' ? 'rgba(59,130,246,0.1)' : 'rgba(245,158,11,0.1)', border: `1px solid ${creativeRequest.status === 'completed' ? 'rgba(16,185,129,0.25)' : creativeRequest.status === 'in_progress' ? 'rgba(59,130,246,0.25)' : 'rgba(245,158,11,0.25)'}`, color: creativeRequest.status === 'completed' ? '#10B981' : creativeRequest.status === 'in_progress' ? '#3B82F6' : '#F59E0B' }}>
                     {creativeRequest.status.replace('_', ' ')}
                   </span>
                 )}
               </div>
               {creativeRequest?.status === 'completed' ? (
-                <button className="btn-primary text-sm">
-                  <Download size={14} />
-                  Download Now
-                  <ArrowRight size={14} />
-                </button>
+                <button className="btn-primary text-sm"><Download size={14} />Download Now<ArrowRight size={14} /></button>
               ) : !creativeRequest && !loadingRequest ? (
-                <button onClick={() => setTab('creative')} className="btn-primary text-sm">
-                  Request Free Creative <ArrowRight size={14} />
-                </button>
+                <button onClick={() => setTab('creative')} className="btn-primary text-sm">Request Free Creative <ArrowRight size={14} /></button>
               ) : (
-                <p className="text-[#6B7280] text-sm">
-                  {loadingRequest ? 'Loading...' : 'Your creative is being worked on.'}
-                </p>
+                <p className="text-[#6B7280] text-sm">{loadingRequest ? 'Loading...' : 'Your creative is being worked on.'}</p>
               )}
             </div>
-
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {[
                 { label: 'Creatives Requested', value: creativeRequest ? '1' : '0' },
@@ -291,7 +259,6 @@ export default function Dashboard() {
                 </div>
               ))}
             </div>
-
             <div className="glass-card rounded-2xl p-5 flex items-center justify-between">
               <div>
                 <p className="text-white font-heading font-semibold text-sm">Free Plan</p>
@@ -308,13 +275,11 @@ export default function Dashboard() {
         {tab === 'creative' && (
           <div className="space-y-6">
             <h2 className="font-heading font-bold text-white text-2xl">My Creative</h2>
-
             {loadingRequest && (
               <div className="glass-card rounded-2xl p-10 flex items-center justify-center">
                 <Loader size={20} className="animate-spin text-[#A855F7]" />
               </div>
             )}
-
             {!loadingRequest && !creativeRequest && !showForm && (
               <div className="glass-card rounded-2xl p-10 flex flex-col items-center text-center">
                 <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4" style={{ background: 'rgba(168,85,247,0.1)', border: '1px solid rgba(168,85,247,0.2)' }}>
@@ -322,13 +287,9 @@ export default function Dashboard() {
                 </div>
                 <h3 className="font-heading font-semibold text-white text-lg mb-2">No creative requested yet</h3>
                 <p className="text-[#9CA3AF] text-sm mb-6 max-w-sm">You haven't requested your free creative yet. It takes 2 minutes and delivers in 48 hours.</p>
-                <button onClick={() => setShowForm(true)} className="btn-primary text-sm">
-                  Request Free Creative
-                  <ArrowRight size={14} />
-                </button>
+                <button onClick={() => setShowForm(true)} className="btn-primary text-sm">Request Free Creative<ArrowRight size={14} /></button>
               </div>
             )}
-
             {!loadingRequest && !creativeRequest && showForm && (
               <div className="glass-card rounded-2xl p-6 sm:p-8">
                 <h3 className="font-heading font-semibold text-white text-lg mb-6">Free Creative Request</h3>
@@ -359,14 +320,12 @@ export default function Dashboard() {
                     <label className={labelClass}>Reference URL (optional)</label>
                     <input type="url" name="referenceUrl" value={form.referenceUrl} onChange={handleFormChange} placeholder="https://..." className={inputClass} />
                   </div>
-
                   {submitError && (
                     <div className="flex items-center gap-2 bg-red-500/[0.06] border border-red-500/20 rounded-xl p-3">
                       <AlertCircle size={14} className="text-red-400 flex-shrink-0" />
                       <span className="text-red-300 text-xs">{submitError}</span>
                     </div>
                   )}
-
                   <button type="submit" disabled={submitting} className="btn-primary text-sm disabled:opacity-50 disabled:cursor-not-allowed">
                     {submitting ? <Loader size={14} className="animate-spin" /> : <ArrowRight size={14} />}
                     {submitting ? 'Submitting...' : 'Submit Request'}
@@ -374,7 +333,6 @@ export default function Dashboard() {
                 </form>
               </div>
             )}
-
             {!loadingRequest && creativeRequest && (
               <div className="glass-card rounded-2xl p-6 sm:p-8">
                 <div className="flex items-start justify-between mb-8">
@@ -383,11 +341,7 @@ export default function Dashboard() {
                     <p className="text-[#9CA3AF] text-sm mt-1">{creativeRequest.niche} · {creativeRequest.ad_format}</p>
                   </div>
                   <span className="text-xs font-semibold px-2.5 py-1 rounded-full capitalize flex-shrink-0"
-                    style={{
-                      background: creativeRequest.status === 'completed' ? 'rgba(16,185,129,0.1)' : creativeRequest.status === 'in_progress' ? 'rgba(59,130,246,0.1)' : 'rgba(245,158,11,0.1)',
-                      border: `1px solid ${creativeRequest.status === 'completed' ? 'rgba(16,185,129,0.25)' : creativeRequest.status === 'in_progress' ? 'rgba(59,130,246,0.25)' : 'rgba(245,158,11,0.25)'}`,
-                      color: creativeRequest.status === 'completed' ? '#10B981' : creativeRequest.status === 'in_progress' ? '#3B82F6' : '#F59E0B',
-                    }}>
+                    style={{ background: creativeRequest.status === 'completed' ? 'rgba(16,185,129,0.1)' : creativeRequest.status === 'in_progress' ? 'rgba(59,130,246,0.1)' : 'rgba(245,158,11,0.1)', border: `1px solid ${creativeRequest.status === 'completed' ? 'rgba(16,185,129,0.25)' : creativeRequest.status === 'in_progress' ? 'rgba(59,130,246,0.25)' : 'rgba(245,158,11,0.25)'}`, color: creativeRequest.status === 'completed' ? '#10B981' : creativeRequest.status === 'in_progress' ? '#3B82F6' : '#F59E0B' }}>
                     {creativeRequest.status.replace('_', ' ')}
                   </span>
                 </div>
@@ -399,10 +353,7 @@ export default function Dashboard() {
                       <div key={step} className="flex items-start gap-4 pb-6 last:pb-0">
                         <div className="flex flex-col items-center flex-shrink-0">
                           <div className="w-8 h-8 rounded-full flex items-center justify-center transition-all"
-                            style={{
-                              background: done ? 'linear-gradient(135deg,#A855F7,#3B82F6)' : 'rgba(255,255,255,0.05)',
-                              border: done ? 'none' : '1px solid rgba(255,255,255,0.1)',
-                            }}>
+                            style={{ background: done ? 'linear-gradient(135deg,#A855F7,#3B82F6)' : 'rgba(255,255,255,0.05)', border: done ? 'none' : '1px solid rgba(255,255,255,0.1)' }}>
                             {done ? <CheckCircle size={14} className="text-white" /> : <Clock size={14} className="text-[#6B7280]" />}
                           </div>
                           {i < timelineSteps.length - 1 && (
@@ -421,11 +372,7 @@ export default function Dashboard() {
                   })}
                 </div>
                 {creativeRequest.status === 'completed' && (
-                  <button className="btn-primary text-sm mt-6">
-                    <Download size={14} />
-                    Download Creative
-                    <ArrowRight size={14} />
-                  </button>
+                  <button className="btn-primary text-sm mt-6"><Download size={14} />Download Creative<ArrowRight size={14} /></button>
                 )}
               </div>
             )}
@@ -464,9 +411,7 @@ export default function Dashboard() {
                       </div>
                     ))}
                   </div>
-                  <button className="btn-primary w-full justify-center text-sm">
-                    Upgrade to {plan.name} <ArrowRight size={13} />
-                  </button>
+                  <button className="btn-primary w-full justify-center text-sm">Upgrade to {plan.name} <ArrowRight size={13} /></button>
                 </div>
               ))}
             </div>
@@ -481,33 +426,15 @@ export default function Dashboard() {
               <form onSubmit={handleSaveSettings} className="space-y-4">
                 <div>
                   <label className={labelClass}>Full Name</label>
-                  <input
-                    type="text"
-                    value={settingsForm.fullName}
-                    onChange={e => setSettingsForm(p => ({ ...p, fullName: e.target.value }))}
-                    placeholder="Your full name"
-                    className={inputClass}
-                  />
+                  <input type="text" value={settingsForm.fullName} onChange={e => setSettingsForm(p => ({ ...p, fullName: e.target.value }))} placeholder="Your full name" className={inputClass} />
                 </div>
                 <div>
                   <label className={labelClass}>Company Name</label>
-                  <input
-                    type="text"
-                    value={settingsForm.company}
-                    onChange={e => setSettingsForm(p => ({ ...p, company: e.target.value }))}
-                    placeholder="Your company"
-                    className={inputClass}
-                  />
+                  <input type="text" value={settingsForm.company} onChange={e => setSettingsForm(p => ({ ...p, company: e.target.value }))} placeholder="Your company" className={inputClass} />
                 </div>
                 <div>
                   <label className={labelClass}>Phone</label>
-                  <input
-                    type="tel"
-                    value={settingsForm.phone}
-                    onChange={e => setSettingsForm(p => ({ ...p, phone: e.target.value }))}
-                    placeholder="+91 00000 00000"
-                    className={inputClass}
-                  />
+                  <input type="tel" value={settingsForm.phone} onChange={e => setSettingsForm(p => ({ ...p, phone: e.target.value }))} placeholder="+91 00000 00000" className={inputClass} />
                 </div>
                 <button type="submit" disabled={settingsSaving} className="btn-primary text-sm disabled:opacity-50">
                   {settingsSaving ? <Loader size={14} className="animate-spin" /> : <ArrowRight size={14} />}
