@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ExternalLink, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ExternalLink, X, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 interface PortfolioSection {
@@ -14,20 +14,19 @@ interface PortfolioImage {
   caption: string;
 }
 
-const fallbackItems = [
-  { title: 'Fashion Brand TikTok', category: 'Short-form Video', image: 'https://images.pexels.com/photos/2218786/pexels-photo-2218786.jpeg?auto=compress&cs=tinysrgb&w=600', spanDesktop: '' },
-  { title: 'SaaS Performance Ad', category: 'Performance Creative', image: 'https://images.pexels.com/photos/3184291/pexels-photo-3184291.jpeg?auto=compress&cs=tinysrgb&w=600', spanDesktop: '' },
-  { title: 'Luxury Brand Campaign', category: 'Brand Campaign', image: 'https://images.pexels.com/photos/1884581/pexels-photo-1884581.jpeg?auto=compress&cs=tinysrgb&w=900', spanDesktop: 'lg:col-span-2' },
-  { title: 'Skincare UGC Concept', category: 'UGC-Style', image: 'https://images.pexels.com/photos/3762879/pexels-photo-3762879.jpeg?auto=compress&cs=tinysrgb&w=600', spanDesktop: '' },
-  { title: 'Tech Product Ad', category: 'Product Ad', image: 'https://images.pexels.com/photos/1779487/pexels-photo-1779487.jpeg?auto=compress&cs=tinysrgb&w=600', spanDesktop: '' },
-  { title: 'Fitness Brand Creative', category: 'Instagram Creative', image: 'https://images.pexels.com/photos/2247179/pexels-photo-2247179.jpeg?auto=compress&cs=tinysrgb&w=600', spanDesktop: '' },
-];
-
-const spanClasses = ['lg:col-span-1 lg:row-span-2', '', '', 'lg:col-span-2', '', ''];
+const spanMap: Record<number, string[]> = {
+  1: ['col-span-2 lg:col-span-3'],
+  2: ['col-span-2 lg:col-span-2', 'col-span-2 lg:col-span-1 lg:row-span-2'],
+  3: ['col-span-2 lg:col-span-1 lg:row-span-2', 'col-span-1', 'col-span-1'],
+  4: ['col-span-2 lg:col-span-2', 'col-span-2 lg:col-span-1', 'col-span-1', 'col-span-1'],
+  5: ['col-span-2 lg:col-span-1 lg:row-span-2', 'col-span-1', 'col-span-1', 'col-span-2 lg:col-span-1', 'col-span-2 lg:col-span-1'],
+  6: ['col-span-2 lg:col-span-1 lg:row-span-2', '', '', 'lg:col-span-2', '', ''],
+};
 
 export default function Portfolio() {
   const sectionRef = useRef<HTMLElement>(null);
   const [sections, setSections] = useState<PortfolioSection[]>([]);
+  const [loaded, setLoaded] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxImages, setLightboxImages] = useState<PortfolioImage[]>([]);
   const [lightboxTitle, setLightboxTitle] = useState('');
@@ -42,7 +41,7 @@ export default function Portfolio() {
       .order('display_order', { ascending: true })
       .limit(6)
       .then(({ data }) => {
-        if (data && data.length > 0) {
+        if (data) {
           setSections(data.map((s: { id: string; title: string; thumbnail_url: string; portfolio_images: { count: number }[] }) => ({
             id: s.id,
             title: s.title,
@@ -50,6 +49,7 @@ export default function Portfolio() {
             image_count: s.portfolio_images?.[0]?.count ?? 0,
           })));
         }
+        setLoaded(true);
       });
   }, []);
 
@@ -68,7 +68,7 @@ export default function Portfolio() {
     );
     if (sectionRef.current) observer.observe(sectionRef.current);
     return () => observer.disconnect();
-  }, []);
+  }, [loaded]);
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
@@ -91,26 +91,17 @@ export default function Portfolio() {
     setLightboxTitle(title);
     setActiveIndex(0);
     setLightboxOpen(true);
-
     const { data } = await supabase
       .from('portfolio_images')
       .select('image_url, caption')
       .eq('section_id', sectionId)
       .order('display_order', { ascending: true });
-
     setLightboxImages((data as PortfolioImage[]) ?? []);
     setLoadingImages(false);
   }
 
-  const displayItems = sections.length > 0
-    ? sections.map((s, i) => ({
-        id: s.id,
-        title: s.title,
-        category: `${s.image_count} image${s.image_count !== 1 ? 's' : ''}`,
-        image: s.thumbnail_url || 'https://images.pexels.com/photos/3184291/pexels-photo-3184291.jpeg?auto=compress&cs=tinysrgb&w=600',
-        spanDesktop: spanClasses[i % spanClasses.length],
-      }))
-    : fallbackItems.map((item, i) => ({ ...item, id: String(i) }));
+  const count = sections.length;
+  const spans = spanMap[Math.min(count, 6)] ?? spanMap[6];
 
   return (
     <section ref={sectionRef} className="relative py-20 md:py-36 [overflow-x:clip]" id="portfolio" style={{ background: 'transparent' }}>
@@ -130,40 +121,80 @@ export default function Portfolio() {
           </p>
         </div>
 
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-3.5 lg:auto-rows-[210px]">
-          {displayItems.map((item, i) => (
-            <div
-              key={item.id}
-              className={`reveal-scale ${item.spanDesktop} relative group overflow-hidden rounded-xl sm:rounded-2xl cursor-pointer aspect-square lg:aspect-auto`}
-              style={{ transitionDelay: `${Math.min(i * 80, 560)}ms` }}
-              onClick={sections.length > 0 && 'id' in item ? () => openLightbox(item.id, item.title) : undefined}
-            >
-              <img
-                src={item.image}
-                alt={item.title}
-                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                loading="lazy"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent opacity-60 group-hover:opacity-85 transition-opacity duration-400" />
-              <div className="absolute inset-0 flex flex-col justify-end p-3 sm:p-5 translate-y-1 group-hover:translate-y-0 transition-transform duration-300">
-                <div
-                  className="inline-flex items-center rounded-full px-2.5 sm:px-3 py-0.5 sm:py-1 text-[10px] sm:text-xs font-medium text-white/80 w-fit mb-1.5 sm:mb-2 font-mono"
-                  style={{ background: 'rgba(168,85,247,0.2)', border: '1px solid rgba(168,85,247,0.3)' }}
-                >
-                  {item.category}
-                </div>
-                <h3 className="text-white font-semibold font-heading text-xs sm:text-sm lg:text-[15px] leading-snug">{item.title}</h3>
-              </div>
+        {!loaded ? (
+          /* Skeleton while loading */
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-3.5 lg:auto-rows-[210px]">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className={`${i === 0 ? 'lg:col-span-1 lg:row-span-2' : i === 3 ? 'lg:col-span-2' : ''} rounded-xl sm:rounded-2xl aspect-square lg:aspect-auto`}
+                style={{ background: 'rgba(255,255,255,0.04)', animation: `pulse 2s ease-in-out ${i * 0.1}s infinite` }} />
+            ))}
+          </div>
+        ) : count === 0 ? (
+          <div className="text-center py-16">
+            <p className="text-[#6B7280] text-sm">Portfolio coming soon.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-3.5 lg:auto-rows-[210px]">
+            {sections.map((section, i) => (
               <div
-                className="absolute top-3 right-3 w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0"
-                style={{ background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.2)' }}
+                key={section.id}
+                className={`reveal-scale ${spans[i] ?? ''} relative group overflow-hidden rounded-xl sm:rounded-2xl cursor-pointer aspect-square lg:aspect-auto`}
+                style={{ transitionDelay: `${Math.min(i * 80, 560)}ms` }}
+                onClick={() => openLightbox(section.id, section.title)}
               >
-                <ExternalLink size={11} className="text-white/80" />
+                {section.thumbnail_url ? (
+                  <img
+                    src={section.thumbnail_url}
+                    alt={section.title}
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                    loading="lazy"
+                  />
+                ) : (
+                  <div className="w-full h-full" style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.15), rgba(59,130,246,0.1))' }} />
+                )}
+
+                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent opacity-60 group-hover:opacity-85 transition-opacity duration-400" />
+
+                <div className="absolute inset-0 flex flex-col justify-end p-3 sm:p-5 translate-y-1 group-hover:translate-y-0 transition-transform duration-300">
+                  <div
+                    className="inline-flex items-center rounded-full px-2.5 sm:px-3 py-0.5 sm:py-1 text-[10px] sm:text-xs font-medium text-white/80 w-fit mb-1.5 sm:mb-2 font-mono"
+                    style={{ background: 'rgba(168,85,247,0.2)', border: '1px solid rgba(168,85,247,0.3)' }}
+                  >
+                    {section.image_count} image{section.image_count !== 1 ? 's' : ''}
+                  </div>
+                  <h3 className="text-white font-semibold font-heading text-xs sm:text-sm lg:text-[15px] leading-snug">{section.title}</h3>
+                </div>
+
+                <div
+                  className="absolute top-3 right-3 w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0"
+                  style={{ background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.2)' }}
+                >
+                  <ExternalLink size={11} className="text-white/80" />
+                </div>
+
+                <div className="absolute inset-0 rounded-xl sm:rounded-2xl border border-transparent group-hover:border-brand-purple/30 transition-colors duration-300 pointer-events-none" />
               </div>
-              <div className="absolute inset-0 rounded-xl sm:rounded-2xl border border-transparent group-hover:border-brand-purple/30 transition-colors duration-300 pointer-events-none" />
-            </div>
-          ))}
-        </div>
+            ))}
+
+            {/* Fill remaining slots if fewer than 6 sections */}
+            {count < 6 && count > 0 && [...Array(Math.min(6 - count, 3))].map((_, i) => (
+              <div
+                key={`placeholder-${i}`}
+                className="reveal-scale rounded-xl sm:rounded-2xl aspect-square lg:aspect-auto flex items-center justify-center"
+                style={{
+                  background: 'rgba(255,255,255,0.02)',
+                  border: '1px dashed rgba(255,255,255,0.06)',
+                  transitionDelay: `${Math.min((count + i) * 80, 560)}ms`,
+                }}
+              >
+                <div className="flex flex-col items-center gap-2 opacity-20">
+                  <Plus size={20} className="text-white" />
+                  <span className="text-white text-[10px] font-mono">More coming soon</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Lightbox */}
@@ -181,7 +212,7 @@ export default function Portfolio() {
             <X size={18} />
           </button>
 
-          {lightboxImages.length > 1 && (
+          {!loadingImages && lightboxImages.length > 1 && (
             <>
               <button
                 onClick={() => setActiveIndex((p) => (p - 1 + lightboxImages.length) % lightboxImages.length)}
@@ -213,18 +244,19 @@ export default function Portfolio() {
               </div>
             ) : (
               <>
-                <div className="relative w-full rounded-2xl overflow-hidden" style={{ maxHeight: '70vh' }}>
+                <p className="text-white/50 text-sm font-heading font-semibold self-start">{lightboxTitle}</p>
+                <div className="relative w-full rounded-2xl overflow-hidden" style={{ maxHeight: '65vh' }}>
                   <img
                     key={activeIndex}
                     src={lightboxImages[activeIndex].image_url}
                     alt={lightboxImages[activeIndex].caption || lightboxTitle}
                     className="w-full h-full object-contain"
-                    style={{ maxHeight: '70vh', animation: 'fadeIn 0.2s ease' }}
+                    style={{ maxHeight: '65vh', animation: 'fadeIn 0.2s ease' }}
                     loading="lazy"
                   />
                 </div>
                 {lightboxImages[activeIndex].caption && (
-                  <p className="text-white/60 text-xs sm:text-sm font-mono text-center">{lightboxImages[activeIndex].caption}</p>
+                  <p className="text-white/50 text-xs sm:text-sm font-mono text-center">{lightboxImages[activeIndex].caption}</p>
                 )}
                 {lightboxImages.length > 1 && (
                   <>
@@ -249,7 +281,7 @@ export default function Portfolio() {
         </div>
       )}
 
-      <style>{`@keyframes fadeIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }`}</style>
+      <style>{`@keyframes fadeIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } } @keyframes pulse { 0%,100% { opacity: 0.4; } 50% { opacity: 0.7; } }`}</style>
     </section>
   );
 }
