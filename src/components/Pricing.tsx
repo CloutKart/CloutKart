@@ -1,58 +1,20 @@
 import { useEffect, useRef } from 'react';
-import { Check, ArrowRight, Star, Zap } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 
-const plans = [
-  {
-    name: 'Starter',
-    price: 'Free',
-    period: '',
-    sub: 'No credit card required',
-    badge: null,
-    features: [
-      '3 premium ad creatives',
-      'Zero commitment required',
-      'Built around your message',
-      'Production-ready files',
-      '48h delivery',
-    ],
-    cta: 'Claim Free Creatives',
-    ctaStyle: 'secondary' as const,
-  },
-  {
-    name: 'Growth',
-    price: '$997',
-    period: '/mo',
-    sub: 'Most popular plan',
-    badge: 'Most Popular',
-    features: [
-      'Up to 20 ad creatives/month',
-      'Dedicated message strategist',
-      'All formats covered',
-      'Unlimited revisions',
-      '2 active campaigns',
-      'Weekly performance reports',
-    ],
-    cta: 'Get Started',
-    ctaStyle: 'primary' as const,
-  },
-  {
-    name: 'Scale',
-    price: '$2,497',
-    period: '/mo',
-    sub: 'For serious growth',
-    badge: null,
-    features: [
-      'Unlimited ad creatives',
-      'Full creative strategy team',
-      'All formats + landing pages',
-      'Unlimited revisions',
-      'Unlimited campaigns',
-      'Daily performance reviews',
-      'Direct Slack access',
-    ],
-    cta: 'Let\'s Talk',
-    ctaStyle: 'secondary' as const,
-  },
+const step1Features = [
+  '3 production-ready ad creatives',
+  'Built around your winning message',
+  'All formats included',
+  'Delivered in 48 hours',
+  'Zero commitment required',
+];
+
+const step2Features = [
+  'Custom scope for your brand',
+  'Flexible engagement models',
+  'Ongoing creative production',
+  'Direct line to your strategist',
+  'Pricing tailored to your needs',
 ];
 
 export default function Pricing() {
@@ -78,91 +40,98 @@ export default function Pricing() {
   return (
     <section ref={sectionRef} className="relative py-20 md:py-36 [overflow-x:clip]" id="pricing" style={{ background: 'transparent' }}>
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+
+        {/* Heading */}
         <div className="text-center mb-12 md:mb-16">
           <div className="reveal eyebrow-pill mb-7">
             <span className="w-1 h-1 rounded-full bg-brand-purple" />
-            Simple Pricing
+            HOW IT WORKS
           </div>
           <h2 className="reveal delay-100 font-heading font-bold leading-[1.06] tracking-tight mb-3 sm:mb-4" style={{ fontSize: 'clamp(2rem, 5vw, 4.5rem)' }}>
-            Simple Pricing.
+            Start Free.
             <br />
-            <span className="gradient-text">Serious Results.</span>
+            <span className="gradient-text">Scale When Ready.</span>
           </h2>
           <p className="reveal delay-200 text-[#D1D5DB] text-sm sm:text-lg max-w-xl mx-auto leading-relaxed">
-            Start free. Scale when you're ready. No surprise fees.
+            No subscriptions. No upfront cost. Just results first.
           </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-5 sm:gap-6 items-start">
-          {plans.map((plan, i) => {
-            const isPopular = plan.badge === 'Most Popular';
-            return (
-              <div
-                key={plan.name}
-                className={`reveal-scale ${isPopular ? 'gradient-border-wrap' : ''}`}
-                style={{ transitionDelay: `${(i + 1) * 120}ms` }}
-              >
-                <div className={`glass-card rounded-[20px] p-6 sm:p-8 h-full flex flex-col ${isPopular ? 'relative' : ''}`}>
-                  {isPopular && (
-                    <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 eyebrow-pill text-[10px] px-3 py-1 whitespace-nowrap z-10">
-                      <Star size={9} className="fill-brand-purple text-brand-purple" />
-                      Most Popular
-                    </div>
-                  )}
+        {/* Two-step layout */}
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-6 items-center">
 
-                  <div className="relative z-10 mb-6">
-                    <div className="flex items-center gap-2 mb-1">
-                      {isPopular && <Zap size={14} className="text-brand-purple" />}
-                      <h3 className="font-heading font-semibold text-white text-lg">{plan.name}</h3>
-                    </div>
-                    <div className="flex items-baseline gap-1 mb-1">
-                      <span className="font-mono text-4xl sm:text-5xl font-bold text-white">{plan.price}</span>
-                      {plan.period && <span className="font-mono text-lg text-[#9CA3AF]">{plan.period}</span>}
-                    </div>
-                    <p className="text-sm text-[#9CA3AF]">{plan.sub}</p>
-                  </div>
-
-                  <div className="relative z-10 space-y-3 flex-1 mb-8">
-                    {plan.features.map((feature) => (
-                      <div key={feature} className="flex items-start gap-3">
-                        <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5" style={{ background: 'rgba(168,85,247,0.12)', border: '1px solid rgba(168,85,247,0.25)' }}>
-                          <Check size={10} className="text-brand-purple" />
-                        </div>
-                        <span className="text-[#D1D5DB] text-sm leading-relaxed">{feature}</span>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="relative z-10">
-                    <a
-                      href="#contact"
-                      className={plan.ctaStyle === 'primary' ? 'btn-primary w-full justify-center text-sm' : 'btn-secondary w-full justify-center text-sm'}
-                    >
-                      {plan.cta}
-                      <ArrowRight size={14} />
-                    </a>
-                  </div>
-                </div>
+          {/* Step 1 */}
+          <div className="reveal-scale delay-100 gradient-border-wrap">
+            <div className="glass-card rounded-[20px] p-6 sm:p-8 flex flex-col h-full">
+              <div className="relative z-10 mb-6">
+                <span className="eyebrow-pill text-[10px] px-3 py-1 mb-4 inline-flex">STEP 01</span>
+                <h3 className="font-heading font-bold text-white text-2xl mb-3">Get 3 Free Creatives</h3>
+                <p className="text-[#9CA3AF] text-sm leading-relaxed">
+                  We build 3 premium ad creatives for your brand — no credit card, no commitment. See the quality before you ever spend a rupee.
+                </p>
               </div>
-            );
-          })}
-        </div>
-
-        {/* Trust indicators */}
-        <div className="reveal delay-500 mt-10 sm:mt-12 grid grid-cols-3 gap-3 sm:gap-4 text-center max-w-2xl mx-auto">
-          {[
-            { value: 'Premium', label: 'Production Quality' },
-            { value: '48hrs', label: 'Avg Delivery Time' },
-            { value: '100%', label: 'Built on Strategy' },
-          ].map((item) => (
-            <div key={item.label} className="glass-card rounded-xl sm:rounded-2xl p-4 sm:p-5">
+              <div className="relative z-10 space-y-3 flex-1 mb-8">
+                {step1Features.map((f) => (
+                  <div key={f} className="flex items-start gap-3">
+                    <span className="text-brand-purple text-xs mt-0.5 flex-shrink-0">✦</span>
+                    <span className="text-[#D1D5DB] text-sm leading-relaxed">{f}</span>
+                  </div>
+                ))}
+              </div>
               <div className="relative z-10">
-                <div className="font-mono text-sm sm:text-lg font-semibold gradient-text mb-1 tracking-tight">{item.value}</div>
-                <div className="text-[10px] sm:text-xs text-[#9CA3AF] leading-tight font-medium">{item.label}</div>
+                <a href="#contact" className="btn-primary w-full justify-center text-sm">
+                  Claim Free Creatives
+                  <ArrowRight size={14} />
+                </a>
               </div>
             </div>
-          ))}
+          </div>
+
+          {/* Arrow connector */}
+          <div className="reveal flex flex-col items-center gap-2 text-[#9CA3AF] px-2 py-4 md:py-0">
+            <ArrowRight size={22} className="hidden md:block" />
+            <svg className="block md:hidden" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <polyline points="19 12 12 19 5 12" />
+            </svg>
+            <span style={{ fontSize: 12, fontFamily: "'Sora', sans-serif", letterSpacing: '0.1em', textTransform: 'uppercase' }}>Then</span>
+          </div>
+
+          {/* Step 2 */}
+          <div className="reveal-scale delay-200">
+            <div className="glass-card rounded-[20px] p-6 sm:p-8 flex flex-col h-full" style={{ background: 'rgba(255,255,255,0.025)' }}>
+              <div className="relative z-10 mb-6">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 mb-4 rounded-full text-[10px] font-semibold tracking-widest uppercase"
+                  style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#9CA3AF' }}>
+                  STEP 02
+                </span>
+                <h3 className="font-heading font-bold text-white text-2xl mb-3">We Build Your Strategy</h3>
+                <p className="text-[#9CA3AF] text-sm leading-relaxed">
+                  Once you've seen what we can do, we get on a call. We learn your brand, your goals, your market — and build a creative system around your budget.
+                </p>
+              </div>
+              <div className="relative z-10 space-y-3 flex-1 mb-8">
+                {step2Features.map((f) => (
+                  <div key={f} className="flex items-start gap-3">
+                    <span className="text-[#9CA3AF] text-xs mt-0.5 flex-shrink-0">✦</span>
+                    <span className="text-[#D1D5DB] text-sm leading-relaxed">{f}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="relative z-10">
+                <a href="mailto:inquiry@clout-kart.com" className="btn-secondary w-full justify-center text-sm">
+                  Book a Call
+                  <ArrowRight size={14} />
+                </a>
+              </div>
+            </div>
+          </div>
         </div>
+
+        {/* Reassurance line */}
+        <p className="reveal delay-400 text-center mt-8" style={{ color: '#9CA3AF', fontSize: 14 }}>
+          No pushy sales. Just a conversation about what you need.
+        </p>
       </div>
     </section>
   );
