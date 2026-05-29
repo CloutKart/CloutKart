@@ -308,7 +308,7 @@ export default function Admin() {
   const [savingCaptionId, setSavingCaptionId] = useState<string | null>(null);
   const imageUploadRef = useRef<HTMLInputElement>(null);
 
-  const [overviewStats, setOverviewStats] = useState({ totalUsers: 0, requestsToday: 0, totalRevenue: 0, paidUsers: 0 });
+  const [overviewStats, setOverviewStats] = useState({ totalUsers: 0, requestsToday: 0, totalRevenue: 0, paidUsers: 0, conversionUsers: 0 });
   const [recentUsers, setRecentUsers] = useState<Profile[]>([]);
   const [requests, setRequests] = useState<CreativeRequest[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
@@ -344,17 +344,19 @@ export default function Admin() {
       { count: totalUsers },
       { count: requestsToday },
       { data: paymentsData },
-      { count: paidUsers },
+      { data: conversionProfiles },
       { data: recent },
     ] = await Promise.all([
       supabase.from('profiles').select('*', { count: 'exact', head: true }),
       supabase.from('free_creative_requests').select('*', { count: 'exact', head: true }).gte('created_at', today),
       supabase.from('payments').select('amount').eq('status', 'captured'),
-      supabase.from('profiles').select('*', { count: 'exact', head: true }).neq('plan', 'free'),
+      supabase.from('profiles').select('plan'),
       supabase.from('profiles').select('id, full_name, company_name, plan, created_at').order('created_at', { ascending: false }).limit(10),
     ]);
     const totalRevenue = paymentsData?.reduce((sum: number, p: { amount: number }) => sum + p.amount, 0) ?? 0;
-    setOverviewStats({ totalUsers: totalUsers ?? 0, requestsToday: requestsToday ?? 0, totalRevenue, paidUsers: paidUsers ?? 0 });
+    const customerProfiles = (conversionProfiles ?? []).filter((p: { plan: string | null }) => (p.plan ?? 'free').toLowerCase() !== 'admin');
+    const paidUsers = customerProfiles.filter((p: { plan: string | null }) => (p.plan ?? 'free').toLowerCase() !== 'free').length;
+    setOverviewStats({ totalUsers: totalUsers ?? 0, requestsToday: requestsToday ?? 0, totalRevenue, paidUsers, conversionUsers: customerProfiles.length });
     setRecentUsers(recent ?? []);
     setLoadingTab(false);
   }
@@ -513,7 +515,7 @@ export default function Admin() {
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'users.csv'; a.click();
   }
 
-  const conversionRate = overviewStats.totalUsers > 0 ? ((overviewStats.paidUsers / overviewStats.totalUsers) * 100).toFixed(1) : '0.0';
+  const conversionRate = overviewStats.conversionUsers > 0 ? ((overviewStats.paidUsers / overviewStats.conversionUsers) * 100).toFixed(1) : '0.0';
   const filteredRequests = requestFilter === 'all' ? requests : requests.filter(r => r.status === requestFilter);
   const filteredUsers = users.filter(u => {
     const matchSearch = !userSearch || (u.full_name ?? '').toLowerCase().includes(userSearch.toLowerCase()) || (u.company_name ?? '').toLowerCase().includes(userSearch.toLowerCase());

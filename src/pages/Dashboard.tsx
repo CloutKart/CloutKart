@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import {
   LayoutDashboard, Image, CreditCard, Settings, LogOut, ArrowRight,
-  Download, Clock, CheckCircle, Loader, ChevronRight, AlertCircle
+  Download, Clock, CheckCircle, Loader, ChevronRight, AlertCircle, Sparkles
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -23,15 +23,13 @@ interface CreativeRequest {
 
 const planFeatures = {
   free: ['1 free creative', '48h delivery', 'Basic formats'],
-  starter: ['5 creatives/mo', '48h delivery', 'All formats', 'Revisions'],
-  growth: ['20 creatives/mo', '24h delivery', 'All formats', 'Unlimited revisions', 'Strategist'],
-  scale: ['Unlimited creatives', 'Priority delivery', 'All formats + landing pages', 'Dedicated team'],
 };
 
-const upgradePlans = [
-  { id: 'starter', name: 'Starter', price: '₹4,999/mo', features: planFeatures.starter },
-  { id: 'growth', name: 'Growth', price: '₹9,999/mo', features: planFeatures.growth },
-  { id: 'scale', name: 'Scale', price: '₹19,999/mo', features: planFeatures.scale },
+const cloutClubFeatures = [
+  'Recurring monthly creative production',
+  'Priority turnaround for active campaigns',
+  'Caption, hook, and visual direction support',
+  'Fresh ad concepts built around your winning message',
 ];
 
 const timelineSteps = ['Submitted', 'In Review', 'In Production', 'Ready to Download'];
@@ -179,6 +177,8 @@ export default function Dashboard() {
   ];
 
   const activeStep = creativeRequest ? (statusToStep[creativeRequest.status] ?? 0) : -1;
+  const creativeUrl = creativeRequest?.creative_url ?? '';
+  const creativeIsImage = /\.(apng|avif|gif|jpe?g|png|webp)(\?.*)?$/i.test(creativeUrl);
 
   return (
     <div className="min-h-screen flex" style={{ background: '#080808', backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.04) 1px, transparent 1px)', backgroundSize: '28px 28px' }}>
@@ -346,31 +346,64 @@ export default function Dashboard() {
                     {creativeRequest.status.replace('_', ' ')}
                   </span>
                 </div>
-                <div className="relative flex flex-col gap-0">
-                  {timelineSteps.map((step, i) => {
-                    const done = i <= activeStep;
-                    const active = i === activeStep;
-                    return (
-                      <div key={step} className="flex items-start gap-4 pb-6 last:pb-0">
-                        <div className="flex flex-col items-center flex-shrink-0">
-                          <div className="w-8 h-8 rounded-full flex items-center justify-center transition-all"
-                            style={{ background: done ? 'linear-gradient(135deg,#A855F7,#3B82F6)' : 'rgba(255,255,255,0.05)', border: done ? 'none' : '1px solid rgba(255,255,255,0.1)' }}>
-                            {done ? <CheckCircle size={14} className="text-white" /> : <Clock size={14} className="text-[#6B7280]" />}
+                <div className="grid lg:grid-cols-[minmax(0,1fr)_minmax(340px,0.9fr)] gap-8 items-start">
+                  <div className="relative flex flex-col gap-0">
+                    {timelineSteps.map((step, i) => {
+                      const done = i <= activeStep;
+                      const active = i === activeStep;
+                      return (
+                        <div key={step} className="flex items-start gap-4 pb-6 last:pb-0">
+                          <div className="flex flex-col items-center flex-shrink-0">
+                            <div className="w-8 h-8 rounded-full flex items-center justify-center transition-all"
+                              style={{ background: done ? 'linear-gradient(135deg,#A855F7,#3B82F6)' : 'rgba(255,255,255,0.05)', border: done ? 'none' : '1px solid rgba(255,255,255,0.1)' }}>
+                              {done ? <CheckCircle size={14} className="text-white" /> : <Clock size={14} className="text-[#6B7280]" />}
+                            </div>
+                            {i < timelineSteps.length - 1 && (
+                              <div className="w-px flex-1 mt-1" style={{ height: 24, background: done ? 'linear-gradient(#A855F7,#3B82F6)' : 'rgba(255,255,255,0.06)' }} />
+                            )}
                           </div>
-                          {i < timelineSteps.length - 1 && (
-                            <div className="w-px flex-1 mt-1" style={{ height: 24, background: done ? 'linear-gradient(#A855F7,#3B82F6)' : 'rgba(255,255,255,0.06)' }} />
-                          )}
+                          <div className="pt-1">
+                            <p className={`font-heading font-semibold text-sm ${active ? '' : done ? 'text-white' : 'text-[#6B7280]'}`}
+                              style={active ? { background: 'linear-gradient(135deg,#A855F7,#3B82F6,#06B6D4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' } : {}}>
+                              {step}
+                            </p>
+                            {active && creativeRequest.status !== 'completed' && <Loader size={12} className="mt-1 text-[#A855F7] animate-spin" />}
+                          </div>
                         </div>
-                        <div className="pt-1">
-                          <p className={`font-heading font-semibold text-sm ${active ? '' : done ? 'text-white' : 'text-[#6B7280]'}`}
-                            style={active ? { background: 'linear-gradient(135deg,#A855F7,#3B82F6,#06B6D4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' } : {}}>
-                            {step}
-                          </p>
-                          {active && creativeRequest.status !== 'completed' && <Loader size={12} className="mt-1 text-[#A855F7] animate-spin" />}
+                      );
+                    })}
+                  </div>
+                  <div className="rounded-2xl overflow-hidden border border-white/[0.08]" style={{ background: 'rgba(255,255,255,0.035)' }}>
+                    <div className="px-4 py-3 border-b border-white/[0.06] flex items-center justify-between">
+                      <p className="text-[11px] font-semibold text-[#9CA3AF] uppercase tracking-[0.08em]">Creative Preview</p>
+                      {creativeRequest.status === 'completed' && <span className="text-[11px] font-semibold text-[#10B981]">Ready</span>}
+                    </div>
+                    <div className="min-h-[280px] sm:min-h-[360px] flex items-center justify-center p-4">
+                      {creativeRequest.status === 'completed' && creativeUrl ? (
+                        creativeIsImage ? (
+                          <a href={creativeUrl} target="_blank" rel="noopener noreferrer" className="block w-full">
+                            <img src={creativeUrl} alt={`${creativeRequest.brand_name} creative preview`} className="w-full max-h-[520px] object-contain rounded-xl" />
+                          </a>
+                        ) : (
+                          <div className="text-center max-w-xs mx-auto">
+                            <div className="w-14 h-14 rounded-2xl mx-auto mb-4 flex items-center justify-center" style={{ background: 'rgba(168,85,247,0.12)', border: '1px solid rgba(168,85,247,0.24)' }}>
+                              <Download size={22} className="text-[#A855F7]" />
+                            </div>
+                            <p className="text-white font-heading font-semibold text-sm mb-1">Preview unavailable</p>
+                            <p className="text-[#9CA3AF] text-xs leading-relaxed">This creative file is ready, but it cannot be previewed inline.</p>
+                          </div>
+                        )
+                      ) : (
+                        <div className="text-center max-w-xs mx-auto">
+                          <div className="w-14 h-14 rounded-2xl mx-auto mb-4 flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.10)' }}>
+                            <Image size={22} className="text-[#6B7280]" />
+                          </div>
+                          <p className="text-white font-heading font-semibold text-sm mb-1">Preview appears here</p>
+                          <p className="text-[#9CA3AF] text-xs leading-relaxed">Your completed creative will show here before download.</p>
                         </div>
-                      </div>
-                    );
-                  })}
+                      )}
+                    </div>
+                  </div>
                 </div>
                 {creativeRequest.status === 'completed' && (
                   <a href={creativeRequest.creative_url || "#"} target="_blank" rel="noopener noreferrer" download className="btn-primary text-sm mt-6"><Download size={14} />Download Creative<ArrowRight size={14} /></a>
@@ -400,21 +433,31 @@ export default function Dashboard() {
                 ))}
               </div>
             </div>
-            <div className="grid sm:grid-cols-3 gap-4">
-              {upgradePlans.map((plan) => (
-                <div key={plan.id} className="glass-card rounded-2xl p-6 flex flex-col">
-                  <h3 className="font-heading font-bold text-white text-lg mb-1">{plan.name}</h3>
-                  <p className="font-mono text-[#9CA3AF] text-sm mb-4">{plan.price}</p>
-                  <div className="space-y-2 flex-1 mb-5">
-                    {plan.features.map(f => (
-                      <div key={f} className="flex items-center gap-2 text-xs text-[#D1D5DB]">
-                        <span className="text-[#A855F7]">✦</span> {f}
-                      </div>
-                    ))}
+            <div className="glass-card rounded-2xl p-6 sm:p-8">
+              <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
+                <div className="max-w-2xl">
+                  <div className="inline-flex items-center gap-2 rounded-full px-3 py-1 mb-4" style={{ background: 'rgba(168,85,247,0.10)', border: '1px solid rgba(168,85,247,0.22)' }}>
+                    <Sparkles size={13} className="text-[#A855F7]" />
+                    <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#C084FC]">Coming soon</span>
                   </div>
-                  <button className="btn-primary w-full justify-center text-sm">Upgrade to {plan.name} <ArrowRight size={13} /></button>
+                  <h3 className="font-heading font-bold text-white text-2xl mb-2">Clout Club</h3>
+                  <p className="text-[#9CA3AF] text-sm leading-relaxed">
+                    A subscription service for brands that need a steady stream of performance creatives without rebuilding the brief every time.
+                  </p>
                 </div>
-              ))}
+                <div className="rounded-2xl px-4 py-3 flex-shrink-0" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                  <p className="text-[#6B7280] text-[10px] uppercase tracking-widest mb-1">Status</p>
+                  <p className="text-white font-heading font-semibold text-sm">Coming Soon</p>
+                </div>
+              </div>
+              <div className="grid sm:grid-cols-2 gap-3 mt-7">
+                {cloutClubFeatures.map(f => (
+                  <div key={f} className="flex items-start gap-3 text-sm text-[#D1D5DB] rounded-xl p-3" style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                    <span className="text-[#A855F7] text-xs mt-0.5 flex-shrink-0">✦</span>
+                    <span>{f}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         )}
