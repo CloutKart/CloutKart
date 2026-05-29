@@ -1,34 +1,27 @@
 import { useState } from 'react';
-import { ArrowRight, Eye, EyeOff, Loader, AlertCircle } from 'lucide-react';
+import { ArrowRight, Eye, EyeOff, Loader, AlertCircle, X } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { isAdminUser } from '../lib/auth';
 import { useNavigate, Link } from 'react-router-dom';
 
-export default function Signup() {
-  const [form, setForm] = useState({ fullName: '', email: '', password: '' });
+export default function Login() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
-    setError('');
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
     try {
-      const { error } = await supabase.auth.signUp({
-        email: form.email,
-        password: form.password,
-        options: { data: { full_name: form.fullName } },
-      });
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
-      navigate('/dashboard');
+      navigate(isAdminUser(data.user) ? '/admin' : '/dashboard');
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Something went wrong');
+      setError(err instanceof Error ? err.message : 'Invalid credentials');
     } finally {
       setLoading(false);
     }
@@ -37,32 +30,28 @@ export default function Signup() {
   const inputClass = "w-full rounded-xl px-4 py-3.5 text-sm text-white placeholder-[#6B7280] focus:outline-none transition-all duration-200 font-medium bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(168,85,247,0.5)] focus:bg-white/[0.07]";
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-12" style={{ background: '#080808', backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.07) 1px, transparent 1px)', backgroundSize: '28px 28px' }}>
+    <div className="min-h-screen flex items-center justify-center px-4" style={{ background: '#080808', backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.07) 1px, transparent 1px)', backgroundSize: '28px 28px' }}>
       <div className="w-full max-w-md">
-        <div className="glass-card rounded-3xl p-8 sm:p-10" style={{ background: 'rgba(12,12,12,0.97)' }}>
+        <div className="relative glass-card rounded-3xl p-8 sm:p-10" style={{ background: 'rgba(12,12,12,0.97)' }}>
+          <Link
+            to="/"
+            className="absolute top-5 right-5 w-8 h-8 rounded-lg flex items-center justify-center border border-white/10 hover:border-white/20 text-white/40 hover:text-white/70 transition-all"
+          >
+            <X size={15} />
+          </Link>
           <div className="mb-8">
             <Link to="/">
               <img src="/logo.png" alt="CloutKart" className="h-9 w-auto object-contain mb-6 opacity-80" />
             </Link>
-            <h2 className="font-heading font-bold text-3xl gradient-text mb-1">Get Started Free</h2>
-            <p className="text-[#9CA3AF] text-sm">Your first creative is free. No credit card required.</p>
+            <h2 className="font-heading font-bold text-3xl gradient-text mb-1">Welcome Back</h2>
+            <p className="text-[#9CA3AF] text-sm">Log in to your CloutKart account.</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-3">
             <input
-              type="text"
-              name="fullName"
-              value={form.fullName}
-              onChange={handleChange}
-              placeholder="Full Name"
-              className={inputClass}
-              required
-            />
-            <input
               type="email"
-              name="email"
-              value={form.email}
-              onChange={handleChange}
+              value={email}
+              onChange={e => setEmail(e.target.value)}
               placeholder="Email Address"
               className={inputClass}
               required
@@ -70,9 +59,8 @@ export default function Signup() {
             <div className="relative">
               <input
                 type={showPassword ? 'text' : 'password'}
-                name="password"
-                value={form.password}
-                onChange={handleChange}
+                value={password}
+                onChange={e => setPassword(e.target.value)}
                 placeholder="Password"
                 className={`${inputClass} pr-12`}
                 required
@@ -84,6 +72,12 @@ export default function Signup() {
               >
                 {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
               </button>
+            </div>
+
+            <div className="text-right">
+              <Link to="/forgot-password" className="text-xs text-[#9CA3AF] hover:text-white transition-colors">
+                Forgot password?
+              </Link>
             </div>
 
             {error && (
@@ -99,18 +93,14 @@ export default function Signup() {
               className="btn-primary w-full justify-center mt-1 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? <Loader size={15} className="animate-spin" /> : <ArrowRight size={15} />}
-              {loading ? 'Creating account...' : 'Create Account'}
+              {loading ? 'Logging in...' : 'Log In'}
             </button>
-
-            <p className="text-center text-[#9CA3AF] text-xs mt-2">
-              Your first creative is free. No credit card required.
-            </p>
           </form>
 
           <p className="text-center text-[#6B7280] text-sm mt-6">
-            Already have an account?{' '}
-            <Link to="/login" className="text-[#9CA3AF] hover:text-white transition-colors underline underline-offset-2">
-              Log in
+            Don't have an account?{' '}
+            <Link to="/signup" className="text-[#9CA3AF] hover:text-white transition-colors underline underline-offset-2">
+              Sign up
             </Link>
           </p>
         </div>
