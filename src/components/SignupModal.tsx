@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { X, ArrowRight, Eye, EyeOff, Loader, AlertCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { isAdminUser } from '../lib/auth';
 import { useNavigate } from 'react-router-dom';
 
 interface Props {
@@ -55,8 +56,7 @@ export default function SignupModal({ open, onClose, defaultMode = 'signup' }: P
         });
         if (error) throw error;
         onClose();
-        const isAdmin = data.user?.email?.endsWith('@clout-kart.com') ?? false;
-        navigate(isAdmin ? '/admin' : '/dashboard');
+        navigate(isAdminUser(data.user) ? '/admin' : '/dashboard');
       }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Something went wrong');

@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
+import { isAdminUser } from '../lib/auth';
 
 interface AuthContextType {
   user: User | null;
@@ -46,7 +47,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const isLoggedIn = !!user;
-  const isAdmin = user?.email?.endsWith('@clout-kart.com') ?? false;
+  const isAdmin = isAdminUser(user);
 
   return (
     <AuthContext.Provider value={{ user, session, isLoggedIn, isAdmin, loading, signOut }}>

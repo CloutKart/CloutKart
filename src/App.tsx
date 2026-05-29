@@ -24,9 +24,10 @@ import Dashboard from './pages/Dashboard';
 import Admin from './pages/Admin';
 
 function ProtectedDashboard() {
-  const { isLoggedIn, loading } = useAuth();
+  const { isLoggedIn, isAdmin, loading } = useAuth();
   if (loading) return null;
   if (!isLoggedIn) return <Navigate to="/login" replace />;
+  if (isAdmin) return <Navigate to="/admin" replace />;
   return <Dashboard />;
 }
 

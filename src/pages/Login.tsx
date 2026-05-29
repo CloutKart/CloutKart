@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ArrowRight, Eye, EyeOff, Loader, AlertCircle, X } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { isAdminUser } from '../lib/auth';
 import { useNavigate, Link } from 'react-router-dom';
 
 export default function Login() {
@@ -18,8 +19,7 @@ export default function Login() {
     try {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
-      const isAdmin = data.user?.email?.endsWith('@clout-kart.com') ?? false;
-      navigate(isAdmin ? '/admin' : '/dashboard');
+      navigate(isAdminUser(data.user) ? '/admin' : '/dashboard');
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Invalid credentials');
     } finally {
