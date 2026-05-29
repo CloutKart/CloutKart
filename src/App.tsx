@@ -66,7 +66,7 @@ function LandingPage({ onSignupOpen }: { onSignupOpen: () => void }) {
           <Services />
           <ScrollStory />
           <Process />
-          <Pricing />
+          <Pricing onSignupOpen={onSignupOpen} />
           <Portfolio />
           <FAQ />
           <Contact />

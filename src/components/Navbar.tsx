@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Menu, X, ArrowRight, LayoutDashboard, ShieldCheck, LogIn } from 'lucide-react';
+import { Menu, X, ArrowRight, LayoutDashboard, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
@@ -36,13 +36,6 @@ export default function Navbar({ onSignupOpen }: Props) {
     if (!isLoggedIn) {
       return (
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => navigate('/login')}
-            className="btn-secondary text-sm px-4 py-2 flex items-center gap-2"
-          >
-            <LogIn size={13} />
-            Log In
-          </button>
           <button onClick={onSignupOpen} className="btn-primary text-sm px-5 py-2.5">
             Get Started
             <ArrowRight size={14} />
@@ -163,21 +156,12 @@ export default function Navbar({ onSignupOpen }: Props) {
         <div className="px-5 pb-10 pt-4 space-y-3">
           <div className="h-px mb-2 bg-white/[0.06]" />
           {!isLoggedIn ? (
-            <>
-              <button
-                onClick={() => { setMenuOpen(false); navigate('/login'); }}
-                className="btn-secondary w-full justify-center text-sm py-3.5"
-              >
-                <LogIn size={13} />
-                Log In
-              </button>
-              <button
-                onClick={() => { setMenuOpen(false); onSignupOpen(); }}
-                className="btn-primary w-full justify-center text-sm py-3.5"
-              >
-                Get Started <ArrowRight size={14} />
-              </button>
-            </>
+            <button
+              onClick={() => { setMenuOpen(false); onSignupOpen(); }}
+              className="btn-primary w-full justify-center text-sm py-3.5"
+            >
+              Get Started <ArrowRight size={14} />
+            </button>
           ) : isAdmin ? (
             <button
               onClick={() => { setMenuOpen(false); navigate('/admin'); }}

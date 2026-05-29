@@ -17,7 +17,11 @@ const step2Features = [
   'Pricing tailored to your needs',
 ];
 
-export default function Pricing() {
+interface Props {
+  onSignupOpen: () => void;
+}
+
+export default function Pricing({ onSignupOpen }: Props) {
   const sectionRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -79,10 +83,10 @@ export default function Pricing() {
                 ))}
               </div>
               <div className="relative z-10">
-                <a href="#contact" className="btn-primary w-full justify-center text-sm">
+                <button onClick={onSignupOpen} className="btn-primary w-full justify-center text-sm">
                   Claim Free Creatives
                   <ArrowRight size={14} />
-                </a>
+                </button>
               </div>
             </div>
           </div>
@@ -119,10 +123,10 @@ export default function Pricing() {
                 ))}
               </div>
               <div className="relative z-10">
-                <a href="mailto:inquiry@clout-kart.com" className="btn-secondary w-full justify-center text-sm">
+                <button onClick={onSignupOpen} className="btn-secondary w-full justify-center text-sm">
                   Book a Call
                   <ArrowRight size={14} />
-                </a>
+                </button>
               </div>
             </div>
           </div>
