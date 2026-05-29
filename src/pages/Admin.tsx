@@ -3,20 +3,23 @@ import { createPortal } from 'react-dom';
 import { useNavigate, Link } from 'react-router-dom';
 import {
   LayoutDashboard, Image, CreditCard, Users, Settings, LogOut,
-  Plus, ArrowRight, Search, Filter, Upload, Loader,
-  Eye, EyeOff, Trash2, RefreshCw, ChevronLeft, X, CheckCircle, Clock, AlertCircle
+  Plus, ArrowRight, Search, Upload, Loader,
+  Eye, EyeOff, Trash2, RefreshCw, ChevronLeft, X, CheckCircle, Clock,
+  AlertCircle, IndianRupee, Sparkles, Edit2, Check
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 
-type Tab = 'overview' | 'requests' | 'payments' | 'users' | 'portfolio' | 'settings';
+type Tab = 'overview' | 'requests' | 'payments' | 'users' | 'portfolio' | 'cloutclub' | 'settings';
 type RequestFilter = 'all' | 'pending' | 'in_progress' | 'completed';
 
 interface Profile {
   id: string;
   full_name: string | null;
   company_name: string | null;
+  email?: string | null;
   plan: string;
+  clout_club_price: number | null;
   created_at: string;
 }
 
@@ -70,12 +73,19 @@ const statusColors: Record<string, { bg: string; border: string; text: string; l
   completed:   { bg: 'rgba(16,185,129,0.1)',  border: 'rgba(16,185,129,0.25)', text: '#10B981', label: 'Completed'   },
 };
 
-const PlanBadge = ({ plan }: { plan: string }) => (
-  <span className="text-xs font-semibold px-2 py-0.5 rounded-md capitalize"
-    style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)', color: '#818CF8' }}>
-    {plan}
-  </span>
-);
+const PlanBadge = ({ plan }: { plan: string }) => {
+  const isCloutClub = plan === 'clout_club';
+  return (
+    <span className="text-xs font-semibold px-2 py-0.5 rounded-md capitalize"
+      style={{
+        background: isCloutClub ? 'rgba(168,85,247,0.12)' : 'rgba(99,102,241,0.08)',
+        border: isCloutClub ? '1px solid rgba(168,85,247,0.3)' : '1px solid rgba(99,102,241,0.2)',
+        color: isCloutClub ? '#C084FC' : '#818CF8'
+      }}>
+      {isCloutClub ? 'Clout Club' : plan}
+    </span>
+  );
+};
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -88,7 +98,8 @@ function storagePathFromUrl(url: string): string | null {
   const idx = url.indexOf(marker);
   return idx !== -1 ? url.slice(idx + marker.length) : null;
 }
-// ─── Status dropdown (self-contained, no flicker) ────────────────────────────
+
+// ─── Status dropdown ────────────────────────────────────────────────────────
 function StatusDropdown({ request, onUpdate }: {
   request: CreativeRequest;
   onUpdate: (id: string, status: string, creativeUrl?: string, creativeCaption?: string, clientMessage?: string) => void;
@@ -115,15 +126,10 @@ function StatusDropdown({ request, onUpdate }: {
     });
   }
 
-  // Close on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       const target = e.target as Node;
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(target) &&
-        !menuRef.current?.contains(target)
-      ) {
+      if (dropdownRef.current && !dropdownRef.current.contains(target) && !menuRef.current?.contains(target)) {
         setOpen(false);
       }
     };
@@ -153,31 +159,16 @@ function StatusDropdown({ request, onUpdate }: {
   }
 
   async function handleFileUpload(file: File) {
-    if (file.size > 20 * 1024 * 1024) {
-      setUploadError('File too large. Max 20MB.');
-      return;
-    }
+    if (file.size > 20 * 1024 * 1024) { setUploadError('File too large. Max 20MB.'); return; }
     setUploading(true);
     setUploadError('');
     const ext = file.name.split('.').pop();
     const path = `${request.id}/${Date.now()}.${ext}`;
     const { error: uploadErr } = await supabase.storage.from('creatives').upload(path, file, { upsert: true });
-    if (uploadErr) {
-      setUploadError('Upload failed: ' + uploadErr.message);
-      setUploading(false);
-      return;
-    }
+    if (uploadErr) { setUploadError('Upload failed: ' + uploadErr.message); setUploading(false); return; }
     const { data: urlData } = supabase.storage.from('creatives').getPublicUrl(path);
     const creative_url = urlData.publicUrl;
-    await supabase
-      .from('free_creative_requests')
-      .update({
-        status: 'completed',
-        creative_url,
-        creative_caption: creativeCaption.trim(),
-        client_message: clientMessage.trim(),
-      })
-      .eq('id', request.id);
+    await supabase.from('free_creative_requests').update({ status: 'completed', creative_url, creative_caption: creativeCaption.trim(), client_message: clientMessage.trim() }).eq('id', request.id);
     onUpdate(request.id, 'completed', creative_url, creativeCaption.trim(), clientMessage.trim());
     setUploading(false);
     setShowUpload(false);
@@ -188,10 +179,7 @@ function StatusDropdown({ request, onUpdate }: {
       <div className="relative" ref={dropdownRef}>
         <button
           ref={buttonRef}
-          onClick={() => {
-            updateDropdownPosition();
-            setOpen(o => !o);
-          }}
+          onClick={() => { updateDropdownPosition(); setOpen(o => !o); }}
           className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold transition-all"
           style={{ background: s.bg, border: `1px solid ${s.border}`, color: s.text }}
         >
@@ -200,29 +188,17 @@ function StatusDropdown({ request, onUpdate }: {
             <path d="M2 3.5l3 3 3-3" stroke="currentColor" strokeWidth="1.2" fill="none" strokeLinecap="round"/>
           </svg>
         </button>
-
         {open && createPortal(
-          <div
-            ref={menuRef}
-            className="fixed z-[220] rounded-xl p-1 min-w-[130px] shadow-xl"
-            style={{
-              top: dropdownPosition.top,
-              left: dropdownPosition.left,
-              background: 'rgba(12,12,12,0.98)',
-              border: '1px solid rgba(255,255,255,0.1)',
-            }}
-          >
+          <div ref={menuRef} className="fixed z-[220] rounded-xl p-1 min-w-[130px] shadow-xl"
+            style={{ top: dropdownPosition.top, left: dropdownPosition.left, background: 'rgba(12,12,12,0.98)', border: '1px solid rgba(255,255,255,0.1)' }}>
             {['pending', 'in_progress', 'completed'].map(st => {
               const sc = statusColors[st];
               return (
-                <button
-                  key={st}
-                  onClick={() => handleStatusClick(st)}
+                <button key={st} onClick={() => handleStatusClick(st)}
                   className="w-full text-left px-3 py-2 text-xs rounded-lg transition-colors flex items-center gap-2"
                   style={{ color: sc.text }}
                   onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
-                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                >
+                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
                   <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: sc.text }} />
                   {sc.label}
                 </button>
@@ -232,90 +208,94 @@ function StatusDropdown({ request, onUpdate }: {
           document.body
         )}
       </div>
-
-      {/* Upload modal for completing a request */}
       {showUpload && createPortal(
         <div className="fixed inset-0 z-[200] flex items-center justify-center px-4" onClick={() => !uploading && setShowUpload(false)}>
           <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
-          <div
-            className="relative w-full max-w-md glass-card rounded-3xl p-8"
-            style={{ background: 'rgba(12,12,12,0.98)' }}
-            onClick={e => e.stopPropagation()}
-          >
-            <button
-              onClick={() => !uploading && setShowUpload(false)}
-              className="absolute top-5 right-5 w-8 h-8 rounded-lg flex items-center justify-center text-[#6B7280] hover:text-white transition-colors"
-              style={{ border: '1px solid rgba(255,255,255,0.08)' }}
-            >
-              <X size={14} />
-            </button>
-
+          <div className="relative w-full max-w-md glass-card rounded-3xl p-8" style={{ background: 'rgba(12,12,12,0.98)' }} onClick={e => e.stopPropagation()}>
+            <button onClick={() => !uploading && setShowUpload(false)} className="absolute top-5 right-5 w-8 h-8 rounded-lg flex items-center justify-center text-[#6B7280] hover:text-white" style={{ border: '1px solid rgba(255,255,255,0.08)' }}><X size={14} /></button>
             <h3 className="font-heading font-bold text-white text-xl mb-1">Upload Creative</h3>
-            <p className="text-[#9CA3AF] text-sm mb-6">
-              Upload the finished creative for <span className="text-white font-semibold">{request.brand_name}</span>. The client will be able to download it from their dashboard.
-            </p>
-
+            <p className="text-[#9CA3AF] text-sm mb-6">Upload the finished creative for <span className="text-white font-semibold">{request.brand_name}</span>.</p>
             <div className="space-y-3 mb-4">
               <div>
                 <label className="block text-[11px] font-semibold text-[#9CA3AF] mb-2 uppercase tracking-[0.08em]">Creative Caption</label>
-                <input
-                  type="text"
-                  value={creativeCaption}
-                  onChange={e => setCreativeCaption(e.target.value)}
-                  placeholder="e.g. Product launch creative"
-                  className="w-full rounded-xl px-4 py-3 text-sm text-white placeholder-[#6B7280] focus:outline-none transition-all duration-200 bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(99,102,241,0.5)]"
-                />
+                <input type="text" value={creativeCaption} onChange={e => setCreativeCaption(e.target.value)} placeholder="e.g. Product launch creative" className="w-full rounded-xl px-4 py-3 text-sm text-white placeholder-[#6B7280] focus:outline-none bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(99,102,241,0.5)]" />
               </div>
               <div>
                 <label className="block text-[11px] font-semibold text-[#9CA3AF] mb-2 uppercase tracking-[0.08em]">Message for Client</label>
-                <textarea
-                  value={clientMessage}
-                  onChange={e => setClientMessage(e.target.value)}
-                  rows={3}
-                  placeholder="Add a short note about this creative..."
-                  className="w-full resize-none rounded-xl px-4 py-3 text-sm text-white placeholder-[#6B7280] focus:outline-none transition-all duration-200 bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(99,102,241,0.5)]"
-                />
+                <textarea value={clientMessage} onChange={e => setClientMessage(e.target.value)} rows={3} placeholder="Add a short note..." className="w-full resize-none rounded-xl px-4 py-3 text-sm text-white placeholder-[#6B7280] focus:outline-none bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(99,102,241,0.5)]" />
               </div>
             </div>
-
-            <div
-              className="border-2 border-dashed border-white/[0.12] rounded-2xl p-8 flex flex-col items-center gap-3 hover:border-white/25 transition-colors cursor-pointer mb-4"
+            <div className="border-2 border-dashed border-white/[0.12] rounded-2xl p-8 flex flex-col items-center gap-3 hover:border-white/25 transition-colors cursor-pointer mb-4"
               onClick={() => !uploading && fileRef.current?.click()}
               onDragOver={e => e.preventDefault()}
-              onDrop={e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) handleFileUpload(f); }}
-            >
-              {uploading ? (
-                <>
-                  <Loader size={24} className="animate-spin text-[#818CF8]" />
-                  <p className="text-[#9CA3AF] text-sm">Uploading...</p>
-                </>
-              ) : (
-                <>
-                  <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.2)' }}>
-                    <Upload size={20} className="text-[#818CF8]" />
-                  </div>
-                  <p className="text-[#9CA3AF] text-sm text-center">Click or drag & drop the creative file</p>
-                  <p className="text-[#6B7280] text-xs">Images, videos, ZIP — max 20MB</p>
-                </>
-              )}
+              onDrop={e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) handleFileUpload(f); }}>
+              {uploading ? <><Loader size={24} className="animate-spin text-[#818CF8]" /><p className="text-[#9CA3AF] text-sm">Uploading...</p></> : <><div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.2)' }}><Upload size={20} className="text-[#818CF8]" /></div><p className="text-[#9CA3AF] text-sm text-center">Click or drag & drop the creative file</p><p className="text-[#6B7280] text-xs">Images, videos, ZIP — max 20MB</p></>}
               <input ref={fileRef} type="file" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handleFileUpload(f); }} />
             </div>
-
-            {uploadError && (
-              <div className="flex items-center gap-2 bg-red-500/[0.06] border border-red-500/20 rounded-xl p-3">
-                <AlertCircle size={14} className="text-red-400 flex-shrink-0" />
-                <span className="text-red-300 text-xs">{uploadError}</span>
-              </div>
-            )}
-
-            <p className="text-[#6B7280] text-xs text-center mt-3">
-              The request will be marked as <span className="text-[#10B981] font-semibold">Completed</span> once uploaded.
-            </p>
+            {uploadError && <div className="flex items-center gap-2 bg-red-500/[0.06] border border-red-500/20 rounded-xl p-3"><AlertCircle size={14} className="text-red-400 flex-shrink-0" /><span className="text-red-300 text-xs">{uploadError}</span></div>}
+            <p className="text-[#6B7280] text-xs text-center mt-3">Marked as <span className="text-[#10B981] font-semibold">Completed</span> once uploaded.</p>
           </div>
         </div>,
         document.body
       )}
     </>
+  );
+}
+
+// ─── Price editor inline cell ────────────────────────────────────────────────
+function PriceEditor({ userId, currentPrice, onSave }: {
+  userId: string;
+  currentPrice: number | null;
+  onSave: (userId: string, price: number | null) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState(currentPrice ? String(currentPrice / 100) : '');
+  const [saving, setSaving] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => { if (editing) inputRef.current?.focus(); }, [editing]);
+
+  async function save() {
+    setSaving(true);
+    const parsed = value.trim() === '' ? null : Math.round(parseFloat(value) * 100);
+    if (parsed !== null && (isNaN(parsed) || parsed <= 0)) { setSaving(false); return; }
+    await supabase.from('profiles').update({ clout_club_price: parsed }).eq('id', userId);
+    onSave(userId, parsed);
+    setEditing(false);
+    setSaving(false);
+  }
+
+  if (editing) {
+    return (
+      <div className="flex items-center gap-1.5">
+        <span className="text-[#9CA3AF] text-xs">₹</span>
+        <input
+          ref={inputRef}
+          type="number"
+          value={value}
+          onChange={e => setValue(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter') save(); if (e.key === 'Escape') setEditing(false); }}
+          placeholder="amount"
+          className="w-24 rounded-lg px-2.5 py-1.5 text-xs text-white bg-white/[0.06] border border-white/[0.15] focus:border-[rgba(168,85,247,0.5)] focus:outline-none"
+        />
+        <button onClick={save} disabled={saving} className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)' }}>
+          {saving ? <Loader size={11} className="animate-spin text-[#10B981]" /> : <Check size={11} className="text-[#10B981]" />}
+        </button>
+        <button onClick={() => setEditing(false)} className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)' }}>
+          <X size={11} className="text-[#9CA3AF]" />
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <button onClick={() => setEditing(true)} className="flex items-center gap-2 group">
+      {currentPrice
+        ? <span className="text-sm font-mono font-semibold" style={{ background: 'linear-gradient(135deg,#A855F7,#3B82F6,#06B6D4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>₹{(currentPrice / 100).toLocaleString('en-IN')}/mo</span>
+        : <span className="text-xs text-[#6B7280] italic">Set price</span>
+      }
+      <Edit2 size={11} className="text-[#6B7280] group-hover:text-[#A855F7] transition-colors" />
+    </button>
   );
 }
 
@@ -326,7 +306,6 @@ export default function Admin() {
   const [tab, setTab] = useState<Tab>('overview');
   const [requestFilter, setRequestFilter] = useState<RequestFilter>('all');
   const [userSearch, setUserSearch] = useState('');
-  const [planFilter, setPlanFilter] = useState('all');
 
   const [showAddSection, setShowAddSection] = useState(false);
   const [newSectionName, setNewSectionName] = useState('');
@@ -348,21 +327,20 @@ export default function Admin() {
   const [requests, setRequests] = useState<CreativeRequest[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [users, setUsers] = useState<Profile[]>([]);
+  const [cloutClubUsers, setCloutClubUsers] = useState<Profile[]>([]);
   const [portfolioSections, setPortfolioSections] = useState<PortfolioSection[]>([]);
   const [loadingTab, setLoadingTab] = useState(false);
+  const [ccSearch, setCcSearch] = useState('');
 
   const handleSignOut = async () => { await signOut(); navigate('/'); };
 
   useEffect(() => { loadOverview(); }, []);
-  useEffect(() => {
-    if (!thumbnailFile) {
-      setThumbnailPreview('');
-      return;
-    }
 
-    const previewUrl = URL.createObjectURL(thumbnailFile);
-    setThumbnailPreview(previewUrl);
-    return () => URL.revokeObjectURL(previewUrl);
+  useEffect(() => {
+    if (!thumbnailFile) { setThumbnailPreview(''); return; }
+    const url = URL.createObjectURL(thumbnailFile);
+    setThumbnailPreview(url);
+    return () => URL.revokeObjectURL(url);
   }, [thumbnailFile]);
 
   useEffect(() => {
@@ -370,27 +348,22 @@ export default function Admin() {
     else if (tab === 'payments') loadPayments();
     else if (tab === 'users') loadUsers();
     else if (tab === 'portfolio') { setManagingSection(null); loadPortfolio(); }
+    else if (tab === 'cloutclub') loadCloutClubUsers();
   }, [tab]);
 
   async function loadOverview() {
     setLoadingTab(true);
     const today = new Date().toISOString().split('T')[0];
-    const [
-      { count: totalUsers },
-      { count: requestsToday },
-      { data: paymentsData },
-      { data: conversionProfiles },
-      { data: recent },
-    ] = await Promise.all([
+    const [{ count: totalUsers }, { count: requestsToday }, { data: paymentsData }, { data: conversionProfiles }, { data: recent }] = await Promise.all([
       supabase.from('profiles').select('*', { count: 'exact', head: true }),
       supabase.from('free_creative_requests').select('*', { count: 'exact', head: true }).gte('created_at', today),
       supabase.from('payments').select('amount').eq('status', 'captured'),
       supabase.from('profiles').select('plan'),
-      supabase.from('profiles').select('id, full_name, company_name, plan, created_at').order('created_at', { ascending: false }).limit(10),
+      supabase.from('profiles').select('id, full_name, company_name, plan, clout_club_price, created_at').order('created_at', { ascending: false }).limit(10),
     ]);
     const totalRevenue = paymentsData?.reduce((sum: number, p: { amount: number }) => sum + p.amount, 0) ?? 0;
     const customerProfiles = (conversionProfiles ?? []).filter((p: { plan: string | null }) => (p.plan ?? 'free').toLowerCase() !== 'admin');
-    const paidUsers = customerProfiles.filter((p: { plan: string | null }) => (p.plan ?? 'free').toLowerCase() !== 'free').length;
+    const paidUsers = customerProfiles.filter((p: { plan: string | null }) => (p.plan ?? 'free').toLowerCase() === 'clout_club').length;
     setOverviewStats({ totalUsers: totalUsers ?? 0, requestsToday: requestsToday ?? 0, totalRevenue, paidUsers, conversionUsers: customerProfiles.length });
     setRecentUsers(recent ?? []);
     setLoadingTab(false);
@@ -398,21 +371,12 @@ export default function Admin() {
 
   async function loadRequests() {
     setLoadingTab(true);
-    const { data: rawRequests } = await supabase
-      .from('free_creative_requests')
-      .select('*')
-      .order('created_at', { ascending: false });
-
+    const { data: rawRequests } = await supabase.from('free_creative_requests').select('*').order('created_at', { ascending: false });
     if (!rawRequests || rawRequests.length === 0) { setRequests([]); setLoadingTab(false); return; }
-
     const userIds = [...new Set(rawRequests.map((r: { user_id: string }) => r.user_id))];
     const { data: profiles } = await supabase.from('profiles').select('id, full_name, company_name').in('id', userIds);
-
     const profileMap: Record<string, { full_name: string | null; company_name: string | null }> = {};
-    (profiles ?? []).forEach((p: { id: string; full_name: string | null; company_name: string | null }) => {
-      profileMap[p.id] = { full_name: p.full_name, company_name: p.company_name };
-    });
-
+    (profiles ?? []).forEach((p: { id: string; full_name: string | null; company_name: string | null }) => { profileMap[p.id] = { full_name: p.full_name, company_name: p.company_name }; });
     setRequests(rawRequests.map((r: CreativeRequest) => ({ ...r, profiles: profileMap[r.user_id] ?? null })));
     setLoadingTab(false);
   }
@@ -431,8 +395,20 @@ export default function Admin() {
 
   async function loadUsers() {
     setLoadingTab(true);
-    const { data } = await supabase.from('profiles').select('id, full_name, company_name, plan, created_at').order('created_at', { ascending: false });
+    const { data } = await supabase.from('profiles').select('id, full_name, company_name, plan, clout_club_price, created_at').order('created_at', { ascending: false });
     setUsers((data as Profile[]) ?? []);
+    setLoadingTab(false);
+  }
+
+  async function loadCloutClubUsers() {
+    setLoadingTab(true);
+    // Load all non-admin users for Clout Club management
+    const { data } = await supabase
+      .from('profiles')
+      .select('id, full_name, company_name, plan, clout_club_price, created_at')
+      .not('plan', 'eq', 'admin')
+      .order('created_at', { ascending: false });
+    setCloutClubUsers((data as Profile[]) ?? []);
     setLoadingTab(false);
   }
 
@@ -440,22 +416,14 @@ export default function Admin() {
     setLoadingTab(true);
     const { data: sections } = await supabase.from('portfolio_sections').select('*, portfolio_images(count)').order('display_order', { ascending: true });
     const mapped = (sections ?? []).map((s: { id: string; title: string; thumbnail_url: string; display_order: number; is_visible: boolean; created_at: string; portfolio_images: { count: number }[] }) => ({
-      id: s.id, title: s.title, thumbnail_url: s.thumbnail_url,
-      display_order: s.display_order, is_visible: s.is_visible, created_at: s.created_at,
-      image_count: s.portfolio_images?.[0]?.count ?? 0,
+      id: s.id, title: s.title, thumbnail_url: s.thumbnail_url, display_order: s.display_order, is_visible: s.is_visible, created_at: s.created_at, image_count: s.portfolio_images?.[0]?.count ?? 0,
     }));
     setPortfolioSections(mapped);
     setLoadingTab(false);
   }
 
   function handleRequestUpdate(id: string, status: string, creativeUrl?: string, creativeCaption?: string, clientMessage?: string) {
-    setRequests(prev => prev.map(r => r.id === id ? {
-      ...r,
-      status,
-      creative_url: creativeUrl ?? r.creative_url,
-      creative_caption: creativeCaption ?? r.creative_caption,
-      client_message: clientMessage ?? r.client_message,
-    } : r));
+    setRequests(prev => prev.map(r => r.id === id ? { ...r, status, creative_url: creativeUrl ?? r.creative_url, creative_caption: creativeCaption ?? r.creative_caption, client_message: clientMessage ?? r.client_message } : r));
   }
 
   async function openImageManager(section: PortfolioSection) {
@@ -497,10 +465,6 @@ export default function Admin() {
     setDeletingImageId(null);
   }
 
-  function updateImageCaptionLocal(id: string, caption: string) {
-    setSectionImages(prev => prev.map(img => img.id === id ? { ...img, caption } : img));
-  }
-
   async function saveImageCaption(id: string, caption: string) {
     setSavingCaptionId(id);
     await supabase.from('portfolio_images').update({ caption }).eq('id', id);
@@ -532,25 +496,20 @@ export default function Admin() {
       const ext = thumbnailFile.name.split('.').pop();
       const path = `sections/${Date.now()}.${ext}`;
       const { error: uploadError } = await supabase.storage.from('portfolio').upload(path, thumbnailFile);
-      if (!uploadError) {
-        const { data: urlData } = supabase.storage.from('portfolio').getPublicUrl(path);
-        thumbnail_url = urlData.publicUrl;
-      }
+      if (!uploadError) { const { data: urlData } = supabase.storage.from('portfolio').getPublicUrl(path); thumbnail_url = urlData.publicUrl; }
     }
     const { data } = await supabase.from('portfolio_sections').insert({ title: newSectionName.trim(), thumbnail_url, display_order: portfolioSections.length }).select().single();
     if (data) setPortfolioSections(prev => [...prev, { ...data, image_count: 0 }]);
     setNewSectionName(''); setThumbnailFile(null); setShowAddSection(false); setAddingSection(false);
   }
 
-  function closeAddSectionModal() {
-    setShowAddSection(false);
-    setThumbnailFile(null);
-    if (sectionFileRef.current) sectionFileRef.current.value = '';
+  function handlePriceSaved(userId: string, price: number | null) {
+    setCloutClubUsers(prev => prev.map(u => u.id === userId ? { ...u, clout_club_price: price } : u));
   }
 
   function exportUsersCSV() {
-    const rows = [['Full Name', 'Company', 'Plan', 'Signed Up']];
-    users.forEach(u => rows.push([u.full_name ?? '', u.company_name ?? '', u.plan, formatDate(u.created_at)]));
+    const rows = [['Full Name', 'Company', 'Plan', 'Clout Club Price', 'Signed Up']];
+    users.forEach(u => rows.push([u.full_name ?? '', u.company_name ?? '', u.plan, u.clout_club_price ? `₹${u.clout_club_price / 100}` : '', formatDate(u.created_at)]));
     const csv = rows.map(r => r.map(c => `"${c}"`).join(',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'users.csv'; a.click();
@@ -558,11 +517,8 @@ export default function Admin() {
 
   const conversionRate = overviewStats.conversionUsers > 0 ? ((overviewStats.paidUsers / overviewStats.conversionUsers) * 100).toFixed(1) : '0.0';
   const filteredRequests = requestFilter === 'all' ? requests : requests.filter(r => r.status === requestFilter);
-  const filteredUsers = users.filter(u => {
-    const matchSearch = !userSearch || (u.full_name ?? '').toLowerCase().includes(userSearch.toLowerCase()) || (u.company_name ?? '').toLowerCase().includes(userSearch.toLowerCase());
-    const matchPlan = planFilter === 'all' || u.plan === planFilter;
-    return matchSearch && matchPlan;
-  });
+  const filteredUsers = users.filter(u => !userSearch || (u.full_name ?? '').toLowerCase().includes(userSearch.toLowerCase()) || (u.company_name ?? '').toLowerCase().includes(userSearch.toLowerCase()));
+  const filteredCCUsers = cloutClubUsers.filter(u => !ccSearch || (u.full_name ?? '').toLowerCase().includes(ccSearch.toLowerCase()) || (u.company_name ?? '').toLowerCase().includes(ccSearch.toLowerCase()));
   const paymentSummary = {
     today: payments.filter(p => p.created_at.startsWith(new Date().toISOString().split('T')[0])).reduce((s, p) => s + p.amount, 0),
     week: (() => { const d = new Date(); d.setDate(d.getDate() - 7); return payments.filter(p => new Date(p.created_at) >= d).reduce((s, p) => s + p.amount, 0); })(),
@@ -575,12 +531,13 @@ export default function Admin() {
   const tdClass = "px-4 py-3 text-sm text-[#D1D5DB] border-t border-white/[0.04]";
 
   const navItems: { id: Tab; icon: React.ElementType; label: string }[] = [
-    { id: 'overview',  icon: LayoutDashboard, label: 'Overview'          },
-    { id: 'requests',  icon: Image,           label: 'Creative Requests' },
-    { id: 'payments',  icon: CreditCard,      label: 'Payments'          },
-    { id: 'users',     icon: Users,           label: 'Users'             },
-    { id: 'portfolio', icon: Image,           label: 'Portfolio'         },
-    { id: 'settings',  icon: Settings,        label: 'Settings'          },
+    { id: 'overview',   icon: LayoutDashboard, label: 'Overview'          },
+    { id: 'requests',   icon: Image,           label: 'Creative Requests' },
+    { id: 'payments',   icon: CreditCard,      label: 'Payments'          },
+    { id: 'users',      icon: Users,           label: 'Users'             },
+    { id: 'cloutclub',  icon: Sparkles,        label: 'Clout Club'        },
+    { id: 'portfolio',  icon: Image,           label: 'Portfolio'         },
+    { id: 'settings',   icon: Settings,        label: 'Settings'          },
   ];
 
   return (
@@ -592,23 +549,22 @@ export default function Admin() {
           <p className="text-[10px] text-[#6B7280] mt-2 font-mono uppercase tracking-wider">Admin Panel</p>
         </div>
         <div className="h-px mx-5 bg-white/[0.06]" />
-        <nav className="flex-1 px-3 pt-4 space-y-1">
+        <nav className="flex-1 px-3 pt-4 space-y-1 overflow-y-auto">
           {navItems.map(({ id, icon: Icon, label }) => {
             const active = tab === id;
+            const isCC = id === 'cloutclub';
             return (
               <button key={id} onClick={() => setTab(id)} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-left"
-                style={{ background: active ? 'rgba(99,102,241,0.08)' : 'transparent', borderLeft: active ? '2px solid #818CF8' : '2px solid transparent' }}>
-                <Icon size={16} style={{ color: active ? '#818CF8' : '#9CA3AF' }} />
-                <span style={active ? { background: 'linear-gradient(135deg,#818CF8,#3B82F6,#06B6D4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' } : { color: '#D1D5DB' }}>{label}</span>
+                style={{ background: active ? (isCC ? 'rgba(168,85,247,0.08)' : 'rgba(99,102,241,0.08)') : 'transparent', borderLeft: active ? `2px solid ${isCC ? '#A855F7' : '#818CF8'}` : '2px solid transparent' }}>
+                <Icon size={16} style={{ color: active ? (isCC ? '#A855F7' : '#818CF8') : '#9CA3AF' }} />
+                <span style={active ? { background: isCC ? 'linear-gradient(135deg,#A855F7,#06B6D4)' : 'linear-gradient(135deg,#818CF8,#3B82F6,#06B6D4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' } : { color: '#D1D5DB' }}>{label}</span>
               </button>
             );
           })}
         </nav>
         <div className="px-5 pb-6 pt-4 border-t border-white/[0.06]">
           <p className="text-[#6B7280] text-xs mb-3 truncate">{user?.email}</p>
-          <button onClick={handleSignOut} className="flex items-center gap-2 text-[#9CA3AF] hover:text-white transition-colors text-sm">
-            <LogOut size={14} /> Log Out
-          </button>
+          <button onClick={handleSignOut} className="flex items-center gap-2 text-[#9CA3AF] hover:text-white transition-colors text-sm"><LogOut size={14} /> Log Out</button>
         </div>
       </aside>
 
@@ -631,7 +587,7 @@ export default function Admin() {
               <button onClick={loadOverview} className="flex items-center gap-2 text-xs text-[#9CA3AF] hover:text-white transition-colors"><RefreshCw size={13} /> Refresh</button>
             </div>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              {[{ label: 'Total Users', value: overviewStats.totalUsers.toString() }, { label: 'Requests Today', value: overviewStats.requestsToday.toString() }, { label: 'Total Revenue', value: formatCurrency(overviewStats.totalRevenue) }, { label: 'Conversion Rate', value: `${conversionRate}%` }].map(s => (
+              {[{ label: 'Total Users', value: overviewStats.totalUsers.toString() }, { label: 'Requests Today', value: overviewStats.requestsToday.toString() }, { label: 'Total Revenue', value: formatCurrency(overviewStats.totalRevenue) }, { label: 'Clout Club Rate', value: `${conversionRate}%` }].map(s => (
                 <div key={s.label} className="glass-card rounded-2xl p-5">
                   <p className="text-[#9CA3AF] text-xs font-medium mb-2">{s.label}</p>
                   <p className="font-mono font-bold text-xl gradient-text">{s.value}</p>
@@ -663,38 +619,9 @@ export default function Admin() {
               ))}
             </div>
             <div className="glass-card rounded-2xl overflow-hidden">
-              {loadingTab
-                ? <div className="flex items-center justify-center p-10"><Loader size={20} className="animate-spin text-[#818CF8]" /></div>
-                : filteredRequests.length === 0
-                ? <p className="text-[#6B7280] text-sm text-center p-10">No requests found.</p>
-                : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead><tr>{['User', 'Brand', 'Niche', 'Format', 'Submitted', 'Creative', 'Status'].map(h => <th key={h} className={thClass}>{h}</th>)}</tr></thead>
-                      <tbody>
-                        {filteredRequests.map(r => (
-                          <tr key={r.id}>
-                            <td className={tdClass}>{r.profiles?.full_name || '—'}</td>
-                            <td className={tdClass}>{r.brand_name}</td>
-                            <td className={tdClass + ' text-[#9CA3AF]'}>{r.niche}</td>
-                            <td className={tdClass + ' text-[#9CA3AF]'}>{r.ad_format}</td>
-                            <td className={tdClass + ' text-[#9CA3AF]'}>{formatDate(r.created_at)}</td>
-                            <td className={tdClass}>
-                              {r.creative_url
-                                ? <span className="flex items-center gap-1 text-xs text-[#10B981]"><CheckCircle size={12} /> Uploaded</span>
-                                : <span className="flex items-center gap-1 text-xs text-[#6B7280]"><Clock size={12} /> Pending</span>
-                              }
-                            </td>
-                            <td className={tdClass}>
-                              <StatusDropdown request={r} onUpdate={handleRequestUpdate} />
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )
-              }
+              {loadingTab ? <div className="flex items-center justify-center p-10"><Loader size={20} className="animate-spin text-[#818CF8]" /></div>
+                : filteredRequests.length === 0 ? <p className="text-[#6B7280] text-sm text-center p-10">No requests found.</p>
+                : <div className="overflow-x-auto"><table className="w-full"><thead><tr>{['User','Brand','Niche','Format','Submitted','Creative','Status'].map(h=><th key={h} className={thClass}>{h}</th>)}</tr></thead><tbody>{filteredRequests.map(r=>(<tr key={r.id}><td className={tdClass}>{r.profiles?.full_name||'—'}</td><td className={tdClass}>{r.brand_name}</td><td className={tdClass+' text-[#9CA3AF]'}>{r.niche}</td><td className={tdClass+' text-[#9CA3AF]'}>{r.ad_format}</td><td className={tdClass+' text-[#9CA3AF]'}>{formatDate(r.created_at)}</td><td className={tdClass}>{r.creative_url?<span className="flex items-center gap-1 text-xs text-[#10B981]"><CheckCircle size={12}/> Uploaded</span>:<span className="flex items-center gap-1 text-xs text-[#6B7280]"><Clock size={12}/> Pending</span>}</td><td className={tdClass}><StatusDropdown request={r} onUpdate={handleRequestUpdate}/></td></tr>))}</tbody></table></div>}
             </div>
           </div>
         )}
@@ -729,26 +656,116 @@ export default function Admin() {
                 <button onClick={loadUsers} className="flex items-center gap-2 text-xs text-[#9CA3AF] hover:text-white transition-colors"><RefreshCw size={13} /> Refresh</button>
               </div>
             </div>
-            <div className="flex gap-3 flex-wrap">
-              <div className="flex items-center gap-2 glass-card rounded-xl px-4 py-2.5 flex-1 min-w-[200px]">
-                <Search size={13} className="text-[#9CA3AF]" />
-                <input value={userSearch} onChange={e => setUserSearch(e.target.value)} placeholder="Search name or company..." className="bg-transparent text-sm text-white placeholder-[#6B7280] focus:outline-none flex-1" />
-              </div>
-              <div className="flex items-center gap-2 glass-card rounded-xl px-4 py-2.5">
-                <Filter size={13} className="text-[#9CA3AF]" />
-                <select value={planFilter} onChange={e => setPlanFilter(e.target.value)} className="bg-transparent text-sm text-[#D1D5DB] focus:outline-none" style={{ appearance: 'none' }}>
-                  <option value="all" style={{ background: '#111' }}>All Plans</option>
-                  <option value="free" style={{ background: '#111' }}>Free</option>
-                  <option value="starter" style={{ background: '#111' }}>Starter</option>
-                  <option value="growth" style={{ background: '#111' }}>Growth</option>
-                  <option value="scale" style={{ background: '#111' }}>Scale</option>
-                </select>
-              </div>
+            <div className="flex items-center gap-2 glass-card rounded-xl px-4 py-2.5">
+              <Search size={13} className="text-[#9CA3AF]" />
+              <input value={userSearch} onChange={e => setUserSearch(e.target.value)} placeholder="Search name or company..." className="bg-transparent text-sm text-white placeholder-[#6B7280] focus:outline-none flex-1" />
             </div>
             <div className="glass-card rounded-2xl overflow-hidden">
               {loadingTab ? <div className="flex items-center justify-center p-10"><Loader size={20} className="animate-spin text-[#818CF8]" /></div>
                 : filteredUsers.length === 0 ? <p className="text-[#6B7280] text-sm text-center p-10">No users found.</p>
                 : <div className="overflow-x-auto"><table className="w-full"><thead><tr>{['Name','Company','Plan','Signed Up'].map(h=><th key={h} className={thClass}>{h}</th>)}</tr></thead><tbody>{filteredUsers.map(u=>(<tr key={u.id}><td className={tdClass}>{u.full_name||'—'}</td><td className={tdClass+' text-[#9CA3AF]'}>{u.company_name||'—'}</td><td className={tdClass}><PlanBadge plan={u.plan}/></td><td className={tdClass+' text-[#9CA3AF]'}>{formatDate(u.created_at)}</td></tr>))}</tbody></table></div>}
+            </div>
+          </div>
+        )}
+
+        {/* CLOUT CLUB MANAGEMENT */}
+        {tab === 'cloutclub' && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between flex-wrap gap-3">
+              <div>
+                <h2 className="font-heading font-bold text-white text-2xl">Clout Club Management</h2>
+                <p className="text-[#9CA3AF] text-sm mt-1">Set custom Razorpay pricing for each client. Prices are shown to the client in their dashboard.</p>
+              </div>
+              <button onClick={loadCloutClubUsers} className="flex items-center gap-2 text-xs text-[#9CA3AF] hover:text-white transition-colors"><RefreshCw size={13} /> Refresh</button>
+            </div>
+
+            {/* Info card */}
+            <div className="glass-card rounded-2xl p-5" style={{ borderLeft: '3px solid #A855F7' }}>
+              <div className="flex items-start gap-3">
+                <IndianRupee size={16} className="text-[#A855F7] mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-white text-sm font-semibold mb-1">How Clout Club Pricing Works</p>
+                  <p className="text-[#9CA3AF] text-xs leading-relaxed">
+                    Set a custom monthly price per client (in INR). Once set, the client sees the exact amount in their dashboard with a Razorpay payment button. Until you set a price, they see "Negotiable — contact us". The Razorpay link is generated using your Razorpay Payment Link or UPI QR flow — make sure to keep your Razorpay key configured in your environment.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Search */}
+            <div className="flex items-center gap-2 glass-card rounded-xl px-4 py-2.5">
+              <Search size={13} className="text-[#9CA3AF]" />
+              <input value={ccSearch} onChange={e => setCcSearch(e.target.value)} placeholder="Search by name or company..." className="bg-transparent text-sm text-white placeholder-[#6B7280] focus:outline-none flex-1" />
+            </div>
+
+            {/* Stats row */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+              <div className="glass-card rounded-2xl p-5">
+                <p className="text-[#9CA3AF] text-xs font-medium mb-2">Total Free Users</p>
+                <p className="font-mono font-bold text-xl gradient-text">{cloutClubUsers.filter(u => u.plan === 'free').length}</p>
+              </div>
+              <div className="glass-card rounded-2xl p-5">
+                <p className="text-[#9CA3AF] text-xs font-medium mb-2">Clout Club Members</p>
+                <p className="font-mono font-bold text-xl" style={{ background: 'linear-gradient(135deg,#A855F7,#06B6D4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{cloutClubUsers.filter(u => u.plan === 'clout_club').length}</p>
+              </div>
+              <div className="glass-card rounded-2xl p-5">
+                <p className="text-[#9CA3AF] text-xs font-medium mb-2">Prices Set</p>
+                <p className="font-mono font-bold text-xl gradient-text">{cloutClubUsers.filter(u => u.clout_club_price).length}</p>
+              </div>
+            </div>
+
+            {/* Table */}
+            <div className="glass-card rounded-2xl overflow-hidden">
+              {loadingTab ? (
+                <div className="flex items-center justify-center p-10"><Loader size={20} className="animate-spin text-[#A855F7]" /></div>
+              ) : filteredCCUsers.length === 0 ? (
+                <p className="text-[#6B7280] text-sm text-center p-10">No users found.</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr>
+                        <th className={thClass}>Client</th>
+                        <th className={thClass}>Company</th>
+                        <th className={thClass}>Current Plan</th>
+                        <th className={thClass}>Monthly Price</th>
+                        <th className={thClass}>Client View</th>
+                        <th className={thClass}>Joined</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredCCUsers.map(u => (
+                        <tr key={u.id}>
+                          <td className={tdClass}>
+                            <div className="font-medium">{u.full_name || '—'}</div>
+                          </td>
+                          <td className={tdClass + ' text-[#9CA3AF]'}>{u.company_name || '—'}</td>
+                          <td className={tdClass}><PlanBadge plan={u.plan} /></td>
+                          <td className={tdClass}>
+                            <PriceEditor
+                              userId={u.id}
+                              currentPrice={u.clout_club_price}
+                              onSave={handlePriceSaved}
+                            />
+                          </td>
+                          <td className={tdClass}>
+                            {u.clout_club_price ? (
+                              <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full" style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)', color: '#10B981' }}>
+                                <CheckCircle size={11} /> Shows ₹{(u.clout_club_price / 100).toLocaleString('en-IN')}/mo
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: '#6B7280' }}>
+                                <Clock size={11} /> Shows "Negotiable"
+                              </span>
+                            )}
+                          </td>
+                          <td className={tdClass + ' text-[#9CA3AF]'}>{formatDate(u.created_at)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -767,8 +784,7 @@ export default function Admin() {
                 <div className="border-2 border-dashed border-white/[0.10] rounded-2xl p-8 flex flex-col items-center gap-3 hover:border-white/20 transition-colors cursor-pointer"
                   onClick={() => imageUploadRef.current?.click()} onDragOver={e => e.preventDefault()}
                   onDrop={e => { e.preventDefault(); if (e.dataTransfer.files.length > 0) uploadImagesToSection(e.dataTransfer.files); }}>
-                  {uploadingImages ? <><Loader size={22} className="animate-spin text-[#818CF8]" /><p className="text-[#9CA3AF] text-sm">Uploading...</p></>
-                    : <><div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'rgba(99,102,241,0.1)' }}><Upload size={18} className="text-[#818CF8]" /></div><p className="text-[#9CA3AF] text-sm text-center">Click or drag & drop images here</p><p className="text-[#6B7280] text-xs">JPG, PNG, WEBP — max 5MB each</p></>}
+                  {uploadingImages ? <><Loader size={22} className="animate-spin text-[#818CF8]" /><p className="text-[#9CA3AF] text-sm">Uploading...</p></> : <><div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'rgba(99,102,241,0.1)' }}><Upload size={18} className="text-[#818CF8]" /></div><p className="text-[#9CA3AF] text-sm text-center">Click or drag & drop images here</p><p className="text-[#6B7280] text-xs">JPG, PNG, WEBP — max 5MB each</p></>}
                   <input ref={imageUploadRef} type="file" accept="image/jpeg,image/png,image/webp" multiple className="hidden" onChange={e => { if (e.target.files) uploadImagesToSection(e.target.files); }} />
                 </div>
                 {loadingImages ? <div className="flex items-center justify-center p-16"><Loader size={20} className="animate-spin text-[#818CF8]" /></div>
@@ -784,23 +800,8 @@ export default function Admin() {
                         </div>
                       </div>
                       <div className="relative z-10 p-3 space-y-2">
-                        <label className="flex items-center justify-between gap-2 text-[10px] font-semibold text-[#6B7280] uppercase tracking-[0.08em]">
-                          Caption
-                          {savingCaptionId === img.id && <Loader size={11} className="animate-spin text-[#818CF8]" />}
-                        </label>
-                        <textarea
-                          value={img.caption ?? ''}
-                          onChange={e => updateImageCaptionLocal(img.id, e.target.value)}
-                          onBlur={e => saveImageCaption(img.id, e.target.value.trim())}
-                          onKeyDown={e => {
-                            if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-                              e.currentTarget.blur();
-                            }
-                          }}
-                          placeholder="Add a short caption..."
-                          rows={2}
-                          className="w-full resize-none rounded-xl px-3 py-2 text-xs text-white placeholder-[#6B7280] focus:outline-none transition-all duration-200 bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(99,102,241,0.5)]"
-                        />
+                        <label className="flex items-center justify-between gap-2 text-[10px] font-semibold text-[#6B7280] uppercase tracking-[0.08em]">Caption{savingCaptionId === img.id && <Loader size={11} className="animate-spin text-[#818CF8]" />}</label>
+                        <textarea value={img.caption ?? ''} onChange={e => setSectionImages(prev => prev.map(i => i.id === img.id ? { ...i, caption: e.target.value } : i))} onBlur={e => saveImageCaption(img.id, e.target.value.trim())} onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) e.currentTarget.blur(); }} placeholder="Add a short caption..." rows={2} className="w-full resize-none rounded-xl px-3 py-2 text-xs text-white placeholder-[#6B7280] focus:outline-none bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(99,102,241,0.5)]" />
                       </div>
                     </div>
                   ))}</div>}
@@ -852,12 +853,12 @@ export default function Admin() {
 
       {/* Add Section Modal */}
       {showAddSection && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4" onClick={closeAddSectionModal}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4" onClick={() => { setShowAddSection(false); setThumbnailFile(null); if (sectionFileRef.current) sectionFileRef.current.value = ''; }}>
           <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
           <div className="relative w-full max-w-md glass-card rounded-3xl p-8" style={{ background: 'rgba(12,12,12,0.98)' }} onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-6">
               <h3 className="font-heading font-bold text-white text-xl">Add New Section</h3>
-              <button onClick={closeAddSectionModal} className="w-8 h-8 rounded-lg flex items-center justify-center text-[#6B7280] hover:text-white" style={{ border: '1px solid rgba(255,255,255,0.08)' }}><X size={14} /></button>
+              <button onClick={() => { setShowAddSection(false); setThumbnailFile(null); }} className="w-8 h-8 rounded-lg flex items-center justify-center text-[#6B7280] hover:text-white" style={{ border: '1px solid rgba(255,255,255,0.08)' }}><X size={14} /></button>
             </div>
             <div className="space-y-4">
               <div>
@@ -866,37 +867,9 @@ export default function Admin() {
               </div>
               <div className="border-2 border-dashed border-white/[0.10] rounded-2xl overflow-hidden cursor-pointer hover:border-white/20 transition-colors" onClick={() => sectionFileRef.current?.click()}>
                 {thumbnailPreview ? (
-                  <div className="relative">
-                    <div className="aspect-video bg-white/[0.04]">
-                      <img src={thumbnailPreview} alt="Selected section thumbnail preview" className="w-full h-full object-cover" />
-                    </div>
-                    <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/80 to-transparent">
-                      <div className="flex items-end justify-between gap-3">
-                        <div className="min-w-0">
-                          <p className="text-white text-sm font-semibold truncate">{thumbnailFile?.name}</p>
-                          <p className="text-[#9CA3AF] text-xs">Click image to change thumbnail</p>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={e => {
-                            e.stopPropagation();
-                            setThumbnailFile(null);
-                            if (sectionFileRef.current) sectionFileRef.current.value = '';
-                          }}
-                          className="w-8 h-8 rounded-lg flex items-center justify-center text-white/70 hover:text-white flex-shrink-0"
-                          style={{ background: 'rgba(0,0,0,0.55)', border: '1px solid rgba(255,255,255,0.12)' }}
-                        >
-                          <X size={14} />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
+                  <div className="relative aspect-video bg-white/[0.04]"><img src={thumbnailPreview} alt="Preview" className="w-full h-full object-cover" /><div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/80 to-transparent"><p className="text-[#9CA3AF] text-xs">Click to change</p></div></div>
                 ) : (
-                  <div className="p-6 flex flex-col items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'rgba(99,102,241,0.1)' }}><Upload size={18} className="text-[#818CF8]" /></div>
-                    <p className="text-[#9CA3AF] text-sm text-center">Click to upload thumbnail</p>
-                    <p className="text-[#6B7280] text-xs">JPG, PNG, WEBP — max 5MB</p>
-                  </div>
+                  <div className="p-6 flex flex-col items-center gap-3"><div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'rgba(99,102,241,0.1)' }}><Upload size={18} className="text-[#818CF8]" /></div><p className="text-[#9CA3AF] text-sm text-center">Click to upload thumbnail</p></div>
                 )}
                 <input ref={sectionFileRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={e => setThumbnailFile(e.target.files?.[0] ?? null)} />
               </div>
