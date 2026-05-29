@@ -17,6 +17,7 @@ interface CreativeRequest {
   description: string;
   reference_url: string;
   status: string;
+  creative_url: string;
   created_at: string;
 }
 
@@ -240,7 +241,7 @@ export default function Dashboard() {
                 )}
               </div>
               {creativeRequest?.status === 'completed' ? (
-                <button className="btn-primary text-sm"><Download size={14} />Download Now<ArrowRight size={14} /></button>
+                <a href={creativeRequest.creative_url || "#"} target="_blank" rel="noopener noreferrer" download className="btn-primary text-sm"><Download size={14} />Download Now<ArrowRight size={14} /></a>
               ) : !creativeRequest && !loadingRequest ? (
                 <button onClick={() => setTab('creative')} className="btn-primary text-sm">Request Free Creative <ArrowRight size={14} /></button>
               ) : (
@@ -372,7 +373,7 @@ export default function Dashboard() {
                   })}
                 </div>
                 {creativeRequest.status === 'completed' && (
-                  <button className="btn-primary text-sm mt-6"><Download size={14} />Download Creative<ArrowRight size={14} /></button>
+                  <a href={creativeRequest.creative_url || "#"} target="_blank" rel="noopener noreferrer" download className="btn-primary text-sm mt-6"><Download size={14} />Download Creative<ArrowRight size={14} /></a>
                 )}
               </div>
             )}
