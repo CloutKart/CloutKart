@@ -296,6 +296,7 @@ export default function Admin() {
   const [showAddSection, setShowAddSection] = useState(false);
   const [newSectionName, setNewSectionName] = useState('');
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
+  const [thumbnailPreview, setThumbnailPreview] = useState('');
   const [addingSection, setAddingSection] = useState(false);
   const sectionFileRef = useRef<HTMLInputElement>(null);
 
@@ -317,6 +318,17 @@ export default function Admin() {
   const handleSignOut = async () => { await signOut(); navigate('/'); };
 
   useEffect(() => { loadOverview(); }, []);
+  useEffect(() => {
+    if (!thumbnailFile) {
+      setThumbnailPreview('');
+      return;
+    }
+
+    const previewUrl = URL.createObjectURL(thumbnailFile);
+    setThumbnailPreview(previewUrl);
+    return () => URL.revokeObjectURL(previewUrl);
+  }, [thumbnailFile]);
+
   useEffect(() => {
     if (tab === 'requests') loadRequests();
     else if (tab === 'payments') loadPayments();
@@ -474,6 +486,12 @@ export default function Admin() {
     const { data } = await supabase.from('portfolio_sections').insert({ title: newSectionName.trim(), thumbnail_url, display_order: portfolioSections.length }).select().single();
     if (data) setPortfolioSections(prev => [...prev, { ...data, image_count: 0 }]);
     setNewSectionName(''); setThumbnailFile(null); setShowAddSection(false); setAddingSection(false);
+  }
+
+  function closeAddSectionModal() {
+    setShowAddSection(false);
+    setThumbnailFile(null);
+    if (sectionFileRef.current) sectionFileRef.current.value = '';
   }
 
   function exportUsersCSV() {
@@ -759,22 +777,52 @@ export default function Admin() {
 
       {/* Add Section Modal */}
       {showAddSection && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4" onClick={() => setShowAddSection(false)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4" onClick={closeAddSectionModal}>
           <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
           <div className="relative w-full max-w-md glass-card rounded-3xl p-8" style={{ background: 'rgba(12,12,12,0.98)' }} onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-6">
               <h3 className="font-heading font-bold text-white text-xl">Add New Section</h3>
-              <button onClick={() => setShowAddSection(false)} className="w-8 h-8 rounded-lg flex items-center justify-center text-[#6B7280] hover:text-white" style={{ border: '1px solid rgba(255,255,255,0.08)' }}><X size={14} /></button>
+              <button onClick={closeAddSectionModal} className="w-8 h-8 rounded-lg flex items-center justify-center text-[#6B7280] hover:text-white" style={{ border: '1px solid rgba(255,255,255,0.08)' }}><X size={14} /></button>
             </div>
             <div className="space-y-4">
               <div>
                 <label className="block text-[11px] font-semibold text-[#9CA3AF] mb-2 uppercase tracking-[0.08em]">Section Name</label>
                 <input type="text" value={newSectionName} onChange={e => setNewSectionName(e.target.value)} placeholder="e.g. E-Commerce Ads" className={inputClass} />
               </div>
-              <div className="border-2 border-dashed border-white/[0.10] rounded-2xl p-6 flex flex-col items-center gap-3 cursor-pointer hover:border-white/20 transition-colors" onClick={() => sectionFileRef.current?.click()}>
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'rgba(99,102,241,0.1)' }}><Upload size={18} className="text-[#818CF8]" /></div>
-                <p className="text-[#9CA3AF] text-sm text-center">{thumbnailFile ? thumbnailFile.name : 'Click to upload thumbnail'}</p>
-                <p className="text-[#6B7280] text-xs">JPG, PNG, WEBP — max 5MB</p>
+              <div className="border-2 border-dashed border-white/[0.10] rounded-2xl overflow-hidden cursor-pointer hover:border-white/20 transition-colors" onClick={() => sectionFileRef.current?.click()}>
+                {thumbnailPreview ? (
+                  <div className="relative">
+                    <div className="aspect-video bg-white/[0.04]">
+                      <img src={thumbnailPreview} alt="Selected section thumbnail preview" className="w-full h-full object-cover" />
+                    </div>
+                    <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/80 to-transparent">
+                      <div className="flex items-end justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="text-white text-sm font-semibold truncate">{thumbnailFile?.name}</p>
+                          <p className="text-[#9CA3AF] text-xs">Click image to change thumbnail</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={e => {
+                            e.stopPropagation();
+                            setThumbnailFile(null);
+                            if (sectionFileRef.current) sectionFileRef.current.value = '';
+                          }}
+                          className="w-8 h-8 rounded-lg flex items-center justify-center text-white/70 hover:text-white flex-shrink-0"
+                          style={{ background: 'rgba(0,0,0,0.55)', border: '1px solid rgba(255,255,255,0.12)' }}
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-6 flex flex-col items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'rgba(99,102,241,0.1)' }}><Upload size={18} className="text-[#818CF8]" /></div>
+                    <p className="text-[#9CA3AF] text-sm text-center">Click to upload thumbnail</p>
+                    <p className="text-[#6B7280] text-xs">JPG, PNG, WEBP — max 5MB</p>
+                  </div>
+                )}
                 <input ref={sectionFileRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={e => setThumbnailFile(e.target.files?.[0] ?? null)} />
               </div>
               <button onClick={handleAddSection} disabled={addingSection || !newSectionName.trim()} className="btn-primary w-full justify-center text-sm disabled:opacity-50">
