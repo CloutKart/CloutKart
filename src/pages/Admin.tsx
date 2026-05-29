@@ -2,8 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import {
   LayoutDashboard, Image, CreditCard, Users, Settings, LogOut,
-  Plus, ArrowRight, Search, Filter, ChevronDown, Upload, Loader,
-  Eye, EyeOff, Trash2, RefreshCw, ChevronLeft, X
+  Plus, ArrowRight, Search, Filter, Upload, Loader,
+  Eye, EyeOff, Trash2, RefreshCw, ChevronLeft, X, CheckCircle, Clock, AlertCircle
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -27,6 +27,7 @@ interface CreativeRequest {
   ad_format: string;
   description: string;
   status: string;
+  creative_url: string;
   created_at: string;
   profiles: { full_name: string | null; company_name: string | null } | null;
 }
@@ -61,22 +62,14 @@ interface PortfolioImage {
 }
 
 const statusColors: Record<string, { bg: string; border: string; text: string; label: string }> = {
-  pending: { bg: 'rgba(245,158,11,0.1)', border: 'rgba(245,158,11,0.25)', text: '#F59E0B', label: 'Pending' },
-  in_progress: { bg: 'rgba(59,130,246,0.1)', border: 'rgba(59,130,246,0.25)', text: '#3B82F6', label: 'In Progress' },
-  completed: { bg: 'rgba(16,185,129,0.1)', border: 'rgba(16,185,129,0.25)', text: '#10B981', label: 'Completed' },
-};
-
-const StatusBadge = ({ status }: { status: string }) => {
-  const s = statusColors[status] ?? statusColors.pending;
-  return (
-    <span className="text-xs font-semibold px-2.5 py-1 rounded-full" style={{ background: s.bg, border: `1px solid ${s.border}`, color: s.text }}>
-      {s.label}
-    </span>
-  );
+  pending:     { bg: 'rgba(245,158,11,0.1)',  border: 'rgba(245,158,11,0.25)',  text: '#F59E0B', label: 'Pending'     },
+  in_progress: { bg: 'rgba(59,130,246,0.1)',  border: 'rgba(59,130,246,0.25)',  text: '#3B82F6', label: 'In Progress' },
+  completed:   { bg: 'rgba(16,185,129,0.1)',  border: 'rgba(16,185,129,0.25)', text: '#10B981', label: 'Completed'   },
 };
 
 const PlanBadge = ({ plan }: { plan: string }) => (
-  <span className="text-xs font-semibold px-2 py-0.5 rounded-md capitalize" style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)', color: '#818CF8' }}>
+  <span className="text-xs font-semibold px-2 py-0.5 rounded-md capitalize"
+    style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)', color: '#818CF8' }}>
     {plan}
   </span>
 );
@@ -84,17 +77,179 @@ const PlanBadge = ({ plan }: { plan: string }) => (
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
 }
-
 function formatCurrency(paise: number) {
   return `₹${(paise / 100).toLocaleString('en-IN')}`;
 }
-
 function storagePathFromUrl(url: string): string | null {
   const marker = '/storage/v1/object/public/portfolio/';
   const idx = url.indexOf(marker);
   return idx !== -1 ? url.slice(idx + marker.length) : null;
 }
+function creativePathFromUrl(url: string): string | null {
+  const marker = '/storage/v1/object/public/creatives/';
+  const idx = url.indexOf(marker);
+  return idx !== -1 ? url.slice(idx + marker.length) : null;
+}
 
+// ─── Status dropdown (self-contained, no flicker) ────────────────────────────
+function StatusDropdown({ request, onUpdate }: {
+  request: CreativeRequest;
+  onUpdate: (id: string, status: string, creativeUrl?: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [showUpload, setShowUpload] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState('');
+  const fileRef = useRef<HTMLInputElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const s = statusColors[request.status] ?? statusColors.pending;
+
+  // Close on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  async function handleStatusClick(newStatus: string) {
+    setOpen(false);
+    if (newStatus === 'completed') {
+      setShowUpload(true);
+    } else {
+      await supabase.from('free_creative_requests').update({ status: newStatus }).eq('id', request.id);
+      onUpdate(request.id, newStatus);
+    }
+  }
+
+  async function handleFileUpload(file: File) {
+    if (file.size > 20 * 1024 * 1024) {
+      setUploadError('File too large. Max 20MB.');
+      return;
+    }
+    setUploading(true);
+    setUploadError('');
+    const ext = file.name.split('.').pop();
+    const path = `${request.id}/${Date.now()}.${ext}`;
+    const { error: uploadErr } = await supabase.storage.from('creatives').upload(path, file, { upsert: true });
+    if (uploadErr) {
+      setUploadError('Upload failed: ' + uploadErr.message);
+      setUploading(false);
+      return;
+    }
+    const { data: urlData } = supabase.storage.from('creatives').getPublicUrl(path);
+    const creative_url = urlData.publicUrl;
+    await supabase.from('free_creative_requests').update({ status: 'completed', creative_url }).eq('id', request.id);
+    onUpdate(request.id, 'completed', creative_url);
+    setUploading(false);
+    setShowUpload(false);
+  }
+
+  return (
+    <>
+      <div className="relative" ref={dropdownRef}>
+        <button
+          onClick={() => setOpen(o => !o)}
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold transition-all"
+          style={{ background: s.bg, border: `1px solid ${s.border}`, color: s.text }}
+        >
+          {s.label}
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor">
+            <path d="M2 3.5l3 3 3-3" stroke="currentColor" strokeWidth="1.2" fill="none" strokeLinecap="round"/>
+          </svg>
+        </button>
+
+        {open && (
+          <div
+            className="absolute left-0 top-full mt-1 z-50 rounded-xl p-1 min-w-[130px] shadow-xl"
+            style={{ background: 'rgba(12,12,12,0.98)', border: '1px solid rgba(255,255,255,0.1)' }}
+          >
+            {['pending', 'in_progress', 'completed'].map(st => {
+              const sc = statusColors[st];
+              return (
+                <button
+                  key={st}
+                  onClick={() => handleStatusClick(st)}
+                  className="w-full text-left px-3 py-2 text-xs rounded-lg transition-colors flex items-center gap-2"
+                  style={{ color: sc.text }}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                >
+                  <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: sc.text }} />
+                  {sc.label}
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Upload modal for completing a request */}
+      {showUpload && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center px-4" onClick={() => !uploading && setShowUpload(false)}>
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+          <div
+            className="relative w-full max-w-md glass-card rounded-3xl p-8"
+            style={{ background: 'rgba(12,12,12,0.98)' }}
+            onClick={e => e.stopPropagation()}
+          >
+            <button
+              onClick={() => !uploading && setShowUpload(false)}
+              className="absolute top-5 right-5 w-8 h-8 rounded-lg flex items-center justify-center text-[#6B7280] hover:text-white transition-colors"
+              style={{ border: '1px solid rgba(255,255,255,0.08)' }}
+            >
+              <X size={14} />
+            </button>
+
+            <h3 className="font-heading font-bold text-white text-xl mb-1">Upload Creative</h3>
+            <p className="text-[#9CA3AF] text-sm mb-6">
+              Upload the finished creative for <span className="text-white font-semibold">{request.brand_name}</span>. The client will be able to download it from their dashboard.
+            </p>
+
+            <div
+              className="border-2 border-dashed border-white/[0.12] rounded-2xl p-8 flex flex-col items-center gap-3 hover:border-white/25 transition-colors cursor-pointer mb-4"
+              onClick={() => !uploading && fileRef.current?.click()}
+              onDragOver={e => e.preventDefault()}
+              onDrop={e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) handleFileUpload(f); }}
+            >
+              {uploading ? (
+                <>
+                  <Loader size={24} className="animate-spin text-[#818CF8]" />
+                  <p className="text-[#9CA3AF] text-sm">Uploading...</p>
+                </>
+              ) : (
+                <>
+                  <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.2)' }}>
+                    <Upload size={20} className="text-[#818CF8]" />
+                  </div>
+                  <p className="text-[#9CA3AF] text-sm text-center">Click or drag & drop the creative file</p>
+                  <p className="text-[#6B7280] text-xs">Images, videos, ZIP — max 20MB</p>
+                </>
+              )}
+              <input ref={fileRef} type="file" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handleFileUpload(f); }} />
+            </div>
+
+            {uploadError && (
+              <div className="flex items-center gap-2 bg-red-500/[0.06] border border-red-500/20 rounded-xl p-3">
+                <AlertCircle size={14} className="text-red-400 flex-shrink-0" />
+                <span className="text-red-300 text-xs">{uploadError}</span>
+              </div>
+            )}
+
+            <p className="text-[#6B7280] text-xs text-center mt-3">
+              The request will be marked as <span className="text-[#10B981] font-semibold">Completed</span> once uploaded.
+            </p>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+// ─── Main Admin component ─────────────────────────────────────────────────────
 export default function Admin() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
@@ -127,7 +282,6 @@ export default function Admin() {
   const handleSignOut = async () => { await signOut(); navigate('/'); };
 
   useEffect(() => { loadOverview(); }, []);
-
   useEffect(() => {
     if (tab === 'requests') loadRequests();
     else if (tab === 'payments') loadPayments();
@@ -157,7 +311,6 @@ export default function Admin() {
     setLoadingTab(false);
   }
 
-  // KEY FIX: fetch requests without join, then manually attach profiles
   async function loadRequests() {
     setLoadingTab(true);
     const { data: rawRequests } = await supabase
@@ -165,59 +318,29 @@ export default function Admin() {
       .select('*')
       .order('created_at', { ascending: false });
 
-    if (!rawRequests || rawRequests.length === 0) {
-      setRequests([]);
-      setLoadingTab(false);
-      return;
-    }
+    if (!rawRequests || rawRequests.length === 0) { setRequests([]); setLoadingTab(false); return; }
 
     const userIds = [...new Set(rawRequests.map((r: { user_id: string }) => r.user_id))];
-    const { data: profiles } = await supabase
-      .from('profiles')
-      .select('id, full_name, company_name')
-      .in('id', userIds);
+    const { data: profiles } = await supabase.from('profiles').select('id, full_name, company_name').in('id', userIds);
 
     const profileMap: Record<string, { full_name: string | null; company_name: string | null }> = {};
     (profiles ?? []).forEach((p: { id: string; full_name: string | null; company_name: string | null }) => {
       profileMap[p.id] = { full_name: p.full_name, company_name: p.company_name };
     });
 
-    setRequests(rawRequests.map((r: CreativeRequest) => ({
-      ...r,
-      profiles: profileMap[r.user_id] ?? null,
-    })));
+    setRequests(rawRequests.map((r: CreativeRequest) => ({ ...r, profiles: profileMap[r.user_id] ?? null })));
     setLoadingTab(false);
   }
 
   async function loadPayments() {
     setLoadingTab(true);
-    const { data: rawPayments } = await supabase
-      .from('payments')
-      .select('*')
-      .eq('status', 'captured')
-      .order('created_at', { ascending: false });
-
-    if (!rawPayments || rawPayments.length === 0) {
-      setPayments([]);
-      setLoadingTab(false);
-      return;
-    }
-
+    const { data: rawPayments } = await supabase.from('payments').select('*').eq('status', 'captured').order('created_at', { ascending: false });
+    if (!rawPayments || rawPayments.length === 0) { setPayments([]); setLoadingTab(false); return; }
     const userIds = [...new Set(rawPayments.map((p: { user_id: string }) => p.user_id))];
-    const { data: profiles } = await supabase
-      .from('profiles')
-      .select('id, full_name')
-      .in('id', userIds);
-
+    const { data: profiles } = await supabase.from('profiles').select('id, full_name').in('id', userIds);
     const profileMap: Record<string, { full_name: string | null }> = {};
-    (profiles ?? []).forEach((p: { id: string; full_name: string | null }) => {
-      profileMap[p.id] = { full_name: p.full_name };
-    });
-
-    setPayments(rawPayments.map((p: Payment) => ({
-      ...p,
-      profiles: profileMap[p.user_id] ?? null,
-    })));
+    (profiles ?? []).forEach((p: { id: string; full_name: string | null }) => { profileMap[p.id] = { full_name: p.full_name }; });
+    setPayments(rawPayments.map((p: Payment) => ({ ...p, profiles: profileMap[p.user_id] ?? null })));
     setLoadingTab(false);
   }
 
@@ -240,6 +363,10 @@ export default function Admin() {
     setLoadingTab(false);
   }
 
+  function handleRequestUpdate(id: string, status: string, creativeUrl?: string) {
+    setRequests(prev => prev.map(r => r.id === id ? { ...r, status, creative_url: creativeUrl ?? r.creative_url } : r));
+  }
+
   async function openImageManager(section: PortfolioSection) {
     setManagingSection(section);
     setLoadingImages(true);
@@ -260,18 +387,11 @@ export default function Admin() {
       const { error } = await supabase.storage.from('portfolio').upload(path, file);
       if (error) continue;
       const { data: urlData } = supabase.storage.from('portfolio').getPublicUrl(path);
-      const { data: inserted } = await supabase.from('portfolio_images').insert({
-        section_id: managingSection.id,
-        image_url: urlData.publicUrl,
-        caption: '',
-        display_order: sectionImages.length + newImages.length,
-      }).select().single();
+      const { data: inserted } = await supabase.from('portfolio_images').insert({ section_id: managingSection.id, image_url: urlData.publicUrl, caption: '', display_order: sectionImages.length + newImages.length }).select().single();
       if (inserted) newImages.push(inserted as PortfolioImage);
     }
     setSectionImages(prev => [...prev, ...newImages]);
-    setPortfolioSections(prev => prev.map(s =>
-      s.id === managingSection.id ? { ...s, image_count: (s.image_count ?? 0) + newImages.length } : s
-    ));
+    setPortfolioSections(prev => prev.map(s => s.id === managingSection.id ? { ...s, image_count: (s.image_count ?? 0) + newImages.length } : s));
     setUploadingImages(false);
     if (imageUploadRef.current) imageUploadRef.current.value = '';
   }
@@ -282,15 +402,8 @@ export default function Admin() {
     if (storagePath) await supabase.storage.from('portfolio').remove([storagePath]);
     await supabase.from('portfolio_images').delete().eq('id', img.id);
     setSectionImages(prev => prev.filter(i => i.id !== img.id));
-    setPortfolioSections(prev => prev.map(s =>
-      s.id === img.section_id ? { ...s, image_count: Math.max(0, (s.image_count ?? 1) - 1) } : s
-    ));
+    setPortfolioSections(prev => prev.map(s => s.id === img.section_id ? { ...s, image_count: Math.max(0, (s.image_count ?? 1) - 1) } : s));
     setDeletingImageId(null);
-  }
-
-  async function updateRequestStatus(id: string, newStatus: string) {
-    await supabase.from('free_creative_requests').update({ status: newStatus }).eq('id', id);
-    setRequests(prev => prev.map(r => r.id === id ? { ...r, status: newStatus } : r));
   }
 
   async function toggleSectionVisibility(id: string, current: boolean) {
@@ -299,7 +412,7 @@ export default function Admin() {
   }
 
   async function deleteSection(id: string) {
-    if (!confirm('Delete this section and all its images? This cannot be undone.')) return;
+    if (!confirm('Delete this section and all its images?')) return;
     const { data: images } = await supabase.from('portfolio_images').select('image_url').eq('section_id', id);
     if (images) {
       const paths = images.map(img => storagePathFromUrl(img.image_url as string)).filter(Boolean) as string[];
@@ -325,10 +438,7 @@ export default function Admin() {
     }
     const { data } = await supabase.from('portfolio_sections').insert({ title: newSectionName.trim(), thumbnail_url, display_order: portfolioSections.length }).select().single();
     if (data) setPortfolioSections(prev => [...prev, { ...data, image_count: 0 }]);
-    setNewSectionName('');
-    setThumbnailFile(null);
-    setShowAddSection(false);
-    setAddingSection(false);
+    setNewSectionName(''); setThumbnailFile(null); setShowAddSection(false); setAddingSection(false);
   }
 
   function exportUsersCSV() {
@@ -336,10 +446,7 @@ export default function Admin() {
     users.forEach(u => rows.push([u.full_name ?? '', u.company_name ?? '', u.plan, formatDate(u.created_at)]));
     const csv = rows.map(r => r.map(c => `"${c}"`).join(',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'users.csv';
-    a.click();
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'users.csv'; a.click();
   }
 
   const conversionRate = overviewStats.totalUsers > 0 ? ((overviewStats.paidUsers / overviewStats.totalUsers) * 100).toFixed(1) : '0.0';
@@ -361,12 +468,12 @@ export default function Admin() {
   const tdClass = "px-4 py-3 text-sm text-[#D1D5DB] border-t border-white/[0.04]";
 
   const navItems: { id: Tab; icon: React.ElementType; label: string }[] = [
-    { id: 'overview', icon: LayoutDashboard, label: 'Overview' },
-    { id: 'requests', icon: Image, label: 'Creative Requests' },
-    { id: 'payments', icon: CreditCard, label: 'Payments' },
-    { id: 'users', icon: Users, label: 'Users' },
-    { id: 'portfolio', icon: Image, label: 'Portfolio' },
-    { id: 'settings', icon: Settings, label: 'Settings' },
+    { id: 'overview',  icon: LayoutDashboard, label: 'Overview'          },
+    { id: 'requests',  icon: Image,           label: 'Creative Requests' },
+    { id: 'payments',  icon: CreditCard,      label: 'Payments'          },
+    { id: 'users',     icon: Users,           label: 'Users'             },
+    { id: 'portfolio', icon: Image,           label: 'Portfolio'         },
+    { id: 'settings',  icon: Settings,        label: 'Settings'          },
   ];
 
   return (
@@ -398,7 +505,6 @@ export default function Admin() {
         </div>
       </aside>
 
-      {/* Main */}
       <main className="flex-1 p-6 md:p-10 overflow-y-auto">
         {/* Mobile nav */}
         <div className="md:hidden flex items-center gap-2 mb-6 overflow-x-auto pb-1">
@@ -418,12 +524,7 @@ export default function Admin() {
               <button onClick={loadOverview} className="flex items-center gap-2 text-xs text-[#9CA3AF] hover:text-white transition-colors"><RefreshCw size={13} /> Refresh</button>
             </div>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              {[
-                { label: 'Total Users', value: overviewStats.totalUsers.toString() },
-                { label: 'Requests Today', value: overviewStats.requestsToday.toString() },
-                { label: 'Total Revenue', value: formatCurrency(overviewStats.totalRevenue) },
-                { label: 'Conversion Rate', value: `${conversionRate}%` },
-              ].map(s => (
+              {[{ label: 'Total Users', value: overviewStats.totalUsers.toString() }, { label: 'Requests Today', value: overviewStats.requestsToday.toString() }, { label: 'Total Revenue', value: formatCurrency(overviewStats.totalRevenue) }, { label: 'Conversion Rate', value: `${conversionRate}%` }].map(s => (
                 <div key={s.label} className="glass-card rounded-2xl p-5">
                   <p className="text-[#9CA3AF] text-xs font-medium mb-2">{s.label}</p>
                   <p className="font-mono font-bold text-xl gradient-text">{s.value}</p>
@@ -431,30 +532,10 @@ export default function Admin() {
               ))}
             </div>
             <div className="glass-card rounded-2xl overflow-hidden">
-              <div className="px-5 py-4 border-b border-white/[0.06]">
-                <h3 className="font-heading font-semibold text-white text-base">Recent Signups</h3>
-              </div>
-              {loadingTab ? (
-                <div className="flex items-center justify-center p-10"><Loader size={20} className="animate-spin text-[#818CF8]" /></div>
-              ) : recentUsers.length === 0 ? (
-                <p className="text-[#6B7280] text-sm text-center p-10">No users yet.</p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead><tr><th className={thClass}>Name</th><th className={thClass}>Company</th><th className={thClass}>Plan</th><th className={thClass}>Date</th></tr></thead>
-                    <tbody>
-                      {recentUsers.map(u => (
-                        <tr key={u.id}>
-                          <td className={tdClass}>{u.full_name || '—'}</td>
-                          <td className={tdClass + ' text-[#9CA3AF]'}>{u.company_name || '—'}</td>
-                          <td className={tdClass}><PlanBadge plan={u.plan} /></td>
-                          <td className={tdClass + ' text-[#9CA3AF]'}>{formatDate(u.created_at)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
+              <div className="px-5 py-4 border-b border-white/[0.06]"><h3 className="font-heading font-semibold text-white text-base">Recent Signups</h3></div>
+              {loadingTab ? <div className="flex items-center justify-center p-10"><Loader size={20} className="animate-spin text-[#818CF8]" /></div>
+                : recentUsers.length === 0 ? <p className="text-[#6B7280] text-sm text-center p-10">No users yet.</p>
+                : <div className="overflow-x-auto"><table className="w-full"><thead><tr><th className={thClass}>Name</th><th className={thClass}>Company</th><th className={thClass}>Plan</th><th className={thClass}>Date</th></tr></thead><tbody>{recentUsers.map(u => (<tr key={u.id}><td className={tdClass}>{u.full_name || '—'}</td><td className={tdClass + ' text-[#9CA3AF]'}>{u.company_name || '—'}</td><td className={tdClass}><PlanBadge plan={u.plan} /></td><td className={tdClass + ' text-[#9CA3AF]'}>{formatDate(u.created_at)}</td></tr>))}</tbody></table></div>}
             </div>
           </div>
         )}
@@ -475,41 +556,38 @@ export default function Admin() {
               ))}
             </div>
             <div className="glass-card rounded-2xl overflow-hidden">
-              {loadingTab ? (
-                <div className="flex items-center justify-center p-10"><Loader size={20} className="animate-spin text-[#818CF8]" /></div>
-              ) : filteredRequests.length === 0 ? (
-                <p className="text-[#6B7280] text-sm text-center p-10">No requests found.</p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead><tr>{['User', 'Brand', 'Niche', 'Format', 'Submitted', 'Status'].map(h => <th key={h} className={thClass}>{h}</th>)}</tr></thead>
-                    <tbody>
-                      {filteredRequests.map(r => (
-                        <tr key={r.id}>
-                          <td className={tdClass}>{r.profiles?.full_name || '—'}</td>
-                          <td className={tdClass}>{r.brand_name}</td>
-                          <td className={tdClass + ' text-[#9CA3AF]'}>{r.niche}</td>
-                          <td className={tdClass + ' text-[#9CA3AF]'}>{r.ad_format}</td>
-                          <td className={tdClass + ' text-[#9CA3AF]'}>{formatDate(r.created_at)}</td>
-                          <td className={tdClass}>
-                            <div className="flex items-center gap-2">
-                              <StatusBadge status={r.status} />
-                              <div className="relative group">
-                                <button className="flex items-center gap-0.5 text-[#6B7280] hover:text-white transition-colors"><ChevronDown size={12} /></button>
-                                <div className="absolute right-0 top-full mt-1 z-10 hidden group-hover:flex group-focus-within:flex flex-col gap-0.5 glass-card rounded-xl p-1 min-w-[120px] border border-white/[0.08]" style={{ background: 'rgba(12,12,12,0.98)' }}>
-                                  {['pending', 'in_progress', 'completed'].map(s => (
-                                    <button key={s} onClick={() => updateRequestStatus(r.id, s)} className="text-left px-3 py-2 text-xs rounded-lg hover:bg-white/[0.06] capitalize transition-colors text-[#D1D5DB]">{s.replace('_', ' ')}</button>
-                                  ))}
-                                </div>
-                              </div>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
+              {loadingTab
+                ? <div className="flex items-center justify-center p-10"><Loader size={20} className="animate-spin text-[#818CF8]" /></div>
+                : filteredRequests.length === 0
+                ? <p className="text-[#6B7280] text-sm text-center p-10">No requests found.</p>
+                : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead><tr>{['User', 'Brand', 'Niche', 'Format', 'Submitted', 'Creative', 'Status'].map(h => <th key={h} className={thClass}>{h}</th>)}</tr></thead>
+                      <tbody>
+                        {filteredRequests.map(r => (
+                          <tr key={r.id}>
+                            <td className={tdClass}>{r.profiles?.full_name || '—'}</td>
+                            <td className={tdClass}>{r.brand_name}</td>
+                            <td className={tdClass + ' text-[#9CA3AF]'}>{r.niche}</td>
+                            <td className={tdClass + ' text-[#9CA3AF]'}>{r.ad_format}</td>
+                            <td className={tdClass + ' text-[#9CA3AF]'}>{formatDate(r.created_at)}</td>
+                            <td className={tdClass}>
+                              {r.creative_url
+                                ? <span className="flex items-center gap-1 text-xs text-[#10B981]"><CheckCircle size={12} /> Uploaded</span>
+                                : <span className="flex items-center gap-1 text-xs text-[#6B7280]"><Clock size={12} /> Pending</span>
+                              }
+                            </td>
+                            <td className={tdClass}>
+                              <StatusDropdown request={r} onUpdate={handleRequestUpdate} />
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )
+              }
             </div>
           </div>
         )}
@@ -523,36 +601,13 @@ export default function Admin() {
             </div>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               {[{ label: 'Today', value: formatCurrency(paymentSummary.today) }, { label: 'This Week', value: formatCurrency(paymentSummary.week) }, { label: 'This Month', value: formatCurrency(paymentSummary.month) }, { label: 'All Time', value: formatCurrency(paymentSummary.allTime) }].map(s => (
-                <div key={s.label} className="glass-card rounded-2xl p-5">
-                  <p className="text-[#9CA3AF] text-xs font-medium mb-2">{s.label}</p>
-                  <p className="font-mono font-bold text-lg gradient-text">{s.value}</p>
-                </div>
+                <div key={s.label} className="glass-card rounded-2xl p-5"><p className="text-[#9CA3AF] text-xs font-medium mb-2">{s.label}</p><p className="font-mono font-bold text-lg gradient-text">{s.value}</p></div>
               ))}
             </div>
             <div className="glass-card rounded-2xl overflow-hidden">
-              {loadingTab ? (
-                <div className="flex items-center justify-center p-10"><Loader size={20} className="animate-spin text-[#818CF8]" /></div>
-              ) : payments.length === 0 ? (
-                <p className="text-[#6B7280] text-sm text-center p-10">No payments yet.</p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead><tr>{['User', 'Plan', 'Amount', 'Date', 'Payment ID', 'Status'].map(h => <th key={h} className={thClass}>{h}</th>)}</tr></thead>
-                    <tbody>
-                      {payments.map(p => (
-                        <tr key={p.id}>
-                          <td className={tdClass}>{p.profiles?.full_name || '—'}</td>
-                          <td className={tdClass}><PlanBadge plan={p.plan} /></td>
-                          <td className={tdClass + ' font-mono'}>{formatCurrency(p.amount)}</td>
-                          <td className={tdClass + ' text-[#9CA3AF]'}>{formatDate(p.created_at)}</td>
-                          <td className={tdClass + ' font-mono text-[#9CA3AF] text-xs'}>{p.payment_id || '—'}</td>
-                          <td className={tdClass}><span className="text-xs font-semibold px-2.5 py-1 rounded-full" style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)', color: '#10B981' }}>Captured</span></td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
+              {loadingTab ? <div className="flex items-center justify-center p-10"><Loader size={20} className="animate-spin text-[#818CF8]" /></div>
+                : payments.length === 0 ? <p className="text-[#6B7280] text-sm text-center p-10">No payments yet.</p>
+                : <div className="overflow-x-auto"><table className="w-full"><thead><tr>{['User','Plan','Amount','Date','Payment ID','Status'].map(h=><th key={h} className={thClass}>{h}</th>)}</tr></thead><tbody>{payments.map(p=>(<tr key={p.id}><td className={tdClass}>{p.profiles?.full_name||'—'}</td><td className={tdClass}><PlanBadge plan={p.plan}/></td><td className={tdClass+' font-mono'}>{formatCurrency(p.amount)}</td><td className={tdClass+' text-[#9CA3AF]'}>{formatDate(p.created_at)}</td><td className={tdClass+' font-mono text-[#9CA3AF] text-xs'}>{p.payment_id||'—'}</td><td className={tdClass}><span className="text-xs font-semibold px-2.5 py-1 rounded-full" style={{background:'rgba(16,185,129,0.1)',border:'1px solid rgba(16,185,129,0.2)',color:'#10B981'}}>Captured</span></td></tr>))}</tbody></table></div>}
             </div>
           </div>
         )}
@@ -584,27 +639,9 @@ export default function Admin() {
               </div>
             </div>
             <div className="glass-card rounded-2xl overflow-hidden">
-              {loadingTab ? (
-                <div className="flex items-center justify-center p-10"><Loader size={20} className="animate-spin text-[#818CF8]" /></div>
-              ) : filteredUsers.length === 0 ? (
-                <p className="text-[#6B7280] text-sm text-center p-10">No users found.</p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead><tr>{['Name', 'Company', 'Plan', 'Signed Up'].map(h => <th key={h} className={thClass}>{h}</th>)}</tr></thead>
-                    <tbody>
-                      {filteredUsers.map(u => (
-                        <tr key={u.id}>
-                          <td className={tdClass}>{u.full_name || '—'}</td>
-                          <td className={tdClass + ' text-[#9CA3AF]'}>{u.company_name || '—'}</td>
-                          <td className={tdClass}><PlanBadge plan={u.plan} /></td>
-                          <td className={tdClass + ' text-[#9CA3AF]'}>{formatDate(u.created_at)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
+              {loadingTab ? <div className="flex items-center justify-center p-10"><Loader size={20} className="animate-spin text-[#818CF8]" /></div>
+                : filteredUsers.length === 0 ? <p className="text-[#6B7280] text-sm text-center p-10">No users found.</p>
+                : <div className="overflow-x-auto"><table className="w-full"><thead><tr>{['Name','Company','Plan','Signed Up'].map(h=><th key={h} className={thClass}>{h}</th>)}</tr></thead><tbody>{filteredUsers.map(u=>(<tr key={u.id}><td className={tdClass}>{u.full_name||'—'}</td><td className={tdClass+' text-[#9CA3AF]'}>{u.company_name||'—'}</td><td className={tdClass}><PlanBadge plan={u.plan}/></td><td className={tdClass+' text-[#9CA3AF]'}>{formatDate(u.created_at)}</td></tr>))}</tbody></table></div>}
             </div>
           </div>
         )}
@@ -615,58 +652,30 @@ export default function Admin() {
             {managingSection ? (
               <>
                 <div className="flex items-center gap-3">
-                  <button onClick={() => setManagingSection(null)} className="flex items-center gap-1.5 text-sm text-[#9CA3AF] hover:text-white transition-colors">
-                    <ChevronLeft size={16} /> Back
-                  </button>
+                  <button onClick={() => setManagingSection(null)} className="flex items-center gap-1.5 text-sm text-[#9CA3AF] hover:text-white transition-colors"><ChevronLeft size={16} /> Back</button>
                   <div className="h-4 w-px bg-white/10" />
                   <h2 className="font-heading font-bold text-white text-xl">{managingSection.title}</h2>
                   <span className="text-xs text-[#6B7280] font-mono ml-auto">{sectionImages.length} image{sectionImages.length !== 1 ? 's' : ''}</span>
                 </div>
-                <div
-                  className="border-2 border-dashed border-white/[0.10] rounded-2xl p-8 flex flex-col items-center gap-3 hover:border-white/20 transition-colors cursor-pointer"
-                  onClick={() => imageUploadRef.current?.click()}
-                  onDragOver={e => e.preventDefault()}
-                  onDrop={e => { e.preventDefault(); if (e.dataTransfer.files.length > 0) uploadImagesToSection(e.dataTransfer.files); }}
-                >
-                  {uploadingImages ? (
-                    <><Loader size={22} className="animate-spin text-[#818CF8]" /><p className="text-[#9CA3AF] text-sm">Uploading...</p></>
-                  ) : (
-                    <>
-                      <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'rgba(99,102,241,0.1)' }}>
-                        <Upload size={18} className="text-[#818CF8]" />
-                      </div>
-                      <p className="text-[#9CA3AF] text-sm text-center">Click or drag & drop images here</p>
-                      <p className="text-[#6B7280] text-xs">JPG, PNG, WEBP — max 5MB each — multiple allowed</p>
-                    </>
-                  )}
-                  <input ref={imageUploadRef} type="file" accept="image/jpeg,image/png,image/webp" multiple className="hidden"
-                    onChange={e => { if (e.target.files) uploadImagesToSection(e.target.files); }} />
+                <div className="border-2 border-dashed border-white/[0.10] rounded-2xl p-8 flex flex-col items-center gap-3 hover:border-white/20 transition-colors cursor-pointer"
+                  onClick={() => imageUploadRef.current?.click()} onDragOver={e => e.preventDefault()}
+                  onDrop={e => { e.preventDefault(); if (e.dataTransfer.files.length > 0) uploadImagesToSection(e.dataTransfer.files); }}>
+                  {uploadingImages ? <><Loader size={22} className="animate-spin text-[#818CF8]" /><p className="text-[#9CA3AF] text-sm">Uploading...</p></>
+                    : <><div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'rgba(99,102,241,0.1)' }}><Upload size={18} className="text-[#818CF8]" /></div><p className="text-[#9CA3AF] text-sm text-center">Click or drag & drop images here</p><p className="text-[#6B7280] text-xs">JPG, PNG, WEBP — max 5MB each</p></>}
+                  <input ref={imageUploadRef} type="file" accept="image/jpeg,image/png,image/webp" multiple className="hidden" onChange={e => { if (e.target.files) uploadImagesToSection(e.target.files); }} />
                 </div>
-                {loadingImages ? (
-                  <div className="flex items-center justify-center p-16"><Loader size={20} className="animate-spin text-[#818CF8]" /></div>
-                ) : sectionImages.length === 0 ? (
-                  <div className="glass-card rounded-2xl p-10 text-center"><p className="text-[#6B7280] text-sm">No images yet. Upload some above.</p></div>
-                ) : (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-                    {sectionImages.map(img => (
-                      <div key={img.id} className="relative group rounded-xl overflow-hidden aspect-square" style={{ background: 'rgba(255,255,255,0.04)' }}>
-                        <img src={img.image_url} alt={img.caption || ''} className="w-full h-full object-cover" loading="lazy" />
-                        {img.caption && (
-                          <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 to-transparent p-2">
-                            <p className="text-white/70 text-[10px] font-mono line-clamp-2">{img.caption}</p>
-                          </div>
-                        )}
-                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
-                          <button onClick={() => deleteImage(img)} disabled={deletingImageId === img.id}
-                            className="w-10 h-10 rounded-full flex items-center justify-center transition-all disabled:opacity-50"
-                            style={{ background: 'rgba(239,68,68,0.9)', border: '1px solid rgba(239,68,68,0.6)' }}>
-                            {deletingImageId === img.id ? <Loader size={14} className="animate-spin text-white" /> : <Trash2 size={14} className="text-white" />}
-                          </button>
-                        </div>
+                {loadingImages ? <div className="flex items-center justify-center p-16"><Loader size={20} className="animate-spin text-[#818CF8]" /></div>
+                  : sectionImages.length === 0 ? <div className="glass-card rounded-2xl p-10 text-center"><p className="text-[#6B7280] text-sm">No images yet.</p></div>
+                  : <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">{sectionImages.map(img => (
+                    <div key={img.id} className="relative group rounded-xl overflow-hidden aspect-square" style={{ background: 'rgba(255,255,255,0.04)' }}>
+                      <img src={img.image_url} alt="" className="w-full h-full object-cover" loading="lazy" />
+                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
+                        <button onClick={() => deleteImage(img)} disabled={deletingImageId === img.id} className="w-10 h-10 rounded-full flex items-center justify-center disabled:opacity-50" style={{ background: 'rgba(239,68,68,0.9)' }}>
+                          {deletingImageId === img.id ? <Loader size={14} className="animate-spin text-white" /> : <Trash2 size={14} className="text-white" />}
+                        </button>
                       </div>
-                    ))}
-                  </div>
-                )}
+                    </div>
+                  ))}</div>}
               </>
             ) : (
               <>
@@ -674,43 +683,29 @@ export default function Admin() {
                   <h2 className="font-heading font-bold text-white text-2xl">Portfolio Manager</h2>
                   <button onClick={() => setShowAddSection(true)} className="btn-primary text-sm"><Plus size={14} /> Add New Section</button>
                 </div>
-                {loadingTab ? (
-                  <div className="flex items-center justify-center p-20"><Loader size={20} className="animate-spin text-[#818CF8]" /></div>
-                ) : portfolioSections.length === 0 ? (
-                  <div className="glass-card rounded-2xl p-10 text-center"><p className="text-[#6B7280] text-sm">No portfolio sections yet.</p></div>
-                ) : (
-                  <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {portfolioSections.map(sec => (
-                      <div key={sec.id} className="glass-card rounded-2xl overflow-hidden">
-                        <div className="relative bg-white/[0.04] h-36 flex items-center justify-center border-b border-white/[0.06]">
-                          {sec.thumbnail_url ? <img src={sec.thumbnail_url} alt={sec.title} className="w-full h-full object-cover" /> : <Image size={28} className="text-[#6B7280]" />}
-                          <button onClick={() => toggleSectionVisibility(sec.id, sec.is_visible)}
-                            className="absolute top-2 right-2 w-7 h-7 rounded-lg flex items-center justify-center transition-all"
-                            style={{ background: 'rgba(0,0,0,0.65)', border: '1px solid rgba(255,255,255,0.1)' }}>
-                            {sec.is_visible ? <Eye size={13} className="text-white/60" /> : <EyeOff size={13} className="text-white/30" />}
-                          </button>
+                {loadingTab ? <div className="flex items-center justify-center p-20"><Loader size={20} className="animate-spin text-[#818CF8]" /></div>
+                  : portfolioSections.length === 0 ? <div className="glass-card rounded-2xl p-10 text-center"><p className="text-[#6B7280] text-sm">No portfolio sections yet.</p></div>
+                  : <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">{portfolioSections.map(sec => (
+                    <div key={sec.id} className="glass-card rounded-2xl overflow-hidden">
+                      <div className="relative bg-white/[0.04] h-36 flex items-center justify-center border-b border-white/[0.06]">
+                        {sec.thumbnail_url ? <img src={sec.thumbnail_url} alt={sec.title} className="w-full h-full object-cover" /> : <Image size={28} className="text-[#6B7280]" />}
+                        <button onClick={() => toggleSectionVisibility(sec.id, sec.is_visible)} className="absolute top-2 right-2 w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.65)', border: '1px solid rgba(255,255,255,0.1)' }}>
+                          {sec.is_visible ? <Eye size={13} className="text-white/60" /> : <EyeOff size={13} className="text-white/30" />}
+                        </button>
+                      </div>
+                      <div className="p-4">
+                        <div className="flex items-center justify-between mb-1">
+                          <h3 className="font-heading font-semibold text-white text-sm">{sec.title}</h3>
+                          <span className="text-xs text-[#9CA3AF] font-mono">{sec.image_count} imgs</span>
                         </div>
-                        <div className="p-4">
-                          <div className="flex items-center justify-between mb-1">
-                            <h3 className="font-heading font-semibold text-white text-sm">{sec.title}</h3>
-                            <span className="text-xs text-[#9CA3AF] font-mono">{sec.image_count} imgs</span>
-                          </div>
-                          {!sec.is_visible && <p className="text-[10px] text-[#F59E0B] mb-2 font-semibold uppercase tracking-wider">Hidden from public</p>}
-                          <div className="flex gap-2 mt-3">
-                            <button onClick={() => deleteSection(sec.id)}
-                              className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-all hover:scale-105"
-                              style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}>
-                              <Trash2 size={14} className="text-red-400" />
-                            </button>
-                            <button onClick={() => openImageManager(sec)} className="btn-primary flex-1 justify-center text-xs py-2">
-                              Manage Images <ArrowRight size={11} />
-                            </button>
-                          </div>
+                        {!sec.is_visible && <p className="text-[10px] text-[#F59E0B] mb-2 font-semibold uppercase tracking-wider">Hidden from public</p>}
+                        <div className="flex gap-2 mt-3">
+                          <button onClick={() => deleteSection(sec.id)} className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}><Trash2 size={14} className="text-red-400" /></button>
+                          <button onClick={() => openImageManager(sec)} className="btn-primary flex-1 justify-center text-xs py-2">Manage Images <ArrowRight size={11} /></button>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                )}
+                    </div>
+                  ))}</div>}
               </>
             )}
           </div>
@@ -734,20 +729,15 @@ export default function Admin() {
           <div className="relative w-full max-w-md glass-card rounded-3xl p-8" style={{ background: 'rgba(12,12,12,0.98)' }} onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-6">
               <h3 className="font-heading font-bold text-white text-xl">Add New Section</h3>
-              <button onClick={() => setShowAddSection(false)} className="w-8 h-8 rounded-lg flex items-center justify-center text-[#6B7280] hover:text-white transition-colors" style={{ border: '1px solid rgba(255,255,255,0.08)' }}>
-                <X size={14} />
-              </button>
+              <button onClick={() => setShowAddSection(false)} className="w-8 h-8 rounded-lg flex items-center justify-center text-[#6B7280] hover:text-white" style={{ border: '1px solid rgba(255,255,255,0.08)' }}><X size={14} /></button>
             </div>
             <div className="space-y-4">
               <div>
                 <label className="block text-[11px] font-semibold text-[#9CA3AF] mb-2 uppercase tracking-[0.08em]">Section Name</label>
                 <input type="text" value={newSectionName} onChange={e => setNewSectionName(e.target.value)} placeholder="e.g. E-Commerce Ads" className={inputClass} />
               </div>
-              <div className="border-2 border-dashed border-white/[0.10] rounded-2xl p-6 flex flex-col items-center gap-3 hover:border-white/20 transition-colors cursor-pointer"
-                onClick={() => sectionFileRef.current?.click()}>
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'rgba(99,102,241,0.1)' }}>
-                  <Upload size={18} className="text-[#818CF8]" />
-                </div>
+              <div className="border-2 border-dashed border-white/[0.10] rounded-2xl p-6 flex flex-col items-center gap-3 cursor-pointer hover:border-white/20 transition-colors" onClick={() => sectionFileRef.current?.click()}>
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'rgba(99,102,241,0.1)' }}><Upload size={18} className="text-[#818CF8]" /></div>
                 <p className="text-[#9CA3AF] text-sm text-center">{thumbnailFile ? thumbnailFile.name : 'Click to upload thumbnail'}</p>
                 <p className="text-[#6B7280] text-xs">JPG, PNG, WEBP — max 5MB</p>
                 <input ref={sectionFileRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={e => setThumbnailFile(e.target.files?.[0] ?? null)} />
