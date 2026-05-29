@@ -305,6 +305,7 @@ export default function Admin() {
   const [loadingImages, setLoadingImages] = useState(false);
   const [uploadingImages, setUploadingImages] = useState(false);
   const [deletingImageId, setDeletingImageId] = useState<string | null>(null);
+  const [savingCaptionId, setSavingCaptionId] = useState<string | null>(null);
   const imageUploadRef = useRef<HTMLInputElement>(null);
 
   const [overviewStats, setOverviewStats] = useState({ totalUsers: 0, requestsToday: 0, totalRevenue: 0, paidUsers: 0 });
@@ -451,6 +452,16 @@ export default function Admin() {
     setSectionImages(prev => prev.filter(i => i.id !== img.id));
     setPortfolioSections(prev => prev.map(s => s.id === img.section_id ? { ...s, image_count: Math.max(0, (s.image_count ?? 1) - 1) } : s));
     setDeletingImageId(null);
+  }
+
+  function updateImageCaptionLocal(id: string, caption: string) {
+    setSectionImages(prev => prev.map(img => img.id === id ? { ...img, caption } : img));
+  }
+
+  async function saveImageCaption(id: string, caption: string) {
+    setSavingCaptionId(id);
+    await supabase.from('portfolio_images').update({ caption }).eq('id', id);
+    setSavingCaptionId(null);
   }
 
   async function toggleSectionVisibility(id: string, current: boolean) {
@@ -719,13 +730,34 @@ export default function Admin() {
                 </div>
                 {loadingImages ? <div className="flex items-center justify-center p-16"><Loader size={20} className="animate-spin text-[#818CF8]" /></div>
                   : sectionImages.length === 0 ? <div className="glass-card rounded-2xl p-10 text-center"><p className="text-[#6B7280] text-sm">No images yet.</p></div>
-                  : <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">{sectionImages.map(img => (
-                    <div key={img.id} className="relative group rounded-xl overflow-hidden aspect-square" style={{ background: 'rgba(255,255,255,0.04)' }}>
-                      <img src={img.image_url} alt="" className="w-full h-full object-cover" loading="lazy" />
-                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
-                        <button onClick={() => deleteImage(img)} disabled={deletingImageId === img.id} className="w-10 h-10 rounded-full flex items-center justify-center disabled:opacity-50" style={{ background: 'rgba(239,68,68,0.9)' }}>
-                          {deletingImageId === img.id ? <Loader size={14} className="animate-spin text-white" /> : <Trash2 size={14} className="text-white" />}
-                        </button>
+                  : <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">{sectionImages.map(img => (
+                    <div key={img.id} className="glass-card rounded-2xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.035)' }}>
+                      <div className="relative group aspect-square" style={{ background: 'rgba(255,255,255,0.04)' }}>
+                        <img src={img.image_url} alt={img.caption || ''} className="w-full h-full object-cover" loading="lazy" />
+                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
+                          <button onClick={() => deleteImage(img)} disabled={deletingImageId === img.id} className="w-10 h-10 rounded-full flex items-center justify-center disabled:opacity-50" style={{ background: 'rgba(239,68,68,0.9)' }}>
+                            {deletingImageId === img.id ? <Loader size={14} className="animate-spin text-white" /> : <Trash2 size={14} className="text-white" />}
+                          </button>
+                        </div>
+                      </div>
+                      <div className="relative z-10 p-3 space-y-2">
+                        <label className="flex items-center justify-between gap-2 text-[10px] font-semibold text-[#6B7280] uppercase tracking-[0.08em]">
+                          Caption
+                          {savingCaptionId === img.id && <Loader size={11} className="animate-spin text-[#818CF8]" />}
+                        </label>
+                        <textarea
+                          value={img.caption ?? ''}
+                          onChange={e => updateImageCaptionLocal(img.id, e.target.value)}
+                          onBlur={e => saveImageCaption(img.id, e.target.value.trim())}
+                          onKeyDown={e => {
+                            if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                              e.currentTarget.blur();
+                            }
+                          }}
+                          placeholder="Add a short caption..."
+                          rows={2}
+                          className="w-full resize-none rounded-xl px-3 py-2 text-xs text-white placeholder-[#6B7280] focus:outline-none transition-all duration-200 bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(99,102,241,0.5)]"
+                        />
                       </div>
                     </div>
                   ))}</div>}
