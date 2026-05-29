@@ -29,6 +29,8 @@ interface CreativeRequest {
   description: string;
   status: string;
   creative_url: string;
+  creative_caption?: string;
+  client_message?: string;
   created_at: string;
   profiles: { full_name: string | null; company_name: string | null } | null;
 }
@@ -89,12 +91,14 @@ function storagePathFromUrl(url: string): string | null {
 // ─── Status dropdown (self-contained, no flicker) ────────────────────────────
 function StatusDropdown({ request, onUpdate }: {
   request: CreativeRequest;
-  onUpdate: (id: string, status: string, creativeUrl?: string) => void;
+  onUpdate: (id: string, status: string, creativeUrl?: string, creativeCaption?: string, clientMessage?: string) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [showUpload, setShowUpload] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
+  const [creativeCaption, setCreativeCaption] = useState(request.creative_caption ?? '');
+  const [clientMessage, setClientMessage] = useState(request.client_message ?? '');
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
   const fileRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -165,8 +169,16 @@ function StatusDropdown({ request, onUpdate }: {
     }
     const { data: urlData } = supabase.storage.from('creatives').getPublicUrl(path);
     const creative_url = urlData.publicUrl;
-    await supabase.from('free_creative_requests').update({ status: 'completed', creative_url }).eq('id', request.id);
-    onUpdate(request.id, 'completed', creative_url);
+    await supabase
+      .from('free_creative_requests')
+      .update({
+        status: 'completed',
+        creative_url,
+        creative_caption: creativeCaption.trim(),
+        client_message: clientMessage.trim(),
+      })
+      .eq('id', request.id);
+    onUpdate(request.id, 'completed', creative_url, creativeCaption.trim(), clientMessage.trim());
     setUploading(false);
     setShowUpload(false);
   }
@@ -242,6 +254,29 @@ function StatusDropdown({ request, onUpdate }: {
             <p className="text-[#9CA3AF] text-sm mb-6">
               Upload the finished creative for <span className="text-white font-semibold">{request.brand_name}</span>. The client will be able to download it from their dashboard.
             </p>
+
+            <div className="space-y-3 mb-4">
+              <div>
+                <label className="block text-[11px] font-semibold text-[#9CA3AF] mb-2 uppercase tracking-[0.08em]">Creative Caption</label>
+                <input
+                  type="text"
+                  value={creativeCaption}
+                  onChange={e => setCreativeCaption(e.target.value)}
+                  placeholder="e.g. Product launch creative"
+                  className="w-full rounded-xl px-4 py-3 text-sm text-white placeholder-[#6B7280] focus:outline-none transition-all duration-200 bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(99,102,241,0.5)]"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-semibold text-[#9CA3AF] mb-2 uppercase tracking-[0.08em]">Message for Client</label>
+                <textarea
+                  value={clientMessage}
+                  onChange={e => setClientMessage(e.target.value)}
+                  rows={3}
+                  placeholder="Add a short note about this creative..."
+                  className="w-full resize-none rounded-xl px-4 py-3 text-sm text-white placeholder-[#6B7280] focus:outline-none transition-all duration-200 bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(99,102,241,0.5)]"
+                />
+              </div>
+            </div>
 
             <div
               className="border-2 border-dashed border-white/[0.12] rounded-2xl p-8 flex flex-col items-center gap-3 hover:border-white/25 transition-colors cursor-pointer mb-4"
@@ -413,8 +448,14 @@ export default function Admin() {
     setLoadingTab(false);
   }
 
-  function handleRequestUpdate(id: string, status: string, creativeUrl?: string) {
-    setRequests(prev => prev.map(r => r.id === id ? { ...r, status, creative_url: creativeUrl ?? r.creative_url } : r));
+  function handleRequestUpdate(id: string, status: string, creativeUrl?: string, creativeCaption?: string, clientMessage?: string) {
+    setRequests(prev => prev.map(r => r.id === id ? {
+      ...r,
+      status,
+      creative_url: creativeUrl ?? r.creative_url,
+      creative_caption: creativeCaption ?? r.creative_caption,
+      client_message: clientMessage ?? r.client_message,
+    } : r));
   }
 
   async function openImageManager(section: PortfolioSection) {

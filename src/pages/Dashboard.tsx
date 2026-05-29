@@ -2,12 +2,12 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import {
   LayoutDashboard, Image, CreditCard, Settings, LogOut, ArrowRight,
-  Download, Clock, CheckCircle, Loader, ChevronRight, AlertCircle, Sparkles
+  Download, Clock, CheckCircle, Loader, ChevronRight, AlertCircle, Sparkles, Images
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 
-type Tab = 'overview' | 'creative' | 'plan' | 'settings';
+type Tab = 'overview' | 'creative' | 'gallery' | 'plan' | 'settings';
 const FREE_CREATIVE_LIMIT = 3;
 
 interface CreativeRequest {
@@ -19,6 +19,8 @@ interface CreativeRequest {
   reference_url: string;
   status: string;
   creative_url: string;
+  creative_caption?: string;
+  client_message?: string;
   created_at: string;
 }
 
@@ -58,7 +60,6 @@ export default function Dashboard() {
       .select('*')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
-      .limit(FREE_CREATIVE_LIMIT)
       .then(({ data }) => {
         setCreativeRequests((data as CreativeRequest[]) ?? []);
         setLoadingRequest(false);
@@ -143,7 +144,7 @@ export default function Dashboard() {
         console.warn('Email notification failed (non-critical):', emailErr);
       }
 
-      setCreativeRequests(prev => [inserted, ...prev].slice(0, FREE_CREATIVE_LIMIT));
+      setCreativeRequests(prev => [inserted, ...prev]);
       setForm({ brandName: '', niche: '', adFormat: '', description: '', referenceUrl: '' });
       setShowForm(false);
     } catch (err: unknown) {
@@ -177,14 +178,16 @@ export default function Dashboard() {
   const navItems: { id: Tab; icon: React.ElementType; label: string }[] = [
     { id: 'overview', icon: LayoutDashboard, label: 'Overview' },
     { id: 'creative', icon: Image, label: 'My Creative' },
+    { id: 'gallery', icon: Images, label: 'Gallery' },
     { id: 'plan', icon: CreditCard, label: 'My Plan' },
     { id: 'settings', icon: Settings, label: 'Settings' },
   ];
 
   const creativeRequest = creativeRequests[0] ?? null;
-  const creativeCount = creativeRequests.length;
+  const creativeCount = Math.min(creativeRequests.length, FREE_CREATIVE_LIMIT);
   const freeCreativesLeft = Math.max(0, FREE_CREATIVE_LIMIT - creativeCount);
   const freeCreativesClaimed = creativeCount >= FREE_CREATIVE_LIMIT;
+  const galleryCreatives = creativeRequests.filter(request => request.status === 'completed' && request.creative_url);
   const getActiveStep = (request: CreativeRequest) => statusToStep[request.status] ?? 0;
   const isImageUrl = (url: string) => /\.(apng|avif|gif|jpe?g|png|webp)(\?.*)?$/i.test(url);
 
@@ -438,11 +441,72 @@ export default function Dashboard() {
                   </div>
                 </div>
                 {request.status === 'completed' && (
-                  <a href={request.creative_url || "#"} target="_blank" rel="noopener noreferrer" download className="btn-primary text-sm mt-6"><Download size={14} />Download Creative<ArrowRight size={14} /></a>
+                  <div className="mt-6 space-y-4">
+                    {(request.creative_caption || request.client_message) && (
+                      <div className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.035)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                        {request.creative_caption && <p className="font-heading font-semibold text-white text-sm mb-2">{request.creative_caption}</p>}
+                        {request.client_message && <p className="text-[#D1D5DB] text-sm leading-relaxed">{request.client_message}</p>}
+                      </div>
+                    )}
+                    <a href={request.creative_url || "#"} target="_blank" rel="noopener noreferrer" download className="btn-primary text-sm"><Download size={14} />Download Creative<ArrowRight size={14} /></a>
+                  </div>
                 )}
               </div>
               );
             })}
+          </div>
+        )}
+
+        {/* GALLERY */}
+        {tab === 'gallery' && (
+          <div className="space-y-6">
+            <div>
+              <h2 className="font-heading font-bold text-white text-2xl">Gallery</h2>
+              <p className="text-[#9CA3AF] text-sm mt-1">Completed creatives uploaded for your account.</p>
+            </div>
+            {loadingRequest ? (
+              <div className="glass-card rounded-2xl p-10 flex items-center justify-center">
+                <Loader size={20} className="animate-spin text-[#A855F7]" />
+              </div>
+            ) : galleryCreatives.length === 0 ? (
+              <div className="glass-card rounded-2xl p-10 flex flex-col items-center text-center">
+                <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4" style={{ background: 'rgba(168,85,247,0.1)', border: '1px solid rgba(168,85,247,0.2)' }}>
+                  <Images size={24} className="text-[#A855F7]" />
+                </div>
+                <h3 className="font-heading font-semibold text-white text-lg mb-2">No uploaded creatives yet</h3>
+                <p className="text-[#9CA3AF] text-sm max-w-sm">Once the team uploads completed creatives for you, they will appear here with captions and notes.</p>
+              </div>
+            ) : (
+              <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                {galleryCreatives.map(request => {
+                  const creativeIsImage = isImageUrl(request.creative_url);
+                  return (
+                    <div key={request.id} className="glass-card rounded-2xl overflow-hidden">
+                      <div className="relative aspect-square bg-white/[0.04] flex items-center justify-center">
+                        {creativeIsImage ? (
+                          <a href={request.creative_url} target="_blank" rel="noopener noreferrer" className="block w-full h-full">
+                            <img src={request.creative_url} alt={request.creative_caption || `${request.brand_name} creative`} className="w-full h-full object-cover" loading="lazy" />
+                          </a>
+                        ) : (
+                          <div className="text-center p-6">
+                            <Download size={28} className="text-[#A855F7] mx-auto mb-3" />
+                            <p className="text-white font-heading font-semibold text-sm">Download file</p>
+                          </div>
+                        )}
+                      </div>
+                      <div className="relative z-10 p-4">
+                        <p className="text-[#6B7280] text-[10px] font-semibold uppercase tracking-widest mb-1">{request.brand_name}</p>
+                        <h3 className="font-heading font-semibold text-white text-base">{request.creative_caption || 'Creative'}</h3>
+                        {request.client_message && <p className="text-[#D1D5DB] text-sm leading-relaxed mt-3">{request.client_message}</p>}
+                        <a href={request.creative_url} target="_blank" rel="noopener noreferrer" download className="btn-secondary text-xs mt-4 py-2 px-4">
+                          <Download size={13} /> Download
+                        </a>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
 
