@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate, Link } from 'react-router-dom';
 import {
   LayoutDashboard, Image, CreditCard, Users, Settings, LogOut,
@@ -85,12 +86,6 @@ function storagePathFromUrl(url: string): string | null {
   const idx = url.indexOf(marker);
   return idx !== -1 ? url.slice(idx + marker.length) : null;
 }
-function creativePathFromUrl(url: string): string | null {
-  const marker = '/storage/v1/object/public/creatives/';
-  const idx = url.indexOf(marker);
-  return idx !== -1 ? url.slice(idx + marker.length) : null;
-}
-
 // ─── Status dropdown (self-contained, no flicker) ────────────────────────────
 function StatusDropdown({ request, onUpdate }: {
   request: CreativeRequest;
@@ -100,20 +95,48 @@ function StatusDropdown({ request, onUpdate }: {
   const [showUpload, setShowUpload] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
   const fileRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
   const s = statusColors[request.status] ?? statusColors.pending;
+
+  function updateDropdownPosition() {
+    const rect = buttonRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    setDropdownPosition({
+      top: rect.bottom + 4,
+      left: Math.min(rect.left, window.innerWidth - 146),
+    });
+  }
 
   // Close on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(target) &&
+        !menuRef.current?.contains(target)
+      ) {
         setOpen(false);
       }
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    updateDropdownPosition();
+    window.addEventListener('resize', updateDropdownPosition);
+    window.addEventListener('scroll', updateDropdownPosition, true);
+    return () => {
+      window.removeEventListener('resize', updateDropdownPosition);
+      window.removeEventListener('scroll', updateDropdownPosition, true);
+    };
+  }, [open]);
 
   async function handleStatusClick(newStatus: string) {
     setOpen(false);
@@ -152,7 +175,11 @@ function StatusDropdown({ request, onUpdate }: {
     <>
       <div className="relative" ref={dropdownRef}>
         <button
-          onClick={() => setOpen(o => !o)}
+          ref={buttonRef}
+          onClick={() => {
+            updateDropdownPosition();
+            setOpen(o => !o);
+          }}
           className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold transition-all"
           style={{ background: s.bg, border: `1px solid ${s.border}`, color: s.text }}
         >
@@ -162,10 +189,16 @@ function StatusDropdown({ request, onUpdate }: {
           </svg>
         </button>
 
-        {open && (
+        {open && createPortal(
           <div
-            className="absolute left-0 top-full mt-1 z-50 rounded-xl p-1 min-w-[130px] shadow-xl"
-            style={{ background: 'rgba(12,12,12,0.98)', border: '1px solid rgba(255,255,255,0.1)' }}
+            ref={menuRef}
+            className="fixed z-[220] rounded-xl p-1 min-w-[130px] shadow-xl"
+            style={{
+              top: dropdownPosition.top,
+              left: dropdownPosition.left,
+              background: 'rgba(12,12,12,0.98)',
+              border: '1px solid rgba(255,255,255,0.1)',
+            }}
           >
             {['pending', 'in_progress', 'completed'].map(st => {
               const sc = statusColors[st];
@@ -183,12 +216,13 @@ function StatusDropdown({ request, onUpdate }: {
                 </button>
               );
             })}
-          </div>
+          </div>,
+          document.body
         )}
       </div>
 
       {/* Upload modal for completing a request */}
-      {showUpload && (
+      {showUpload && createPortal(
         <div className="fixed inset-0 z-[200] flex items-center justify-center px-4" onClick={() => !uploading && setShowUpload(false)}>
           <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
           <div
@@ -243,7 +277,8 @@ function StatusDropdown({ request, onUpdate }: {
               The request will be marked as <span className="text-[#10B981] font-semibold">Completed</span> once uploaded.
             </p>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );
