@@ -183,6 +183,7 @@ export default function Dashboard() {
 
   const creativeRequest = creativeRequests[0] ?? null;
   const creativeCount = creativeRequests.length;
+  const freeCreativesLeft = Math.max(0, FREE_CREATIVE_LIMIT - creativeCount);
   const freeCreativesClaimed = creativeCount >= FREE_CREATIVE_LIMIT;
   const getActiveStep = (request: CreativeRequest) => statusToStep[request.status] ?? 0;
   const isImageUrl = (url: string) => /\.(apng|avif|gif|jpe?g|png|webp)(\?.*)?$/i.test(url);
@@ -456,6 +457,13 @@ export default function Dashboard() {
                   <h3 className="font-heading font-bold text-white text-xl">Free Plan</h3>
                 </div>
                 <span className="text-xs px-3 py-1 rounded-full font-semibold" style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)', color: '#10B981' }}>Active</span>
+              </div>
+              <div className="mb-5 inline-flex items-center gap-3 rounded-2xl px-4 py-3" style={{ background: 'rgba(168,85,247,0.08)', border: '1px solid rgba(168,85,247,0.18)' }}>
+                <span className="font-mono font-bold gradient-text text-xl">{freeCreativesLeft}</span>
+                <div>
+                  <p className="text-white text-sm font-semibold">{freeCreativesLeft === 1 ? 'free creative left' : 'free creatives left'}</p>
+                  <p className="text-[#9CA3AF] text-xs">{creativeCount}/{FREE_CREATIVE_LIMIT} claimed</p>
+                </div>
               </div>
               <div className="space-y-2">
                 {planFeatures.free.map(f => (
