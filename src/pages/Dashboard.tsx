@@ -8,6 +8,7 @@ import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 
 type Tab = 'overview' | 'creative' | 'plan' | 'settings';
+const FREE_CREATIVE_LIMIT = 3;
 
 interface CreativeRequest {
   id: string;
@@ -22,7 +23,7 @@ interface CreativeRequest {
 }
 
 const planFeatures = {
-  free: ['1 free creative', '48h delivery', 'Basic formats'],
+  free: ['3 free creatives', '48h delivery', 'Basic formats'],
 };
 
 const cloutClubFeatures = [
@@ -40,7 +41,7 @@ export default function Dashboard() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const [tab, setTab] = useState<Tab>('overview');
-  const [creativeRequest, setCreativeRequest] = useState<CreativeRequest | null>(null);
+  const [creativeRequests, setCreativeRequests] = useState<CreativeRequest[]>([]);
   const [loadingRequest, setLoadingRequest] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -57,10 +58,9 @@ export default function Dashboard() {
       .select('*')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle()
+      .limit(FREE_CREATIVE_LIMIT)
       .then(({ data }) => {
-        setCreativeRequest(data);
+        setCreativeRequests((data as CreativeRequest[]) ?? []);
         setLoadingRequest(false);
       });
   }, [user]);
@@ -96,6 +96,10 @@ export default function Dashboard() {
   const handleSubmitCreative = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
+    if (creativeRequests.length >= FREE_CREATIVE_LIMIT) {
+      setSubmitError('You have already claimed your 3 free creatives.');
+      return;
+    }
     setSubmitting(true);
     setSubmitError('');
     try {
@@ -139,7 +143,8 @@ export default function Dashboard() {
         console.warn('Email notification failed (non-critical):', emailErr);
       }
 
-      setCreativeRequest(inserted);
+      setCreativeRequests(prev => [inserted, ...prev].slice(0, FREE_CREATIVE_LIMIT));
+      setForm({ brandName: '', niche: '', adFormat: '', description: '', referenceUrl: '' });
       setShowForm(false);
     } catch (err: unknown) {
       setSubmitError(err instanceof Error ? err.message : 'Failed to submit request. Please try again.');
@@ -176,9 +181,11 @@ export default function Dashboard() {
     { id: 'settings', icon: Settings, label: 'Settings' },
   ];
 
-  const activeStep = creativeRequest ? (statusToStep[creativeRequest.status] ?? 0) : -1;
-  const creativeUrl = creativeRequest?.creative_url ?? '';
-  const creativeIsImage = /\.(apng|avif|gif|jpe?g|png|webp)(\?.*)?$/i.test(creativeUrl);
+  const creativeRequest = creativeRequests[0] ?? null;
+  const creativeCount = creativeRequests.length;
+  const freeCreativesClaimed = creativeCount >= FREE_CREATIVE_LIMIT;
+  const getActiveStep = (request: CreativeRequest) => statusToStep[request.status] ?? 0;
+  const isImageUrl = (url: string) => /\.(apng|avif|gif|jpe?g|png|webp)(\?.*)?$/i.test(url);
 
   return (
     <div className="min-h-screen flex" style={{ background: '#080808', backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.04) 1px, transparent 1px)', backgroundSize: '28px 28px' }}>
@@ -230,8 +237,9 @@ export default function Dashboard() {
             <div className="glass-card rounded-2xl p-6">
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <p className="text-[#9CA3AF] text-xs font-semibold uppercase tracking-widest mb-1">Your Free Creative</p>
-                  <h3 className="font-heading font-semibold text-white">{creativeRequest ? creativeRequest.brand_name : 'Free Creative Request'}</h3>
+                  <p className="text-[#9CA3AF] text-xs font-semibold uppercase tracking-widest mb-1">Your Free Creatives</p>
+                  <h3 className="font-heading font-semibold text-white">{freeCreativesClaimed ? 'Free Creatives claimed' : creativeRequest ? creativeRequest.brand_name : 'Free Creative Requests'}</h3>
+                  <p className="text-[#6B7280] text-xs mt-1">{creativeCount}/{FREE_CREATIVE_LIMIT} claimed</p>
                 </div>
                 {creativeRequest && (
                   <span className="text-xs font-semibold px-2.5 py-1 rounded-full capitalize"
@@ -240,17 +248,19 @@ export default function Dashboard() {
                   </span>
                 )}
               </div>
-              {creativeRequest?.status === 'completed' ? (
+              {freeCreativesClaimed ? (
+                <p className="text-[#10B981] text-sm font-semibold">Free Creatives claimed.</p>
+              ) : creativeRequest?.status === 'completed' ? (
                 <a href={creativeRequest.creative_url || "#"} target="_blank" rel="noopener noreferrer" download className="btn-primary text-sm"><Download size={14} />Download Now<ArrowRight size={14} /></a>
               ) : !creativeRequest && !loadingRequest ? (
-                <button onClick={() => setTab('creative')} className="btn-primary text-sm">Request Free Creative <ArrowRight size={14} /></button>
+                <button onClick={() => setTab('creative')} className="btn-primary text-sm">Claim Free Creatives <ArrowRight size={14} /></button>
               ) : (
                 <p className="text-[#6B7280] text-sm">{loadingRequest ? 'Loading...' : 'Your creative is being worked on.'}</p>
               )}
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {[
-                { label: 'Creatives Requested', value: creativeRequest ? '1' : '0' },
+                { label: 'Creatives Claimed', value: `${creativeCount}/${FREE_CREATIVE_LIMIT}` },
                 { label: 'Current Plan', value: 'Free Plan' },
                 { label: 'Member Since', value: memberSince },
               ].map((s) => (
@@ -281,19 +291,20 @@ export default function Dashboard() {
                 <Loader size={20} className="animate-spin text-[#A855F7]" />
               </div>
             )}
-            {!loadingRequest && !creativeRequest && !showForm && (
+            {!loadingRequest && creativeCount === 0 && !showForm && (
               <div className="glass-card rounded-2xl p-10 flex flex-col items-center text-center">
                 <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4" style={{ background: 'rgba(168,85,247,0.1)', border: '1px solid rgba(168,85,247,0.2)' }}>
                   <Image size={24} className="text-[#A855F7]" />
                 </div>
-                <h3 className="font-heading font-semibold text-white text-lg mb-2">No creative requested yet</h3>
-                <p className="text-[#9CA3AF] text-sm mb-6 max-w-sm">You haven't requested your free creative yet. It takes 2 minutes and delivers in 48 hours.</p>
-                <button onClick={() => setShowForm(true)} className="btn-primary text-sm">Request Free Creative<ArrowRight size={14} /></button>
+                <h3 className="font-heading font-semibold text-white text-lg mb-2">Claim your 3 free creatives</h3>
+                <p className="text-[#9CA3AF] text-sm mb-6 max-w-sm">Submit up to 3 free creative briefs. Each one takes 2 minutes and delivers in 48 hours.</p>
+                <button onClick={() => setShowForm(true)} className="btn-primary text-sm">Claim Creative 1 of 3<ArrowRight size={14} /></button>
               </div>
             )}
-            {!loadingRequest && !creativeRequest && showForm && (
+            {!loadingRequest && !freeCreativesClaimed && showForm && (
               <div className="glass-card rounded-2xl p-6 sm:p-8">
-                <h3 className="font-heading font-semibold text-white text-lg mb-6">Free Creative Request</h3>
+                <h3 className="font-heading font-semibold text-white text-lg mb-1">Free Creative Request</h3>
+                <p className="text-[#9CA3AF] text-sm mb-6">Claiming creative {creativeCount + 1} of {FREE_CREATIVE_LIMIT}.</p>
                 <form onSubmit={handleSubmitCreative} className="space-y-4">
                   <div>
                     <label className={labelClass}>Brand Name</label>
@@ -329,21 +340,41 @@ export default function Dashboard() {
                   )}
                   <button type="submit" disabled={submitting} className="btn-primary text-sm disabled:opacity-50 disabled:cursor-not-allowed">
                     {submitting ? <Loader size={14} className="animate-spin" /> : <ArrowRight size={14} />}
-                    {submitting ? 'Submitting...' : 'Submit Request'}
+                    {submitting ? 'Submitting...' : `Submit Creative ${creativeCount + 1}`}
                   </button>
                 </form>
               </div>
             )}
-            {!loadingRequest && creativeRequest && (
-              <div className="glass-card rounded-2xl p-6 sm:p-8">
+            {!loadingRequest && creativeCount > 0 && (
+              <div className="glass-card rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                  <p className="text-[#9CA3AF] text-xs font-semibold uppercase tracking-widest mb-1">Free Creatives</p>
+                  <h3 className="font-heading font-semibold text-white text-lg">{freeCreativesClaimed ? 'Free Creatives claimed' : `${creativeCount}/${FREE_CREATIVE_LIMIT} claimed`}</h3>
+                  <p className="text-[#6B7280] text-sm mt-1">{freeCreativesClaimed ? 'You have used all 3 free creative requests.' : `${FREE_CREATIVE_LIMIT - creativeCount} free request${FREE_CREATIVE_LIMIT - creativeCount === 1 ? '' : 's'} remaining.`}</p>
+                </div>
+                {!freeCreativesClaimed && (
+                  <button onClick={() => setShowForm(true)} className="btn-primary text-sm justify-center">
+                    Claim Creative {creativeCount + 1} of {FREE_CREATIVE_LIMIT}
+                    <ArrowRight size={14} />
+                  </button>
+                )}
+              </div>
+            )}
+            {!loadingRequest && creativeRequests.map((request, index) => {
+              const activeStep = getActiveStep(request);
+              const creativeUrl = request.creative_url ?? '';
+              const creativeIsImage = isImageUrl(creativeUrl);
+              return (
+                <div key={request.id} className="glass-card rounded-2xl p-6 sm:p-8">
                 <div className="flex items-start justify-between mb-8">
                   <div>
-                    <h3 className="font-heading font-semibold text-white text-lg">{creativeRequest.brand_name}</h3>
-                    <p className="text-[#9CA3AF] text-sm mt-1">{creativeRequest.niche} · {creativeRequest.ad_format}</p>
+                    <p className="text-[#6B7280] text-xs font-semibold uppercase tracking-widest mb-1">Creative {index + 1}</p>
+                    <h3 className="font-heading font-semibold text-white text-lg">{request.brand_name}</h3>
+                    <p className="text-[#9CA3AF] text-sm mt-1">{request.niche} · {request.ad_format}</p>
                   </div>
                   <span className="text-xs font-semibold px-2.5 py-1 rounded-full capitalize flex-shrink-0"
-                    style={{ background: creativeRequest.status === 'completed' ? 'rgba(16,185,129,0.1)' : creativeRequest.status === 'in_progress' ? 'rgba(59,130,246,0.1)' : 'rgba(245,158,11,0.1)', border: `1px solid ${creativeRequest.status === 'completed' ? 'rgba(16,185,129,0.25)' : creativeRequest.status === 'in_progress' ? 'rgba(59,130,246,0.25)' : 'rgba(245,158,11,0.25)'}`, color: creativeRequest.status === 'completed' ? '#10B981' : creativeRequest.status === 'in_progress' ? '#3B82F6' : '#F59E0B' }}>
-                    {creativeRequest.status.replace('_', ' ')}
+                    style={{ background: request.status === 'completed' ? 'rgba(16,185,129,0.1)' : request.status === 'in_progress' ? 'rgba(59,130,246,0.1)' : 'rgba(245,158,11,0.1)', border: `1px solid ${request.status === 'completed' ? 'rgba(16,185,129,0.25)' : request.status === 'in_progress' ? 'rgba(59,130,246,0.25)' : 'rgba(245,158,11,0.25)'}`, color: request.status === 'completed' ? '#10B981' : request.status === 'in_progress' ? '#3B82F6' : '#F59E0B' }}>
+                    {request.status.replace('_', ' ')}
                   </span>
                 </div>
                 <div className="grid lg:grid-cols-[minmax(0,1fr)_minmax(340px,0.9fr)] gap-8 items-start">
@@ -367,7 +398,7 @@ export default function Dashboard() {
                               style={active ? { background: 'linear-gradient(135deg,#A855F7,#3B82F6,#06B6D4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' } : {}}>
                               {step}
                             </p>
-                            {active && creativeRequest.status !== 'completed' && <Loader size={12} className="mt-1 text-[#A855F7] animate-spin" />}
+                            {active && request.status !== 'completed' && <Loader size={12} className="mt-1 text-[#A855F7] animate-spin" />}
                           </div>
                         </div>
                       );
@@ -376,13 +407,13 @@ export default function Dashboard() {
                   <div className="rounded-2xl overflow-hidden border border-white/[0.08]" style={{ background: 'rgba(255,255,255,0.035)' }}>
                     <div className="px-4 py-3 border-b border-white/[0.06] flex items-center justify-between">
                       <p className="text-[11px] font-semibold text-[#9CA3AF] uppercase tracking-[0.08em]">Creative Preview</p>
-                      {creativeRequest.status === 'completed' && <span className="text-[11px] font-semibold text-[#10B981]">Ready</span>}
+                      {request.status === 'completed' && <span className="text-[11px] font-semibold text-[#10B981]">Ready</span>}
                     </div>
                     <div className="min-h-[280px] sm:min-h-[360px] flex items-center justify-center p-4">
-                      {creativeRequest.status === 'completed' && creativeUrl ? (
+                      {request.status === 'completed' && creativeUrl ? (
                         creativeIsImage ? (
                           <a href={creativeUrl} target="_blank" rel="noopener noreferrer" className="block w-full">
-                            <img src={creativeUrl} alt={`${creativeRequest.brand_name} creative preview`} className="w-full max-h-[520px] object-contain rounded-xl" />
+                            <img src={creativeUrl} alt={`${request.brand_name} creative preview`} className="w-full max-h-[520px] object-contain rounded-xl" />
                           </a>
                         ) : (
                           <div className="text-center max-w-xs mx-auto">
@@ -405,11 +436,12 @@ export default function Dashboard() {
                     </div>
                   </div>
                 </div>
-                {creativeRequest.status === 'completed' && (
-                  <a href={creativeRequest.creative_url || "#"} target="_blank" rel="noopener noreferrer" download className="btn-primary text-sm mt-6"><Download size={14} />Download Creative<ArrowRight size={14} /></a>
+                {request.status === 'completed' && (
+                  <a href={request.creative_url || "#"} target="_blank" rel="noopener noreferrer" download className="btn-primary text-sm mt-6"><Download size={14} />Download Creative<ArrowRight size={14} /></a>
                 )}
               </div>
-            )}
+              );
+            })}
           </div>
         )}
 

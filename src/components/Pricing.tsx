@@ -10,11 +10,11 @@ const step1Features = [
 ];
 
 const step2Features = [
-  'Custom scope for your brand',
-  'Flexible engagement models',
-  'Ongoing creative production',
-  'Direct line to your strategist',
-  'Pricing tailored to your needs',
+  'Monthly creative production',
+  'Fresh ad concepts for campaigns',
+  'Hook, caption, and message support',
+  'Priority creative turnaround',
+  'Built for brands ready to scale',
 ];
 
 interface Props {
@@ -109,9 +109,9 @@ export default function Pricing({ onSignupOpen }: Props) {
                   style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#9CA3AF' }}>
                   STEP 02
                 </span>
-                <h3 className="font-heading font-bold text-white text-2xl mb-3">We Build Your Strategy</h3>
+                <h3 className="font-heading font-bold text-white text-2xl mb-3">Clout Club</h3>
                 <p className="text-[#9CA3AF] text-sm leading-relaxed">
-                  Once you've seen what we can do, we get on a call. We learn your brand, your goals, your market — and build a creative system around your budget.
+                  After your free creatives, Clout Club gives your brand a steady creative engine: recurring ad concepts, campaign-ready assets, and message-led production.
                 </p>
               </div>
               <div className="relative z-10 space-y-3 flex-1 mb-8">
@@ -124,7 +124,7 @@ export default function Pricing({ onSignupOpen }: Props) {
               </div>
               <div className="relative z-10">
                 <button onClick={onSignupOpen} className="btn-secondary w-full justify-center text-sm">
-                  Book a Call
+                  Join the Waitlist
                   <ArrowRight size={14} />
                 </button>
               </div>
