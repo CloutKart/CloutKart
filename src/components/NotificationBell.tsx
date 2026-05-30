@@ -30,6 +30,10 @@ const TYPE_ICONS: Record<string, string> = {
   subscription_expired: '🔴',
 };
 
+// How often to poll for new notifications (ms). Acts as guaranteed fallback when
+// postgres_changes realtime misses trigger-inserted rows.
+const POLL_INTERVAL = 8_000;
+
 export function NotificationBell({ isAdmin, userId }: NotificationBellProps) {
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -39,6 +43,7 @@ export function NotificationBell({ isAdmin, userId }: NotificationBellProps) {
   const accentColor = isAdmin ? '#818CF8' : '#A855F7';
   const badgeColor = isAdmin ? '#EF4444' : '#A855F7';
 
+  // ── Fetch ───────────────────────────────────────────────────────────────────
   const loadNotifications = useCallback(async () => {
     let query = supabase
       .from('notifications')
@@ -53,56 +58,66 @@ export function NotificationBell({ isAdmin, userId }: NotificationBellProps) {
     }
 
     const { data } = await query;
-    setNotifications((data as Notification[]) ?? []);
+    if (data) setNotifications(data as Notification[]);
   }, [isAdmin, userId]);
 
+  // Initial load
   useEffect(() => {
     if (userId) loadNotifications();
   }, [userId, loadNotifications]);
 
-  // Real-time: INSERT + UPDATE
-  // Admin uses no filter (boolean filters are unreliable in Supabase Realtime) — RLS
-  // enforces access server-side. Client uses user_id filter (same proven pattern as messages).
+  // ── Polling — guaranteed fallback for trigger-inserted rows ─────────────────
+  useEffect(() => {
+    if (!userId) return;
+    const id = setInterval(loadNotifications, POLL_INTERVAL);
+    return () => clearInterval(id);
+  }, [userId, loadNotifications]);
+
+  // ── Realtime — bonus on top of polling ──────────────────────────────────────
   useEffect(() => {
     if (!userId) return;
     const channelName = isAdmin ? `notif-admin-${userId}` : `notif-${userId}`;
 
-    type ChangeConfig = {
-      event: 'INSERT' | 'UPDATE';
-      schema: string;
-      table: string;
-      filter?: string;
-    };
-
-    const baseConfig: ChangeConfig = {
-      event: 'INSERT',
-      schema: 'public',
-      table: 'notifications',
-      ...(!isAdmin && { filter: `user_id=eq.${userId}` }),
-    };
-
-    const channel = supabase.channel(channelName)
-      .on('postgres_changes', baseConfig, (payload) => {
-        const incoming = payload.new as Notification;
-        // Client-side guard in case RLS lets through an unrelated row
-        if (isAdmin && !incoming.is_admin_notification) return;
-        if (!isAdmin && (incoming.user_id !== userId || incoming.is_admin_notification)) return;
-        setNotifications(prev =>
-          prev.some(n => n.id === incoming.id) ? prev : [incoming, ...prev]
-        );
-      })
-      .on('postgres_changes', { ...baseConfig, event: 'UPDATE' }, (payload) => {
-        const updated = payload.new as Notification;
-        setNotifications(prev =>
-          prev.map(n => n.id === updated.id ? { ...n, is_read: updated.is_read } : n)
-        );
-      })
+    const channel = supabase
+      .channel(channelName)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notifications',
+          ...(isAdmin ? {} : { filter: `user_id=eq.${userId}` }),
+        },
+        (payload) => {
+          const row = payload.new as Notification;
+          if (isAdmin && !row.is_admin_notification) return;
+          if (!isAdmin && (row.user_id !== userId || row.is_admin_notification)) return;
+          setNotifications(prev =>
+            prev.some(n => n.id === row.id) ? prev : [row, ...prev]
+          );
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'notifications',
+          ...(isAdmin ? {} : { filter: `user_id=eq.${userId}` }),
+        },
+        (payload) => {
+          const row = payload.new as Notification;
+          setNotifications(prev =>
+            prev.map(n => n.id === row.id ? { ...n, is_read: row.is_read } : n)
+          );
+        }
+      )
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
   }, [isAdmin, userId]);
 
-  // Reload when the tab regains focus — guarantees freshness if realtime missed an event
+  // Refresh when the tab becomes visible again
   useEffect(() => {
     const onVisible = () => {
       if (document.visibilityState === 'visible' && userId) loadNotifications();
@@ -111,7 +126,7 @@ export function NotificationBell({ isAdmin, userId }: NotificationBellProps) {
     return () => document.removeEventListener('visibilitychange', onVisible);
   }, [userId, loadNotifications]);
 
-  // Close dropdown on outside click
+  // ── Close on outside click ──────────────────────────────────────────────────
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
@@ -122,10 +137,11 @@ export function NotificationBell({ isAdmin, userId }: NotificationBellProps) {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
+  // ── Actions ─────────────────────────────────────────────────────────────────
   async function markAllRead() {
-    const unreadIds = notifications.filter(n => !n.is_read).map(n => n.id);
-    if (unreadIds.length === 0) return;
-    await supabase.from('notifications').update({ is_read: true }).in('id', unreadIds);
+    const ids = notifications.filter(n => !n.is_read).map(n => n.id);
+    if (!ids.length) return;
+    await supabase.from('notifications').update({ is_read: true }).in('id', ids);
     setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
   }
 
@@ -137,15 +153,14 @@ export function NotificationBell({ isAdmin, userId }: NotificationBellProps) {
 
   const unreadCount = notifications.filter(n => !n.is_read).length;
 
+  // ── Render ──────────────────────────────────────────────────────────────────
   return (
     <div ref={dropdownRef} className="relative">
       <button
         onClick={() => setOpen(o => !o)}
         className="relative w-9 h-9 rounded-xl flex items-center justify-center transition-all"
         style={{
-          background: open
-            ? `rgba(${accentRgb},0.18)`
-            : `rgba(${accentRgb},0.08)`,
+          background: open ? `rgba(${accentRgb},0.18)` : `rgba(${accentRgb},0.08)`,
           border: `1px solid rgba(${accentRgb},0.25)`,
         }}
       >
@@ -219,9 +234,7 @@ export function NotificationBell({ isAdmin, userId }: NotificationBellProps) {
                   onClick={() => markRead(n.id)}
                   className="flex items-start gap-3 px-4 py-3 cursor-pointer transition-all border-b"
                   style={{
-                    background: n.is_read
-                      ? 'transparent'
-                      : `rgba(${accentRgb},0.07)`,
+                    background: n.is_read ? 'transparent' : `rgba(${accentRgb},0.07)`,
                     borderColor: 'rgba(255,255,255,0.04)',
                   }}
                   onMouseEnter={e => (e.currentTarget.style.background = `rgba(${accentRgb},0.1)`)}

@@ -1,4 +1,10 @@
--- Enable real-time replication for the messages table.
--- Without this, Supabase Realtime won't broadcast INSERT/UPDATE events
--- even if the subscription is set up correctly on the client.
-ALTER PUBLICATION supabase_realtime ADD TABLE messages;
+-- Enable real-time replication for the messages table (idempotent).
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables
+    WHERE pubname = 'supabase_realtime' AND tablename = 'messages'
+  ) THEN
+    EXECUTE 'ALTER PUBLICATION supabase_realtime ADD TABLE messages';
+  END IF;
+END $$;

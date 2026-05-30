@@ -51,8 +51,16 @@ CREATE POLICY "clients_insert_expiry_notifications" ON notifications
     AND type IN ('subscription_expiring', 'subscription_expired')
   );
 
--- Enable realtime
-ALTER PUBLICATION supabase_realtime ADD TABLE notifications;
+-- Enable realtime (idempotent — won't error if table is already in the publication)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables
+    WHERE pubname = 'supabase_realtime' AND tablename = 'notifications'
+  ) THEN
+    EXECUTE 'ALTER PUBLICATION supabase_realtime ADD TABLE notifications';
+  END IF;
+END $$;
 
 -- ─── Trigger: new user signup → admin notification ───────────────────────────
 CREATE OR REPLACE FUNCTION notify_admin_new_user()
