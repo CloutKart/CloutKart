@@ -568,7 +568,7 @@ export default function Dashboard() {
         </div>
       </aside>
 
-      <main className="flex-1 p-6 md:p-10 overflow-y-auto">
+      <main className="flex-1 p-4 sm:p-6 md:p-10 overflow-y-auto">
         {/* Notification bell — desktop top right */}
         <div className="hidden md:flex justify-end mb-6">
           {user && <NotificationBell isAdmin={false} userId={user.id} />}
@@ -805,7 +805,7 @@ export default function Dashboard() {
                   <div><label className={labelClass}>Brief Description</label><textarea name="description" value={form.description} onChange={handleFormChange} rows={4} placeholder="Describe your product, target audience, and what you want to convey..." className={`${inputClass} resize-none`} required /></div>
                   <div><label className={labelClass}>Reference URL (optional)</label><input type="url" name="referenceUrl" value={form.referenceUrl} onChange={handleFormChange} placeholder="https://..." className={inputClass} /></div>
                   {submitError && <div className="flex items-center gap-2 bg-red-500/[0.06] border border-red-500/20 rounded-xl p-3"><AlertCircle size={14} className="text-red-400 flex-shrink-0" /><span className="text-red-300 text-xs">{submitError}</span></div>}
-                  <div className="flex gap-3">
+                  <div className="flex flex-col sm:flex-row gap-3">
                     <button type="submit" disabled={submitting} className="btn-primary text-sm disabled:opacity-50 disabled:cursor-not-allowed">
                       {submitting ? <Loader size={14} className="animate-spin" /> : <ArrowRight size={14} />}
                       {submitting ? 'Submitting...' : isCloutClub ? 'Submit Brief' : `Submit Creative ${freeCreativeCount + 1}`}
@@ -848,7 +848,7 @@ export default function Dashboard() {
               return (
                 <div key={request.id} className="glass-card rounded-2xl p-6 sm:p-8"
                   style={isCloutClub ? { border: '1px solid rgba(168,85,247,0.15)' } : {}}>
-                  <div className="flex items-start justify-between mb-8">
+                  <div className="flex items-start justify-between mb-4 sm:mb-8">
                     <div>
                       <p className="text-[#6B7280] text-xs font-semibold uppercase tracking-widest mb-1">Creative {index + 1}</p>
                       <h3 className="font-heading font-semibold text-white text-lg">{request.brand_name}</h3>
@@ -1051,7 +1051,7 @@ export default function Dashboard() {
           <div className="space-y-6">
             <h2 className="font-heading font-bold text-white text-2xl">My Plan</h2>
             <div className="glass-card rounded-2xl p-6">
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex items-start justify-between flex-wrap gap-3 mb-4">
                 <div>
                   <p className="text-[#9CA3AF] text-xs uppercase tracking-widest mb-1">Current Plan</p>
                   <h3 className="font-heading font-bold text-white text-xl">
@@ -1066,7 +1066,7 @@ export default function Dashboard() {
                     </p>
                   )}
                 </div>
-                <span className="text-xs px-3 py-1 rounded-full font-semibold"
+                <span className="text-xs px-3 py-1 rounded-full font-semibold flex-shrink-0"
                   style={subscriptionExpired
                     ? { background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', color: '#F87171' }
                     : subscriptionExpiringSoon
@@ -1203,7 +1203,7 @@ export default function Dashboard() {
           </div>
         )}
         {tab === 'messages' && isCloutClub && (
-          <div className="space-y-4 flex flex-col" style={{ height: 'calc(100vh - 9rem)' }}>
+          <div className="space-y-4 flex flex-col" style={{ height: 'calc(100dvh - 9rem)' }}>
             <div>
               <h2 className="font-heading font-bold text-white text-2xl">Messages</h2>
               <p className="text-[#9CA3AF] text-sm mt-1">Chat with your CloutKart team. Feedback on specific creatives appears here too.</p>

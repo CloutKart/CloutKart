@@ -711,7 +711,7 @@ export default function Admin() {
         </div>
       </aside>
 
-      <main className="flex-1 p-6 md:p-10 overflow-y-auto">
+      <main className="flex-1 p-4 sm:p-6 md:p-10 overflow-y-auto">
         {/* Notification bell — desktop top right */}
         <div className="hidden md:flex justify-end mb-6">
           {user && <NotificationBell isAdmin={true} userId={user.id} />}
@@ -904,9 +904,9 @@ export default function Admin() {
               <button onClick={loadMessageUsers} className="flex items-center gap-2 text-xs text-[#9CA3AF] hover:text-white transition-colors"><RefreshCw size={13} /> Refresh</button>
             </div>
 
-            <div className="grid md:grid-cols-[280px_1fr] gap-4" style={{ height: 'calc(100vh - 13rem)', minHeight: 500 }}>
+            <div className="grid md:grid-cols-[280px_1fr] gap-4" style={{ height: 'calc(100dvh - 13rem)', minHeight: 500 }}>
               {/* Member list */}
-              <div className="glass-card rounded-2xl overflow-hidden flex flex-col" style={{ border: '1px solid rgba(99,102,241,0.15)' }}>
+              <div className={`glass-card rounded-2xl overflow-hidden flex-col ${selectedMsgUser ? 'hidden md:flex' : 'flex'}`} style={{ border: '1px solid rgba(99,102,241,0.15)' }}>
                 <div className="px-4 py-3 border-b flex items-center gap-2" style={{ borderColor: 'rgba(99,102,241,0.1)' }}>
                   <Search size={12} className="text-[#9CA3AF]" />
                   <input value={msgSearch} onChange={e => setMsgSearch(e.target.value)} placeholder="Search members..." className="bg-transparent text-xs text-white placeholder-[#6B7280] focus:outline-none flex-1" />
@@ -945,7 +945,7 @@ export default function Admin() {
               </div>
 
               {/* Thread view */}
-              <div className="glass-card rounded-2xl overflow-hidden flex flex-col" style={{ border: '1px solid rgba(99,102,241,0.15)' }}>
+              <div className={`glass-card rounded-2xl overflow-hidden flex-col ${!selectedMsgUser ? 'hidden md:flex' : 'flex'}`} style={{ border: '1px solid rgba(99,102,241,0.15)' }}>
                 {!selectedMsgUser ? (
                   <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
                     <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-3"
@@ -960,6 +960,9 @@ export default function Admin() {
                     {/* Thread header */}
                     <div className="px-4 py-3 border-b flex items-center justify-between" style={{ borderColor: 'rgba(99,102,241,0.1)' }}>
                       <div className="flex items-center gap-3">
+                        <button className="md:hidden flex items-center text-[#9CA3AF] hover:text-white transition-colors" onClick={() => setSelectedMsgUser(null)}>
+                          <ChevronLeft size={18} />
+                        </button>
                         <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold"
                           style={{ background: 'linear-gradient(135deg,rgba(99,102,241,0.3),rgba(168,85,247,0.3))', color: '#C4B5FD' }}>
                           {(selectedMsgUser.full_name || selectedMsgUser.company_name || '?')[0].toUpperCase()}
