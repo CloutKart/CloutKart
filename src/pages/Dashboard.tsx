@@ -78,10 +78,12 @@ function RazorpayButton({ amountPaise, userEmail, userName, userId }: RazorpayBu
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const RAZORPAY_KEY = import.meta.env.VITE_RAZORPAY_KEY_ID as string;
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
 
   async function handlePay() {
     setLoading(true);
     setError('');
+
     const loaded = await loadRazorpayScript();
     if (!loaded || !RAZORPAY_KEY) {
       setError('Payment service unavailable. Please contact us directly.');
@@ -89,47 +91,75 @@ function RazorpayButton({ amountPaise, userEmail, userName, userId }: RazorpayBu
       return;
     }
 
-    const options = {
-      key: RAZORPAY_KEY,
-      amount: amountPaise,
-      currency: 'INR',
-      name: 'CloutKart',
-      description: 'Clout Club Subscription',
-      image: '/logo.png',
-      prefill: { name: userName, email: userEmail },
-      theme: { color: '#A855F7' },
-      handler: async (response: { razorpay_payment_id: string }) => {
-        try {
-          const { data: { session } } = await supabase.auth.getSession();
-          if (!session) return;
-          const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-          // Verify payment server-side using the edge function with secret key
-          const verifyRes = await fetch(`${supabaseUrl}/functions/v1/verify-razorpay-payment`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${session.access_token}`,
-            },
-            body: JSON.stringify({
-              payment_id: response.razorpay_payment_id,
-              amount_paise: amountPaise,
-              user_id: userId,
-            }),
-          });
-          if (!verifyRes.ok) {
-            console.error('Payment verification failed');
-          }
-          window.location.reload();
-        } catch (_err) {
-          console.error('Payment recording failed:', _err);
-        }
-      },
-      modal: { ondismiss: () => setLoading(false) },
-    };
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) { setError('Please log in again.'); setLoading(false); return; }
 
-    const rzp = new window.Razorpay(options);
-    rzp.open();
-    setLoading(false);
+      // Step 1: Create order server-side (requires secret key)
+      const orderRes = await fetch(`${supabaseUrl}/functions/v1/create-razorpay-order`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ amount_paise: amountPaise, user_id: userId }),
+      });
+
+      const orderData = await orderRes.json();
+      if (!orderRes.ok || !orderData.order_id) {
+        setError(orderData.error || 'Could not initiate payment. Please try again.');
+        setLoading(false);
+        return;
+      }
+
+      const options = {
+        key: RAZORPAY_KEY,
+        amount: amountPaise,
+        currency: 'INR',
+        order_id: orderData.order_id,
+        name: 'CloutKart',
+        description: 'Clout Club Subscription',
+        image: '/logo.png',
+        prefill: { name: userName, email: userEmail },
+        theme: { color: '#A855F7' },
+        handler: async (response: { razorpay_payment_id: string; razorpay_order_id: string; razorpay_signature: string }) => {
+          try {
+            // Step 2: Verify HMAC signature server-side and record payment
+            const verifyRes = await fetch(`${supabaseUrl}/functions/v1/verify-razorpay-payment`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session.access_token}`,
+              },
+              body: JSON.stringify({
+                payment_id: response.razorpay_payment_id,
+                order_id: response.razorpay_order_id,
+                razorpay_signature: response.razorpay_signature,
+                amount_paise: amountPaise,
+                user_id: userId,
+              }),
+            });
+            if (!verifyRes.ok) {
+              const errData = await verifyRes.json();
+              console.error('Payment verification failed:', errData.error);
+            }
+            window.location.reload();
+          } catch (_err) {
+            console.error('Payment recording failed:', _err);
+            window.location.reload();
+          }
+        },
+        modal: { ondismiss: () => setLoading(false) },
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.open();
+      setLoading(false);
+    } catch (err) {
+      console.error('Payment init error:', err);
+      setError('Something went wrong. Please try again.');
+      setLoading(false);
+    }
   }
 
   return (
