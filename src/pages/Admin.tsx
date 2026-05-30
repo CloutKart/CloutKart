@@ -294,6 +294,61 @@ function PriceEditor({ userId, currentPrice, onSave }: {
   );
 }
 
+// ─── Subscription expiry editor ──────────────────────────────────────────────
+function ExpiryEditor({ userId, currentExpiry, onSave }: {
+  userId: string; currentExpiry: string | null;
+  onSave: (userId: string, expiry: string | null) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState(currentExpiry ? currentExpiry.split('T')[0] : '');
+  const [saving, setSaving] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  useEffect(() => { if (editing) inputRef.current?.focus(); }, [editing]);
+
+  async function save() {
+    setSaving(true);
+    const newExpiry = value ? new Date(value + 'T23:59:59Z').toISOString() : null;
+    await supabase.from('profiles').update({ subscription_expires_at: newExpiry }).eq('id', userId);
+    onSave(userId, newExpiry); setEditing(false); setSaving(false);
+  }
+
+  if (editing) return (
+    <div className="flex items-center gap-1.5">
+      <input ref={inputRef} type="date" value={value} onChange={e => setValue(e.target.value)}
+        onKeyDown={e => { if (e.key === 'Enter') save(); if (e.key === 'Escape') setEditing(false); }}
+        className="rounded-lg px-2 py-1.5 text-xs text-white bg-white/[0.06] border border-white/[0.15] focus:border-[rgba(168,85,247,0.5)] focus:outline-none"
+        style={{ colorScheme: 'dark', width: 120 }} />
+      <button onClick={save} disabled={saving} className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)' }}>
+        {saving ? <Loader size={11} className="animate-spin text-[#10B981]" /> : <Check size={11} className="text-[#10B981]" />}
+      </button>
+      <button onClick={() => setEditing(false)} className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)' }}>
+        <X size={11} className="text-[#9CA3AF]" />
+      </button>
+    </div>
+  );
+
+  const d = currentExpiry ? subDaysLeft(currentExpiry) : null;
+  return (
+    <button onClick={() => { setValue(currentExpiry ? currentExpiry.split('T')[0] : ''); setEditing(true); }} className="flex items-center gap-2 group">
+      <div className="flex flex-col gap-0.5 items-start">
+        {currentExpiry ? (
+          <>
+            <span className="text-xs font-mono" style={{ color: d !== null && d <= 0 ? '#F87171' : d !== null && d <= 7 ? '#F59E0B' : '#D1D5DB' }}>
+              {new Date(currentExpiry).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+            </span>
+            <span className="text-[10px] font-semibold" style={{ color: d !== null && d <= 0 ? '#F87171' : d !== null && d <= 7 ? '#F59E0B' : '#10B981' }}>
+              {d !== null && d <= 0 ? 'Expired' : `${d}d left`}
+            </span>
+          </>
+        ) : (
+          <span className="text-xs text-[#6B7280] italic">Set date</span>
+        )}
+      </div>
+      <Edit2 size={11} className="text-[#6B7280] group-hover:text-[#A855F7] transition-colors flex-shrink-0" />
+    </button>
+  );
+}
+
 // ─── Main Admin component ─────────────────────────────────────────────────────
 export default function Admin() {
   const { user, signOut } = useAuth();
@@ -631,6 +686,10 @@ export default function Admin() {
     setCloutClubUsers(prev => prev.map(u => u.id === userId ? { ...u, clout_club_price: price } : u));
   }
 
+  function handleExpirySaved(userId: string, expiry: string | null) {
+    setCloutClubUsers(prev => prev.map(u => u.id === userId ? { ...u, subscription_expires_at: expiry } : u));
+  }
+
   function exportUsersCSV() {
     const rows = [['Full Name', 'Company', 'Plan', 'Clout Club Price', 'Signed Up']];
     users.forEach(u => rows.push([u.full_name ?? '', u.company_name ?? '', u.plan, u.clout_club_price ? `₹${u.clout_club_price / 100}` : '', formatDate(u.created_at)]));
@@ -894,7 +953,7 @@ export default function Admin() {
             <div className="glass-card rounded-2xl overflow-hidden">
               {loadingTab ? <div className="flex items-center justify-center p-10"><Loader size={20} className="animate-spin text-[#A855F7]" /></div>
                 : filteredCCUsers.length === 0 ? <p className="text-[#6B7280] text-sm text-center p-10">No users found.</p>
-                : <div className="overflow-x-auto"><table className="w-full"><thead><tr><th className={thClass}>Client</th><th className={thClass}>Company</th><th className={thClass}>Plan</th><th className={thClass}>Monthly Price</th><th className={thClass}>Days Left</th><th className={thClass}>Client View</th><th className={thClass}>Joined</th></tr></thead><tbody>{filteredCCUsers.map(u => (<tr key={u.id}><td className={tdClass}><div className="font-medium">{u.full_name || '—'}</div></td><td className={tdClass + ' text-[#9CA3AF]'}>{u.company_name || '—'}</td><td className={tdClass}><PlanBadge plan={u.plan} /></td><td className={tdClass}><PriceEditor userId={u.id} currentPrice={u.clout_club_price} onSave={handlePriceSaved} /></td><td className={tdClass}>{(() => { if (u.plan !== 'clout_club' || !u.subscription_expires_at) return <span className="text-[#6B7280] text-xs">—</span>; const d = subDaysLeft(u.subscription_expires_at)!; const expired = d <= 0; const soon = !expired && d <= 7; return <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={expired ? { background: 'rgba(239,68,68,0.1)', color: '#F87171' } : soon ? { background: 'rgba(245,158,11,0.1)', color: '#F59E0B' } : { background: 'rgba(16,185,129,0.1)', color: '#10B981' }}>{expired ? 'Expired' : `${d}d`}</span>; })()}</td><td className={tdClass}>{u.clout_club_price ? <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full" style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)', color: '#10B981' }}><CheckCircle size={11} /> Shows ₹{(u.clout_club_price / 100).toLocaleString('en-IN')}/mo</span> : <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: '#6B7280' }}><Clock size={11} /> Shows "Negotiable"</span>}</td><td className={tdClass + ' text-[#9CA3AF]'}>{formatDate(u.created_at)}</td></tr>))}</tbody></table></div>}
+                : <div className="overflow-x-auto"><table className="w-full"><thead><tr><th className={thClass}>Client</th><th className={thClass}>Company</th><th className={thClass}>Plan</th><th className={thClass}>Monthly Price</th><th className={thClass}>Expires</th><th className={thClass}>Client View</th><th className={thClass}>Joined</th></tr></thead><tbody>{filteredCCUsers.map(u => (<tr key={u.id}><td className={tdClass}><div className="font-medium">{u.full_name || '—'}</div></td><td className={tdClass + ' text-[#9CA3AF]'}>{u.company_name || '—'}</td><td className={tdClass}><PlanBadge plan={u.plan} /></td><td className={tdClass}><PriceEditor userId={u.id} currentPrice={u.clout_club_price} onSave={handlePriceSaved} /></td><td className={tdClass}><ExpiryEditor userId={u.id} currentExpiry={u.subscription_expires_at ?? null} onSave={handleExpirySaved} /></td><td className={tdClass}>{u.clout_club_price ? <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full" style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)', color: '#10B981' }}><CheckCircle size={11} /> Shows ₹{(u.clout_club_price / 100).toLocaleString('en-IN')}/mo</span> : <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: '#6B7280' }}><Clock size={11} /> Shows "Negotiable"</span>}</td><td className={tdClass + ' text-[#9CA3AF]'}>{formatDate(u.created_at)}</td></tr>))}</tbody></table></div>}
             </div>
           </div>
         )}
