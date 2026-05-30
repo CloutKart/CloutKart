@@ -333,6 +333,8 @@ export default function Admin() {
   const [msgSearch, setMsgSearch] = useState('');
   const [unreadByUser, setUnreadByUser] = useState<Record<string, number>>({});
   const chatEndRef = useRef<HTMLDivElement>(null);
+  // Ref so the realtime handler always sees the latest selected user without re-subscribing
+  const selectedMsgUserRef = useRef<Profile | null>(null);
 
   const handleSignOut = async () => { await signOut(); navigate('/'); };
 
@@ -358,6 +360,46 @@ export default function Admin() {
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [threadMessages]);
+
+  // Keep ref in sync so the realtime handler always sees current selection
+  useEffect(() => {
+    selectedMsgUserRef.current = selectedMsgUser;
+  }, [selectedMsgUser]);
+
+  // Real-time subscription for the Messages tab — subscribe once, stays alive while on tab
+  useEffect(() => {
+    if (tab !== 'messages') return;
+    const channel = supabase.channel('admin-messages-rt')
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'messages',
+      }, (payload) => {
+        const incoming = payload.new as Message;
+
+        // If this message belongs to the open thread, append it (deduplicated)
+        if (selectedMsgUserRef.current?.id === incoming.user_id) {
+          setThreadMessages(prev =>
+            prev.some(m => m.id === incoming.id) ? prev : [...prev, incoming]
+          );
+        }
+
+        // Increment unread badge for client messages (admin hasn't sent these)
+        if (!incoming.is_from_admin) {
+          setUnreadByUser(prev => ({
+            ...prev,
+            [incoming.user_id]: (prev[incoming.user_id] ?? 0) + 1,
+          }));
+          // Ensure this user appears in the member list
+          setMsgUsers(prev =>
+            prev.some(u => u.id === incoming.user_id) ? prev : prev
+            // Full profile fetch happens on loadMessageUsers; just keep existing list for now
+          );
+        }
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [tab]);
 
   async function loadAdminProfile() {
     if (!user) return;

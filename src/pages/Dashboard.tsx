@@ -266,7 +266,7 @@ export default function Dashboard() {
     loadMessages();
   }, [tab, user]);
 
-  // Real-time messages subscription
+  // Real-time messages subscription — deduplicates against optimistic inserts
   useEffect(() => {
     if (!user) return;
     const channel = supabase.channel(`messages:${user.id}`)
@@ -276,7 +276,10 @@ export default function Dashboard() {
         table: 'messages',
         filter: `user_id=eq.${user.id}`,
       }, (payload) => {
-        setMessages(prev => [...prev, payload.new as Message]);
+        const incoming = payload.new as Message;
+        setMessages(prev =>
+          prev.some(m => m.id === incoming.id) ? prev : [...prev, incoming]
+        );
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
