@@ -328,6 +328,7 @@ export default function Admin() {
   const [loadingThread, setLoadingThread] = useState(false);
   const [replyText, setReplyText] = useState('');
   const [sendingReply, setSendingReply] = useState(false);
+  const [replyError, setReplyError] = useState('');
   const [msgFilter, setMsgFilter] = useState<'all' | 'chat' | 'feedback'>('all');
   const [msgSearch, setMsgSearch] = useState('');
   const [unreadByUser, setUnreadByUser] = useState<Record<string, number>>({});
@@ -470,15 +471,23 @@ export default function Admin() {
   async function sendReply() {
     if (!replyText.trim() || !selectedMsgUser || !user) return;
     setSendingReply(true);
-    const { data: inserted } = await supabase.from('messages').insert({
+    setReplyError('');
+    const { data: inserted, error } = await supabase.from('messages').insert({
       user_id: selectedMsgUser.id,
       sender_id: user.id,
       is_from_admin: true,
       content: replyText.trim(),
       type: 'chat',
     }).select().single();
-    if (inserted) setThreadMessages(prev => [...prev, inserted as Message]);
-    setReplyText('');
+    if (error) {
+      console.error('Reply error:', error.message, error.code);
+      setReplyError(error.code === '42P01'
+        ? 'Messages table not found — run the migration in Supabase SQL Editor first.'
+        : `Failed to send: ${error.message}`);
+    } else if (inserted) {
+      setThreadMessages(prev => [...prev, inserted as Message]);
+      setReplyText('');
+    }
     setSendingReply(false);
   }
 
@@ -956,11 +965,14 @@ export default function Admin() {
                     </div>
 
                     {/* Reply input */}
-                    <div className="p-3 border-t" style={{ borderColor: 'rgba(99,102,241,0.1)' }}>
+                    <div className="p-3 border-t space-y-2" style={{ borderColor: 'rgba(99,102,241,0.1)' }}>
+                      {replyError && (
+                        <p className="text-red-400 text-xs px-1">{replyError}</p>
+                      )}
                       <div className="flex gap-2">
                         <input
                           value={replyText}
-                          onChange={e => setReplyText(e.target.value)}
+                          onChange={e => { setReplyText(e.target.value); setReplyError(''); }}
                           onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendReply(); } }}
                           placeholder={`Reply to ${selectedMsgUser.full_name || 'client'}...`}
                           className="flex-1 rounded-xl px-4 py-2.5 text-sm text-white placeholder-[#6B7280] focus:outline-none bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(99,102,241,0.4)]"

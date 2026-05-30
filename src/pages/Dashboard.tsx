@@ -233,9 +233,11 @@ export default function Dashboard() {
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [messageInput, setMessageInput] = useState('');
   const [sendingMessage, setSendingMessage] = useState(false);
+  const [messageError, setMessageError] = useState('');
   const [feedbackOpen, setFeedbackOpen] = useState<string | null>(null);
   const [feedbackText, setFeedbackText] = useState('');
   const [sendingFeedback, setSendingFeedback] = useState(false);
+  const [feedbackError, setFeedbackError] = useState('');
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   const loadProfile = useCallback(async () => {
@@ -287,34 +289,48 @@ export default function Dashboard() {
   async function loadMessages() {
     if (!user) return;
     setLoadingMessages(true);
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('messages')
       .select('*')
       .eq('user_id', user.id)
       .order('created_at', { ascending: true });
-    setMessages((data as Message[]) ?? []);
+    if (error) {
+      console.error('Failed to load messages:', error.message);
+      setMessageError('Could not load messages. Make sure the messages table has been created in Supabase.');
+    } else {
+      setMessages((data as Message[]) ?? []);
+    }
     setLoadingMessages(false);
   }
 
   async function sendMessage() {
     if (!messageInput.trim() || !user) return;
     setSendingMessage(true);
-    const { data: inserted } = await supabase.from('messages').insert({
+    setMessageError('');
+    const { data: inserted, error } = await supabase.from('messages').insert({
       user_id: user.id,
       sender_id: user.id,
       is_from_admin: false,
       content: messageInput.trim(),
       type: 'chat',
     }).select().single();
-    if (inserted) setMessages(prev => [...prev, inserted as Message]);
-    setMessageInput('');
+    if (error) {
+      console.error('Send message error:', error.message, error.code);
+      setMessageError(error.code === '42P01'
+        ? 'Messages table not found. Please run the Supabase migration first.'
+        : `Failed to send: ${error.message}`);
+    } else if (inserted) {
+      setMessages(prev => [...prev, inserted as Message]);
+      setMessageInput('');
+    }
     setSendingMessage(false);
   }
 
   async function sendFeedback(requestId: string) {
     if (!feedbackText.trim() || !user) return;
     setSendingFeedback(true);
-    const { data: inserted } = await supabase.from('messages').insert({
+    setFeedbackError('');
+    const { data: inserted, error } = await supabase.from('messages').insert({
       user_id: user.id,
       sender_id: user.id,
       is_from_admin: false,
@@ -322,9 +338,16 @@ export default function Dashboard() {
       type: 'feedback',
       creative_request_id: requestId,
     }).select().single();
-    if (inserted) setMessages(prev => [...prev, inserted as Message]);
-    setFeedbackText('');
-    setFeedbackOpen(null);
+    if (error) {
+      console.error('Send feedback error:', error.message, error.code);
+      setFeedbackError(error.code === '42P01'
+        ? 'Messages table not found.'
+        : `Failed to send: ${error.message}`);
+    } else if (inserted) {
+      setMessages(prev => [...prev, inserted as Message]);
+      setFeedbackText('');
+      setFeedbackOpen(null);
+    }
     setSendingFeedback(false);
   }
 
@@ -881,10 +904,13 @@ export default function Dashboard() {
                                 ))}
                               </div>
                             )}
+                            {feedbackError && (
+                              <p className="text-red-400 text-[10px] px-2 pb-1">{feedbackError}</p>
+                            )}
                             <div className="flex gap-2 p-2">
                               <input
                                 value={feedbackText}
-                                onChange={e => setFeedbackText(e.target.value)}
+                                onChange={e => { setFeedbackText(e.target.value); setFeedbackError(''); }}
                                 onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendFeedback(request.id); } }}
                                 placeholder="Leave feedback..."
                                 className="flex-1 rounded-lg px-3 py-2 text-xs text-white placeholder-[#6B7280] focus:outline-none bg-white/[0.05] border border-white/[0.1] focus:border-[rgba(168,85,247,0.4)]"
@@ -1013,6 +1039,11 @@ export default function Dashboard() {
               <div className="flex-1 overflow-y-auto p-4 space-y-1">
                 {loadingMessages ? (
                   <div className="flex items-center justify-center h-full"><Loader size={20} className="animate-spin text-[#A855F7]" /></div>
+                ) : messageError && messages.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-full text-center py-12 px-4">
+                    <AlertCircle size={20} className="text-red-400 mb-2" />
+                    <p className="text-red-300 text-xs leading-relaxed">{messageError}</p>
+                  </div>
                 ) : messages.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-full text-center py-12">
                     <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-3"
@@ -1030,11 +1061,14 @@ export default function Dashboard() {
                 <div ref={chatEndRef} />
               </div>
               {/* Input */}
-              <div className="p-3 border-t border-white/[0.08]">
+              <div className="p-3 border-t border-white/[0.08] space-y-2">
+                {messageError && messages.length > 0 && (
+                  <p className="text-red-400 text-xs px-1">{messageError}</p>
+                )}
                 <div className="flex gap-2">
                   <input
                     value={messageInput}
-                    onChange={e => setMessageInput(e.target.value)}
+                    onChange={e => { setMessageInput(e.target.value); setMessageError(''); }}
                     onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
                     placeholder="Message your CloutKart team..."
                     className="flex-1 rounded-xl px-4 py-2.5 text-sm text-white placeholder-[#6B7280] focus:outline-none bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(168,85,247,0.4)]"
