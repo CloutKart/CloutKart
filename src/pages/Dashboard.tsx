@@ -1,14 +1,15 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import {
   LayoutDashboard, Image, CreditCard, Settings, LogOut, ArrowRight,
   Download, Clock, CheckCircle, Loader, ChevronRight, AlertCircle,
-  Sparkles, Images, IndianRupee, MessageCircle, ExternalLink
+  Sparkles, Images, IndianRupee, MessageCircle, ExternalLink, Send,
+  Star, Zap, MessageSquare
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 
-type Tab = 'overview' | 'creative' | 'gallery' | 'plan' | 'settings';
+type Tab = 'overview' | 'creative' | 'gallery' | 'plan' | 'messages' | 'settings';
 const FREE_CREATIVE_LIMIT = 3;
 
 interface CreativeRequest {
@@ -33,11 +34,21 @@ interface UserProfile {
   clout_club_price: number | null;
 }
 
+interface Message {
+  id: string;
+  user_id: string;
+  sender_id: string;
+  is_from_admin: boolean;
+  content: string;
+  type: 'chat' | 'feedback';
+  creative_request_id?: string | null;
+  is_read: boolean;
+  created_at: string;
+}
+
 const timelineSteps = ['Submitted', 'In Review', 'In Production', 'Ready to Download'];
 const statusToStep: Record<string, number> = { pending: 0, in_progress: 2, completed: 3 };
 
-// ─── Razorpay Payment Button ─────────────────────────────────────────────────
-// Loads the Razorpay checkout script and opens the payment flow
 declare global {
   interface Window {
     Razorpay: new (options: object) => { open: () => void };
@@ -60,12 +71,12 @@ interface RazorpayButtonProps {
   amountPaise: number;
   userEmail: string;
   userName: string;
+  userId: string;
 }
 
-function RazorpayButton({ amountPaise, userEmail, userName }: RazorpayButtonProps) {
+function RazorpayButton({ amountPaise, userEmail, userName, userId }: RazorpayButtonProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-
   const RAZORPAY_KEY = import.meta.env.VITE_RAZORPAY_KEY_ID as string;
 
   async function handlePay() {
@@ -88,27 +99,32 @@ function RazorpayButton({ amountPaise, userEmail, userName }: RazorpayButtonProp
       prefill: { name: userName, email: userEmail },
       theme: { color: '#A855F7' },
       handler: async (response: { razorpay_payment_id: string }) => {
-        // Record payment in DB and update plan
         try {
           const { data: { session } } = await supabase.auth.getSession();
           if (!session) return;
-          await supabase.from('payments').insert({
-            user_id: session.user.id,
-            amount: amountPaise,
-            plan: 'clout_club',
-            status: 'captured',
-            payment_id: response.razorpay_payment_id,
+          const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+          // Verify payment server-side using the edge function with secret key
+          const verifyRes = await fetch(`${supabaseUrl}/functions/v1/verify-razorpay-payment`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${session.access_token}`,
+            },
+            body: JSON.stringify({
+              payment_id: response.razorpay_payment_id,
+              amount_paise: amountPaise,
+              user_id: userId,
+            }),
           });
-          await supabase.from('profiles').update({ plan: 'clout_club' }).eq('id', session.user.id);
-          // Reload the page to reflect new plan
+          if (!verifyRes.ok) {
+            console.error('Payment verification failed');
+          }
           window.location.reload();
         } catch (_err) {
           console.error('Payment recording failed:', _err);
         }
       },
-      modal: {
-        ondismiss: () => setLoading(false),
-      },
+      modal: { ondismiss: () => setLoading(false) },
     };
 
     const rzp = new window.Razorpay(options);
@@ -128,10 +144,41 @@ function RazorpayButton({ amountPaise, userEmail, userName }: RazorpayButtonProp
         Pay ₹{(amountPaise / 100).toLocaleString('en-IN')}/mo
         <ArrowRight size={14} />
       </button>
-      {!RAZORPAY_KEY && (
-        <p className="text-[#F59E0B] text-xs">Payment not yet configured. Contact us to complete setup.</p>
-      )}
+      {!RAZORPAY_KEY && <p className="text-[#F59E0B] text-xs">Payment not yet configured. Contact us.</p>}
       {error && <p className="text-red-400 text-xs">{error}</p>}
+    </div>
+  );
+}
+
+// ─── Chat message bubble ──────────────────────────────────────────────────────
+function MessageBubble({ msg, creativeRequests }: { msg: Message; creativeRequests: CreativeRequest[] }) {
+  const fromAdmin = msg.is_from_admin;
+  const creative = msg.creative_request_id
+    ? creativeRequests.find(r => r.id === msg.creative_request_id)
+    : null;
+
+  return (
+    <div className={`flex ${fromAdmin ? 'justify-start' : 'justify-end'} mb-3`}>
+      <div className={`max-w-[80%] ${fromAdmin ? 'items-start' : 'items-end'} flex flex-col gap-1`}>
+        {creative && (
+          <p className="text-[10px] font-semibold uppercase tracking-wider px-1"
+            style={{ color: '#C084FC' }}>
+            Re: {creative.brand_name} — {creative.ad_format}
+          </p>
+        )}
+        <div
+          className="px-4 py-2.5 rounded-2xl text-sm leading-relaxed"
+          style={fromAdmin
+            ? { background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.2)', color: '#E2E8F0', borderBottomLeftRadius: 6 }
+            : { background: 'linear-gradient(135deg, rgba(168,85,247,0.25), rgba(59,130,246,0.2))', border: '1px solid rgba(168,85,247,0.3)', color: '#F3E8FF', borderBottomRightRadius: 6 }
+          }
+        >
+          {msg.content}
+        </div>
+        <p className="text-[10px] text-[#6B7280] px-1">
+          {fromAdmin ? 'CloutKart Team' : 'You'} · {new Date(msg.created_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+        </p>
+      </div>
     </div>
   );
 }
@@ -150,6 +197,16 @@ export default function Dashboard() {
   const [settingsForm, setSettingsForm] = useState({ fullName: '', company: '', phone: '' });
   const [settingsSaving, setSettingsSaving] = useState(false);
   const [settingsSaved, setSettingsSaved] = useState(false);
+
+  // Messages state
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [loadingMessages, setLoadingMessages] = useState(false);
+  const [messageInput, setMessageInput] = useState('');
+  const [sendingMessage, setSendingMessage] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState<string | null>(null);
+  const [feedbackText, setFeedbackText] = useState('');
+  const [sendingFeedback, setSendingFeedback] = useState(false);
+  const chatEndRef = useRef<HTMLDivElement>(null);
 
   const loadProfile = useCallback(async () => {
     if (!user) return;
@@ -171,6 +228,76 @@ export default function Dashboard() {
     loadProfile();
   }, [user, loadProfile]);
 
+  // Load messages when Messages tab opens
+  useEffect(() => {
+    if (tab !== 'messages' || !user) return;
+    loadMessages();
+  }, [tab, user]);
+
+  // Real-time messages subscription
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase.channel(`messages:${user.id}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'messages',
+        filter: `user_id=eq.${user.id}`,
+      }, (payload) => {
+        setMessages(prev => [...prev, payload.new as Message]);
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user]);
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  async function loadMessages() {
+    if (!user) return;
+    setLoadingMessages(true);
+    const { data } = await supabase
+      .from('messages')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: true });
+    setMessages((data as Message[]) ?? []);
+    setLoadingMessages(false);
+  }
+
+  async function sendMessage() {
+    if (!messageInput.trim() || !user) return;
+    setSendingMessage(true);
+    const { data: inserted } = await supabase.from('messages').insert({
+      user_id: user.id,
+      sender_id: user.id,
+      is_from_admin: false,
+      content: messageInput.trim(),
+      type: 'chat',
+    }).select().single();
+    if (inserted) setMessages(prev => [...prev, inserted as Message]);
+    setMessageInput('');
+    setSendingMessage(false);
+  }
+
+  async function sendFeedback(requestId: string) {
+    if (!feedbackText.trim() || !user) return;
+    setSendingFeedback(true);
+    const { data: inserted } = await supabase.from('messages').insert({
+      user_id: user.id,
+      sender_id: user.id,
+      is_from_admin: false,
+      content: feedbackText.trim(),
+      type: 'feedback',
+      creative_request_id: requestId,
+    }).select().single();
+    if (inserted) setMessages(prev => [...prev, inserted as Message]);
+    setFeedbackText('');
+    setFeedbackOpen(null);
+    setSendingFeedback(false);
+  }
+
   const handleSignOut = async () => { await signOut(); navigate('/'); };
 
   const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -181,7 +308,11 @@ export default function Dashboard() {
   const handleSubmitCreative = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
-    if (creativeRequests.length >= FREE_CREATIVE_LIMIT) { setSubmitError('You have already claimed your 3 free creatives.'); return; }
+    // Clout Club members have no limit; free users limited to FREE_CREATIVE_LIMIT
+    if (!isCloutClub && creativeRequests.length >= FREE_CREATIVE_LIMIT) {
+      setSubmitError('You have already claimed your 3 free creatives.');
+      return;
+    }
     setSubmitting(true);
     setSubmitError('');
     try {
@@ -220,57 +351,105 @@ export default function Dashboard() {
 
   const userName = profile.full_name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'there';
   const memberSince = user?.created_at ? new Date(user.created_at).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' }) : '—';
-  const creativeCount = Math.min(creativeRequests.length, FREE_CREATIVE_LIMIT);
-  const freeCreativesLeft = Math.max(0, FREE_CREATIVE_LIMIT - creativeCount);
-  const freeCreativesClaimed = creativeCount >= FREE_CREATIVE_LIMIT;
+  const creativeCount = creativeRequests.length;
+  const freeCreativeCount = Math.min(creativeCount, FREE_CREATIVE_LIMIT);
+  const freeCreativesLeft = Math.max(0, FREE_CREATIVE_LIMIT - freeCreativeCount);
+  const isCloutClub = profile.plan === 'clout_club';
+  const freeCreativesClaimed = !isCloutClub && creativeCount >= FREE_CREATIVE_LIMIT;
   const galleryCreatives = creativeRequests.filter(r => r.status === 'completed' && r.creative_url);
   const getActiveStep = (request: CreativeRequest) => statusToStep[request.status] ?? 0;
   const isImageUrl = (url: string) => /\.(apng|avif|gif|jpe?g|png|webp)(\?.*)?$/i.test(url);
-  const isCloutClub = profile.plan === 'clout_club';
+  const isVideoUrl = (url: string) => /\.(mp4|mov|webm|avi|m4v|mkv|ogv)(\?.*)?$/i.test(url);
+  const unreadCount = messages.filter(m => m.is_from_admin && !m.is_read).length;
 
   const inputClass = "w-full rounded-xl px-4 py-3.5 text-sm text-white placeholder-[#6B7280] focus:outline-none transition-all duration-200 font-medium bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(168,85,247,0.5)] focus:bg-white/[0.07]";
   const labelClass = "block text-[11px] font-semibold text-[#9CA3AF] mb-2 uppercase tracking-[0.08em] font-heading";
 
-  const navItems: { id: Tab; icon: React.ElementType; label: string }[] = [
+  // CC-aware sidebar style
+  const sidebarBg = isCloutClub
+    ? 'linear-gradient(180deg, rgba(22,8,45,0.98) 0%, rgba(12,5,25,0.98) 60%, rgba(10,10,12,0.98) 100%)'
+    : 'rgba(10,10,10,0.95)';
+  const mainBg = isCloutClub
+    ? { background: '#080810', backgroundImage: 'radial-gradient(ellipse 80% 40% at 50% 0%, rgba(168,85,247,0.07) 0%, transparent 70%), radial-gradient(circle, rgba(255,255,255,0.03) 1px, transparent 1px)', backgroundSize: '100% 100%, 28px 28px' }
+    : { background: '#080808', backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.04) 1px, transparent 1px)', backgroundSize: '28px 28px' };
+
+  const navItems: { id: Tab; icon: React.ElementType; label: string; ccOnly?: boolean }[] = [
     { id: 'overview', icon: LayoutDashboard, label: 'Overview' },
-    { id: 'creative', icon: Image,           label: 'My Creative' },
-    { id: 'gallery',  icon: Images,          label: 'Gallery' },
-    { id: 'plan',     icon: CreditCard,      label: 'My Plan' },
-    { id: 'settings', icon: Settings,        label: 'Settings' },
-  ];
+    { id: 'creative', icon: Image, label: isCloutClub ? 'My Creatives' : 'My Creative' },
+    { id: 'gallery', icon: Images, label: 'Gallery' },
+    { id: 'plan', icon: CreditCard, label: 'My Plan' },
+    { id: 'messages', icon: MessageCircle, label: 'Messages', ccOnly: true },
+    { id: 'settings', icon: Settings, label: 'Settings' },
+  ].filter(item => !item.ccOnly || isCloutClub);
 
   return (
-    <div className="min-h-screen flex" style={{ background: '#080808', backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.04) 1px, transparent 1px)', backgroundSize: '28px 28px' }}>
+    <div className="min-h-screen flex" style={mainBg}>
       {/* Sidebar */}
-      <aside className="hidden md:flex flex-col w-60 flex-shrink-0 border-r border-white/[0.06]" style={{ background: 'rgba(10,10,10,0.95)' }}>
+      <aside className="hidden md:flex flex-col w-60 flex-shrink-0 border-r border-white/[0.06]"
+        style={{ background: sidebarBg }}>
         <div className="px-5 pt-6 pb-4">
           <Link to="/"><img src="/logo.png" alt="CloutKart" className="h-8 w-auto object-contain opacity-80" /></Link>
+          {isCloutClub && (
+            <div className="mt-3 flex items-center gap-1.5">
+              <Sparkles size={10} className="text-[#A855F7]" />
+              <span className="text-[10px] font-bold uppercase tracking-widest"
+                style={{ background: 'linear-gradient(135deg,#A855F7,#C084FC,#818CF8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                Clout Club
+              </span>
+            </div>
+          )}
         </div>
         <div className="h-px mx-5 bg-white/[0.06]" />
         <nav className="flex-1 px-3 pt-4 space-y-1">
           {navItems.map(({ id, icon: Icon, label }) => {
             const active = tab === id;
+            const isMsg = id === 'messages';
             return (
-              <button key={id} onClick={() => setTab(id)} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 text-left"
-                style={{ background: active ? 'rgba(168,85,247,0.08)' : 'transparent', borderLeft: active ? '2px solid #A855F7' : '2px solid transparent' }}>
-                <Icon size={16} style={{ color: active ? '#A855F7' : '#9CA3AF' }} />
-                <span style={active ? { background: 'linear-gradient(135deg,#A855F7,#3B82F6,#06B6D4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' } : { color: '#D1D5DB' }}>{label}</span>
+              <button key={id} onClick={() => setTab(id)}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 text-left"
+                style={{
+                  background: active ? (isCloutClub ? 'rgba(168,85,247,0.1)' : 'rgba(168,85,247,0.08)') : 'transparent',
+                  borderLeft: active ? `2px solid ${isCloutClub ? '#C084FC' : '#A855F7'}` : '2px solid transparent',
+                }}>
+                <div className="relative">
+                  <Icon size={16} style={{ color: active ? (isCloutClub ? '#C084FC' : '#A855F7') : '#9CA3AF' }} />
+                  {isMsg && unreadCount > 0 && (
+                    <span className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 rounded-full text-[8px] font-bold flex items-center justify-center"
+                      style={{ background: '#A855F7', color: '#fff' }}>{unreadCount}</span>
+                  )}
+                </div>
+                <span style={active
+                  ? { background: isCloutClub ? 'linear-gradient(135deg,#C084FC,#818CF8)' : 'linear-gradient(135deg,#A855F7,#3B82F6,#06B6D4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }
+                  : { color: '#D1D5DB' }}>
+                  {label}
+                </span>
               </button>
             );
           })}
         </nav>
+
+        {/* CC member badge */}
         {isCloutClub && (
-          <div className="mx-4 mb-4 rounded-xl p-3" style={{ background: 'rgba(168,85,247,0.08)', border: '1px solid rgba(168,85,247,0.2)' }}>
+          <div className="mx-4 mb-4 rounded-xl p-3 relative overflow-hidden"
+            style={{ background: 'linear-gradient(135deg, rgba(168,85,247,0.15), rgba(99,102,241,0.1))', border: '1px solid rgba(168,85,247,0.3)' }}>
+            <div className="absolute top-0 right-0 w-12 h-12 rounded-full opacity-20"
+              style={{ background: 'radial-gradient(circle, #A855F7, transparent)', transform: 'translate(30%, -30%)' }} />
             <div className="flex items-center gap-2 mb-1">
-              <Sparkles size={12} className="text-[#A855F7]" />
-              <span className="text-[10px] font-bold text-[#C084FC] uppercase tracking-wider">Clout Club</span>
+              <Star size={11} className="text-[#C084FC]" fill="#C084FC" />
+              <span className="text-[10px] font-bold uppercase tracking-wider"
+                style={{ background: 'linear-gradient(135deg,#C084FC,#818CF8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                Clout Club
+              </span>
             </div>
             <p className="text-[#9CA3AF] text-[11px]">Active member</p>
           </div>
         )}
+
         <div className="px-5 pb-6 pt-4 border-t border-white/[0.06]">
           <p className="text-[#6B7280] text-xs mb-3 truncate">{user?.email}</p>
-          <button onClick={handleSignOut} className="flex items-center gap-2 text-[#9CA3AF] hover:text-white transition-colors text-sm"><LogOut size={14} /> Log Out</button>
+          <button onClick={handleSignOut} className="flex items-center gap-2 text-[#9CA3AF] hover:text-white transition-colors text-sm">
+            <LogOut size={14} /> Log Out
+          </button>
         </div>
       </aside>
 
@@ -278,67 +457,130 @@ export default function Dashboard() {
         {/* Mobile nav */}
         <div className="md:hidden flex items-center gap-2 mb-6 overflow-x-auto pb-1">
           {navItems.map(({ id, icon: Icon, label }) => (
-            <button key={id} onClick={() => setTab(id)} className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium whitespace-nowrap flex-shrink-0 transition-all"
+            <button key={id} onClick={() => setTab(id)}
+              className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium whitespace-nowrap flex-shrink-0 transition-all"
               style={{ background: tab === id ? 'rgba(168,85,247,0.12)' : 'rgba(255,255,255,0.04)', border: tab === id ? '1px solid rgba(168,85,247,0.3)' : '1px solid rgba(255,255,255,0.08)', color: tab === id ? '#A855F7' : '#9CA3AF' }}>
               <Icon size={13} />{label}
             </button>
           ))}
         </div>
 
-        {/* OVERVIEW */}
+        {/* ── OVERVIEW ──────────────────────────────────────────────────────── */}
         {tab === 'overview' && (
           <div className="space-y-6">
-            <div className="glass-card rounded-2xl p-6" style={{ borderLeft: '3px solid #A855F7' }}>
-              <div className="flex items-start justify-between">
-                <div>
-                  <h2 className="font-heading font-bold text-white text-xl mb-1">Welcome back, {userName}</h2>
-                  <p className="text-[#9CA3AF] text-sm">Here's what's happening with your account.</p>
+            {/* Welcome card — CC variant */}
+            {isCloutClub ? (
+              <div className="rounded-2xl p-6 relative overflow-hidden"
+                style={{ background: 'linear-gradient(135deg, rgba(22,8,45,0.9), rgba(15,5,30,0.9))', border: '1px solid rgba(168,85,247,0.35)' }}>
+                <div className="absolute inset-0 pointer-events-none">
+                  <div className="absolute top-0 right-0 w-40 h-40 opacity-20"
+                    style={{ background: 'radial-gradient(circle, #A855F7, transparent)', transform: 'translate(30%, -30%)' }} />
+                  <div className="absolute bottom-0 left-0 w-24 h-24 opacity-10"
+                    style={{ background: 'radial-gradient(circle, #3B82F6, transparent)', transform: 'translate(-30%, 30%)' }} />
                 </div>
-                {isCloutClub && (
-                  <span className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full font-semibold" style={{ background: 'rgba(168,85,247,0.12)', border: '1px solid rgba(168,85,247,0.25)', color: '#C084FC' }}>
-                    <Sparkles size={11} /> Clout Club
-                  </span>
-                )}
-              </div>
-            </div>
-            <div className="glass-card rounded-2xl p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <p className="text-[#9CA3AF] text-xs font-semibold uppercase tracking-widest mb-1">Your Free Creatives</p>
-                  <h3 className="font-heading font-semibold text-white">{freeCreativesClaimed ? 'All creatives claimed' : creativeRequests[0] ? creativeRequests[0].brand_name : 'Free Creative Requests'}</h3>
-                  <p className="text-[#6B7280] text-xs mt-1">{creativeCount}/{FREE_CREATIVE_LIMIT} claimed</p>
+                <div className="relative flex items-start justify-between">
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Sparkles size={14} className="text-[#C084FC]" />
+                      <span className="text-xs font-bold uppercase tracking-widest"
+                        style={{ background: 'linear-gradient(135deg,#C084FC,#818CF8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                        Clout Club Member
+                      </span>
+                    </div>
+                    <h2 className="font-heading font-bold text-white text-2xl mb-1">Welcome back, {userName}</h2>
+                    <p className="text-[#C4B5FD] text-sm opacity-80">Your campaigns are in motion.</p>
+                  </div>
+                  <div className="flex-shrink-0 w-12 h-12 rounded-2xl flex items-center justify-center"
+                    style={{ background: 'rgba(168,85,247,0.2)', border: '1px solid rgba(168,85,247,0.4)' }}>
+                    <Zap size={20} className="text-[#C084FC]" />
+                  </div>
                 </div>
-                {creativeRequests[0] && (
-                  <span className="text-xs font-semibold px-2.5 py-1 rounded-full capitalize flex-shrink-0"
-                    style={{ background: creativeRequests[0].status === 'completed' ? 'rgba(16,185,129,0.1)' : creativeRequests[0].status === 'in_progress' ? 'rgba(59,130,246,0.1)' : 'rgba(245,158,11,0.1)', border: `1px solid ${creativeRequests[0].status === 'completed' ? 'rgba(16,185,129,0.25)' : creativeRequests[0].status === 'in_progress' ? 'rgba(59,130,246,0.25)' : 'rgba(245,158,11,0.25)'}`, color: creativeRequests[0].status === 'completed' ? '#10B981' : creativeRequests[0].status === 'in_progress' ? '#3B82F6' : '#F59E0B' }}>
-                    {creativeRequests[0].status.replace('_', ' ')}
-                  </span>
-                )}
               </div>
-              {freeCreativesClaimed
-                ? <p className="text-[#10B981] text-sm font-semibold">All 3 free creatives claimed.</p>
-                : creativeRequests[0]?.status === 'completed'
-                  ? <a href={creativeRequests[0].creative_url || "#"} target="_blank" rel="noopener noreferrer" download className="btn-primary text-sm"><Download size={14} />Download Now<ArrowRight size={14} /></a>
-                  : !creativeRequests[0] && !loadingRequest
-                    ? <button onClick={() => setTab('creative')} className="btn-primary text-sm">Claim Free Creatives <ArrowRight size={14} /></button>
-                    : <p className="text-[#6B7280] text-sm">{loadingRequest ? 'Loading...' : 'Your creative is being worked on.'}</p>
-              }
-            </div>
+            ) : (
+              <div className="glass-card rounded-2xl p-6" style={{ borderLeft: '3px solid #A855F7' }}>
+                <div className="flex items-start justify-between">
+                  <div>
+                    <h2 className="font-heading font-bold text-white text-xl mb-1">Welcome back, {userName}</h2>
+                    <p className="text-[#9CA3AF] text-sm">Here's what's happening with your account.</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Free creatives summary (free users only) */}
+            {!isCloutClub && (
+              <div className="glass-card rounded-2xl p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <p className="text-[#9CA3AF] text-xs font-semibold uppercase tracking-widest mb-1">Your Free Creatives</p>
+                    <h3 className="font-heading font-semibold text-white">{freeCreativesClaimed ? 'All creatives claimed' : creativeRequests[0] ? creativeRequests[0].brand_name : 'Free Creative Requests'}</h3>
+                    <p className="text-[#6B7280] text-xs mt-1">{freeCreativeCount}/{FREE_CREATIVE_LIMIT} claimed</p>
+                  </div>
+                  {creativeRequests[0] && (
+                    <span className="text-xs font-semibold px-2.5 py-1 rounded-full capitalize flex-shrink-0"
+                      style={{ background: creativeRequests[0].status === 'completed' ? 'rgba(16,185,129,0.1)' : creativeRequests[0].status === 'in_progress' ? 'rgba(59,130,246,0.1)' : 'rgba(245,158,11,0.1)', border: `1px solid ${creativeRequests[0].status === 'completed' ? 'rgba(16,185,129,0.25)' : creativeRequests[0].status === 'in_progress' ? 'rgba(59,130,246,0.25)' : 'rgba(245,158,11,0.25)'}`, color: creativeRequests[0].status === 'completed' ? '#10B981' : creativeRequests[0].status === 'in_progress' ? '#3B82F6' : '#F59E0B' }}>
+                      {creativeRequests[0].status.replace('_', ' ')}
+                    </span>
+                  )}
+                </div>
+                {freeCreativesClaimed
+                  ? <p className="text-[#10B981] text-sm font-semibold">All 3 free creatives claimed.</p>
+                  : creativeRequests[0]?.status === 'completed'
+                    ? <a href={creativeRequests[0].creative_url || '#'} target="_blank" rel="noopener noreferrer" download className="btn-primary text-sm"><Download size={14} />Download Now<ArrowRight size={14} /></a>
+                    : !creativeRequests[0] && !loadingRequest
+                      ? <button onClick={() => setTab('creative')} className="btn-primary text-sm">Claim Free Creatives <ArrowRight size={14} /></button>
+                      : <p className="text-[#6B7280] text-sm">{loadingRequest ? 'Loading...' : 'Your creative is being worked on.'}</p>
+                }
+              </div>
+            )}
+
+            {/* CC active campaigns summary */}
+            {isCloutClub && creativeRequests.length > 0 && (
+              <div className="rounded-2xl p-5"
+                style={{ background: 'rgba(168,85,247,0.06)', border: '1px solid rgba(168,85,247,0.2)' }}>
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-[#C4B5FD] text-xs font-semibold uppercase tracking-widest">Active Creatives</p>
+                  <span className="text-xs font-mono font-bold"
+                    style={{ background: 'linear-gradient(135deg,#A855F7,#3B82F6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                    {creativeRequests.length} total
+                  </span>
+                </div>
+                <div className="space-y-2">
+                  {creativeRequests.slice(0, 3).map(r => (
+                    <div key={r.id} className="flex items-center justify-between text-sm">
+                      <span className="text-white font-medium">{r.brand_name}</span>
+                      <span className="text-xs px-2 py-0.5 rounded-full capitalize"
+                        style={{ background: r.status === 'completed' ? 'rgba(16,185,129,0.1)' : r.status === 'in_progress' ? 'rgba(59,130,246,0.1)' : 'rgba(245,158,11,0.1)', color: r.status === 'completed' ? '#10B981' : r.status === 'in_progress' ? '#3B82F6' : '#F59E0B' }}>
+                        {r.status.replace('_', ' ')}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {[{ label: 'Creatives Claimed', value: `${creativeCount}/${FREE_CREATIVE_LIMIT}` }, { label: 'Current Plan', value: isCloutClub ? 'Clout Club' : 'Free Plan' }, { label: 'Member Since', value: memberSince }].map(s => (
-                <div key={s.label} className="glass-card rounded-2xl p-5">
+              {[
+                { label: 'Creatives', value: isCloutClub ? `${creativeCount}` : `${freeCreativeCount}/${FREE_CREATIVE_LIMIT}` },
+                { label: 'Current Plan', value: isCloutClub ? 'Clout Club' : 'Free Plan' },
+                { label: 'Member Since', value: memberSince }
+              ].map(s => (
+                <div key={s.label} className="glass-card rounded-2xl p-5"
+                  style={isCloutClub ? { border: '1px solid rgba(168,85,247,0.18)', background: 'rgba(168,85,247,0.04)' } : {}}>
                   <p className="text-[#9CA3AF] text-xs font-medium mb-2">{s.label}</p>
                   <p className="font-mono font-bold text-lg gradient-text">{s.value}</p>
                 </div>
               ))}
             </div>
+
             {!isCloutClub && (
               <div className="glass-card rounded-2xl p-5 flex items-center justify-between">
                 <div>
                   <p className="text-white font-heading font-semibold text-sm">Upgrade to Clout Club</p>
                   <p className="text-[#9CA3AF] text-xs mt-0.5">Recurring ad production, priority turnaround</p>
                 </div>
-                <button onClick={() => setTab('plan')} className="flex items-center gap-1 text-sm font-semibold" style={{ background: 'linear-gradient(135deg,#A855F7,#3B82F6,#06B6D4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                <button onClick={() => setTab('plan')} className="flex items-center gap-1 text-sm font-semibold"
+                  style={{ background: 'linear-gradient(135deg,#A855F7,#3B82F6,#06B6D4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
                   View Plans <ChevronRight size={14} style={{ color: '#A855F7' }} />
                 </button>
               </div>
@@ -346,12 +588,14 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* MY CREATIVE */}
+        {/* ── MY CREATIVE ───────────────────────────────────────────────────── */}
         {tab === 'creative' && (
           <div className="space-y-6">
-            <h2 className="font-heading font-bold text-white text-2xl">My Creative</h2>
+            <h2 className="font-heading font-bold text-white text-2xl">{isCloutClub ? 'My Creatives' : 'My Creative'}</h2>
             {loadingRequest && <div className="glass-card rounded-2xl p-10 flex items-center justify-center"><Loader size={20} className="animate-spin text-[#A855F7]" /></div>}
-            {!loadingRequest && creativeCount === 0 && !showForm && (
+
+            {/* Free users: empty state */}
+            {!loadingRequest && !isCloutClub && freeCreativeCount === 0 && !showForm && (
               <div className="glass-card rounded-2xl p-10 flex flex-col items-center text-center">
                 <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4" style={{ background: 'rgba(168,85,247,0.1)', border: '1px solid rgba(168,85,247,0.2)' }}><Image size={24} className="text-[#A855F7]" /></div>
                 <h3 className="font-heading font-semibold text-white text-lg mb-2">Claim your 3 free creatives</h3>
@@ -359,10 +603,30 @@ export default function Dashboard() {
                 <button onClick={() => setShowForm(true)} className="btn-primary text-sm">Claim Creative 1 of 3<ArrowRight size={14} /></button>
               </div>
             )}
-            {!loadingRequest && !freeCreativesClaimed && showForm && (
+
+            {/* CC members: empty state */}
+            {!loadingRequest && isCloutClub && creativeRequests.length === 0 && !showForm && (
+              <div className="rounded-2xl p-10 flex flex-col items-center text-center"
+                style={{ background: 'rgba(168,85,247,0.05)', border: '1px solid rgba(168,85,247,0.2)' }}>
+                <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4"
+                  style={{ background: 'rgba(168,85,247,0.12)', border: '1px solid rgba(168,85,247,0.3)' }}>
+                  <Sparkles size={24} className="text-[#C084FC]" />
+                </div>
+                <h3 className="font-heading font-semibold text-white text-lg mb-2">Start your first campaign</h3>
+                <p className="text-[#C4B5FD] text-sm mb-6 max-w-sm opacity-80">Submit your creative brief and the team will get started on your campaign.</p>
+                <button onClick={() => setShowForm(true)} className="btn-primary text-sm">New Creative Brief <ArrowRight size={14} /></button>
+              </div>
+            )}
+
+            {/* Form */}
+            {!loadingRequest && (isCloutClub || (!freeCreativesClaimed)) && showForm && (
               <div className="glass-card rounded-2xl p-6 sm:p-8">
-                <h3 className="font-heading font-semibold text-white text-lg mb-1">Free Creative Request</h3>
-                <p className="text-[#9CA3AF] text-sm mb-6">Claiming creative {creativeCount + 1} of {FREE_CREATIVE_LIMIT}.</p>
+                <h3 className="font-heading font-semibold text-white text-lg mb-1">
+                  {isCloutClub ? 'New Creative Brief' : 'Free Creative Request'}
+                </h3>
+                <p className="text-[#9CA3AF] text-sm mb-6">
+                  {isCloutClub ? 'Submit your brief — the team will get started right away.' : `Claiming creative ${freeCreativeCount + 1} of ${FREE_CREATIVE_LIMIT}.`}
+                </p>
                 <form onSubmit={handleSubmitCreative} className="space-y-4">
                   <div><label className={labelClass}>Brand Name</label><input type="text" name="brandName" value={form.brandName} onChange={handleFormChange} placeholder="Your brand name" className={inputClass} required /></div>
                   <div><label className={labelClass}>Industry / Niche</label><input type="text" name="niche" value={form.niche} onChange={handleFormChange} placeholder="e.g. Fashion, SaaS, Food" className={inputClass} required /></div>
@@ -379,29 +643,49 @@ export default function Dashboard() {
                   <div><label className={labelClass}>Brief Description</label><textarea name="description" value={form.description} onChange={handleFormChange} rows={4} placeholder="Describe your product, target audience, and what you want to convey..." className={`${inputClass} resize-none`} required /></div>
                   <div><label className={labelClass}>Reference URL (optional)</label><input type="url" name="referenceUrl" value={form.referenceUrl} onChange={handleFormChange} placeholder="https://..." className={inputClass} /></div>
                   {submitError && <div className="flex items-center gap-2 bg-red-500/[0.06] border border-red-500/20 rounded-xl p-3"><AlertCircle size={14} className="text-red-400 flex-shrink-0" /><span className="text-red-300 text-xs">{submitError}</span></div>}
-                  <button type="submit" disabled={submitting} className="btn-primary text-sm disabled:opacity-50 disabled:cursor-not-allowed">
-                    {submitting ? <Loader size={14} className="animate-spin" /> : <ArrowRight size={14} />}
-                    {submitting ? 'Submitting...' : `Submit Creative ${creativeCount + 1}`}
-                  </button>
+                  <div className="flex gap-3">
+                    <button type="submit" disabled={submitting} className="btn-primary text-sm disabled:opacity-50 disabled:cursor-not-allowed">
+                      {submitting ? <Loader size={14} className="animate-spin" /> : <ArrowRight size={14} />}
+                      {submitting ? 'Submitting...' : isCloutClub ? 'Submit Brief' : `Submit Creative ${freeCreativeCount + 1}`}
+                    </button>
+                    <button type="button" onClick={() => setShowForm(false)} className="btn-secondary text-sm">Cancel</button>
+                  </div>
                 </form>
               </div>
             )}
-            {!loadingRequest && creativeCount > 0 && !freeCreativesClaimed && (
+
+            {/* Free users: counter + next slot */}
+            {!loadingRequest && !isCloutClub && freeCreativeCount > 0 && !freeCreativesClaimed && (
               <div className="glass-card rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
                   <p className="text-[#9CA3AF] text-xs font-semibold uppercase tracking-widest mb-1">Free Creatives</p>
-                  <h3 className="font-heading font-semibold text-white text-lg">{`${creativeCount}/${FREE_CREATIVE_LIMIT} claimed`}</h3>
-                  <p className="text-[#6B7280] text-sm mt-1">{`${FREE_CREATIVE_LIMIT - creativeCount} free request${FREE_CREATIVE_LIMIT - creativeCount === 1 ? '' : 's'} remaining.`}</p>
+                  <h3 className="font-heading font-semibold text-white text-lg">{freeCreativeCount}/{FREE_CREATIVE_LIMIT} claimed</h3>
+                  <p className="text-[#6B7280] text-sm mt-1">{FREE_CREATIVE_LIMIT - freeCreativeCount} free request{FREE_CREATIVE_LIMIT - freeCreativeCount === 1 ? '' : 's'} remaining.</p>
                 </div>
-                <button onClick={() => setShowForm(true)} className="btn-primary text-sm justify-center">Claim Creative {creativeCount + 1} of {FREE_CREATIVE_LIMIT}<ArrowRight size={14} /></button>
+                <button onClick={() => setShowForm(true)} className="btn-primary text-sm justify-center">
+                  Claim Creative {freeCreativeCount + 1} of {FREE_CREATIVE_LIMIT}<ArrowRight size={14} />
+                </button>
               </div>
             )}
+
+            {/* CC new brief button */}
+            {!loadingRequest && isCloutClub && !showForm && (
+              <div className="flex justify-end">
+                <button onClick={() => setShowForm(true)} className="btn-primary text-sm">
+                  <Sparkles size={14} /> New Brief <ArrowRight size={14} />
+                </button>
+              </div>
+            )}
+
+            {/* Creative cards */}
             {!loadingRequest && creativeRequests.map((request, index) => {
               const activeStep = getActiveStep(request);
               const creativeUrl = request.creative_url ?? '';
               const creativeIsImage = isImageUrl(creativeUrl);
+              const creativeIsVideo = isVideoUrl(creativeUrl);
               return (
-                <div key={request.id} className="glass-card rounded-2xl p-6 sm:p-8">
+                <div key={request.id} className="glass-card rounded-2xl p-6 sm:p-8"
+                  style={isCloutClub ? { border: '1px solid rgba(168,85,247,0.15)' } : {}}>
                   <div className="flex items-start justify-between mb-8">
                     <div>
                       <p className="text-[#6B7280] text-xs font-semibold uppercase tracking-widest mb-1">Creative {index + 1}</p>
@@ -421,13 +705,15 @@ export default function Dashboard() {
                         return (
                           <div key={step} className="flex items-start gap-4 pb-6 last:pb-0">
                             <div className="flex flex-col items-center flex-shrink-0">
-                              <div className="w-8 h-8 rounded-full flex items-center justify-center transition-all" style={{ background: done ? 'linear-gradient(135deg,#A855F7,#3B82F6)' : 'rgba(255,255,255,0.05)', border: done ? 'none' : '1px solid rgba(255,255,255,0.1)' }}>
+                              <div className="w-8 h-8 rounded-full flex items-center justify-center transition-all"
+                                style={{ background: done ? 'linear-gradient(135deg,#A855F7,#3B82F6)' : 'rgba(255,255,255,0.05)', border: done ? 'none' : '1px solid rgba(255,255,255,0.1)' }}>
                                 {done ? <CheckCircle size={14} className="text-white" /> : <Clock size={14} className="text-[#6B7280]" />}
                               </div>
                               {i < timelineSteps.length - 1 && <div className="w-px flex-1 mt-1" style={{ height: 24, background: done ? 'linear-gradient(#A855F7,#3B82F6)' : 'rgba(255,255,255,0.06)' }} />}
                             </div>
                             <div className="pt-1">
-                              <p className={`font-heading font-semibold text-sm ${active ? '' : done ? 'text-white' : 'text-[#6B7280]'}`} style={active ? { background: 'linear-gradient(135deg,#A855F7,#3B82F6,#06B6D4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' } : {}}>
+                              <p className={`font-heading font-semibold text-sm ${active ? '' : done ? 'text-white' : 'text-[#6B7280]'}`}
+                                style={active ? { background: 'linear-gradient(135deg,#A855F7,#3B82F6,#06B6D4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' } : {}}>
                                 {step}
                               </p>
                               {active && request.status !== 'completed' && <Loader size={12} className="mt-1 text-[#A855F7] animate-spin" />}
@@ -443,11 +729,25 @@ export default function Dashboard() {
                       </div>
                       <div className="min-h-[280px] sm:min-h-[360px] flex items-center justify-center p-4">
                         {request.status === 'completed' && creativeUrl ? (
-                          creativeIsImage
-                            ? <a href={creativeUrl} target="_blank" rel="noopener noreferrer" className="block w-full"><img src={creativeUrl} alt={`${request.brand_name} creative`} className="w-full max-h-[520px] object-contain rounded-xl" /></a>
-                            : <div className="text-center max-w-xs mx-auto"><div className="w-14 h-14 rounded-2xl mx-auto mb-4 flex items-center justify-center" style={{ background: 'rgba(168,85,247,0.12)', border: '1px solid rgba(168,85,247,0.24)' }}><Download size={22} className="text-[#A855F7]" /></div><p className="text-white font-heading font-semibold text-sm mb-1">Preview unavailable</p><p className="text-[#9CA3AF] text-xs leading-relaxed">This creative file is ready but can't be previewed inline.</p></div>
+                          creativeIsVideo ? (
+                            <video src={creativeUrl} controls className="w-full max-h-[520px] rounded-xl" preload="metadata" />
+                          ) : creativeIsImage ? (
+                            <a href={creativeUrl} target="_blank" rel="noopener noreferrer" className="block w-full">
+                              <img src={creativeUrl} alt={`${request.brand_name} creative`} className="w-full max-h-[520px] object-contain rounded-xl" />
+                            </a>
+                          ) : (
+                            <div className="text-center max-w-xs mx-auto">
+                              <div className="w-14 h-14 rounded-2xl mx-auto mb-4 flex items-center justify-center" style={{ background: 'rgba(168,85,247,0.12)', border: '1px solid rgba(168,85,247,0.24)' }}><Download size={22} className="text-[#A855F7]" /></div>
+                              <p className="text-white font-heading font-semibold text-sm mb-1">File ready</p>
+                              <p className="text-[#9CA3AF] text-xs leading-relaxed">Download to view this creative.</p>
+                            </div>
+                          )
                         ) : (
-                          <div className="text-center max-w-xs mx-auto"><div className="w-14 h-14 rounded-2xl mx-auto mb-4 flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.10)' }}><Image size={22} className="text-[#6B7280]" /></div><p className="text-white font-heading font-semibold text-sm mb-1">Preview appears here</p><p className="text-[#9CA3AF] text-xs leading-relaxed">Your completed creative will show here before download.</p></div>
+                          <div className="text-center max-w-xs mx-auto">
+                            <div className="w-14 h-14 rounded-2xl mx-auto mb-4 flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.10)' }}><Image size={22} className="text-[#6B7280]" /></div>
+                            <p className="text-white font-heading font-semibold text-sm mb-1">Preview appears here</p>
+                            <p className="text-[#9CA3AF] text-xs leading-relaxed">Your completed creative will show here before download.</p>
+                          </div>
                         )}
                       </div>
                     </div>
@@ -460,7 +760,9 @@ export default function Dashboard() {
                           {request.client_message && <p className="text-[#D1D5DB] text-sm leading-relaxed">{request.client_message}</p>}
                         </div>
                       )}
-                      <a href={request.creative_url || "#"} target="_blank" rel="noopener noreferrer" download className="btn-primary text-sm"><Download size={14} />Download Creative<ArrowRight size={14} /></a>
+                      <a href={request.creative_url || '#'} target="_blank" rel="noopener noreferrer" download className="btn-primary text-sm">
+                        <Download size={14} />Download Creative<ArrowRight size={14} />
+                      </a>
                     </div>
                   )}
                 </div>
@@ -469,37 +771,117 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* GALLERY */}
+        {/* ── GALLERY ───────────────────────────────────────────────────────── */}
         {tab === 'gallery' && (
           <div className="space-y-6">
-            <div><h2 className="font-heading font-bold text-white text-2xl">Gallery</h2><p className="text-[#9CA3AF] text-sm mt-1">Completed creatives uploaded for your account.</p></div>
-            {loadingRequest ? <div className="glass-card rounded-2xl p-10 flex items-center justify-center"><Loader size={20} className="animate-spin text-[#A855F7]" /></div>
-              : galleryCreatives.length === 0 ? <div className="glass-card rounded-2xl p-10 flex flex-col items-center text-center"><div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4" style={{ background: 'rgba(168,85,247,0.1)', border: '1px solid rgba(168,85,247,0.2)' }}><Images size={24} className="text-[#A855F7]" /></div><h3 className="font-heading font-semibold text-white text-lg mb-2">No uploaded creatives yet</h3><p className="text-[#9CA3AF] text-sm max-w-sm">Once the team uploads completed creatives for you, they will appear here.</p></div>
-              : <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">{galleryCreatives.map(request => {
-                const creativeIsImage = isImageUrl(request.creative_url);
-                return (
-                  <div key={request.id} className="glass-card rounded-2xl overflow-hidden">
-                    <div className="relative aspect-square bg-white/[0.04] flex items-center justify-center">
-                      {creativeIsImage ? <a href={request.creative_url} target="_blank" rel="noopener noreferrer" className="block w-full h-full"><img src={request.creative_url} alt={request.creative_caption || `${request.brand_name} creative`} className="w-full h-full object-cover" loading="lazy" /></a> : <div className="text-center p-6"><Download size={28} className="text-[#A855F7] mx-auto mb-3" /><p className="text-white font-heading font-semibold text-sm">Download file</p></div>}
+            <div>
+              <h2 className="font-heading font-bold text-white text-2xl">Gallery</h2>
+              <p className="text-[#9CA3AF] text-sm mt-1">Completed creatives uploaded for your account.</p>
+            </div>
+            {loadingRequest ? (
+              <div className="glass-card rounded-2xl p-10 flex items-center justify-center"><Loader size={20} className="animate-spin text-[#A855F7]" /></div>
+            ) : galleryCreatives.length === 0 ? (
+              <div className="glass-card rounded-2xl p-10 flex flex-col items-center text-center">
+                <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4" style={{ background: 'rgba(168,85,247,0.1)', border: '1px solid rgba(168,85,247,0.2)' }}><Images size={24} className="text-[#A855F7]" /></div>
+                <h3 className="font-heading font-semibold text-white text-lg mb-2">No uploaded creatives yet</h3>
+                <p className="text-[#9CA3AF] text-sm max-w-sm">Once the team uploads completed creatives for you, they will appear here.</p>
+              </div>
+            ) : (
+              <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                {galleryCreatives.map(request => {
+                  const creativeIsImage = isImageUrl(request.creative_url);
+                  const creativeIsVideo = isVideoUrl(request.creative_url);
+                  const feedbackMessages = messages.filter(m => m.creative_request_id === request.id);
+                  return (
+                    <div key={request.id} className="glass-card rounded-2xl overflow-hidden"
+                      style={isCloutClub ? { border: '1px solid rgba(168,85,247,0.15)' } : {}}>
+                      <div className="relative aspect-square bg-white/[0.04] flex items-center justify-center">
+                        {creativeIsVideo ? (
+                          <video src={request.creative_url} controls className="w-full h-full object-contain" preload="metadata" />
+                        ) : creativeIsImage ? (
+                          <a href={request.creative_url} target="_blank" rel="noopener noreferrer" className="block w-full h-full">
+                            <img src={request.creative_url} alt={request.creative_caption || `${request.brand_name} creative`} className="w-full h-full object-cover" loading="lazy" />
+                          </a>
+                        ) : (
+                          <div className="text-center p-6">
+                            <Download size={28} className="text-[#A855F7] mx-auto mb-3" />
+                            <p className="text-white font-heading font-semibold text-sm">Download file</p>
+                          </div>
+                        )}
+                      </div>
+                      <div className="relative z-10 p-4">
+                        <p className="text-[#6B7280] text-[10px] font-semibold uppercase tracking-widest mb-1">{request.brand_name}</p>
+                        <h3 className="font-heading font-semibold text-white text-base">{request.creative_caption || 'Creative'}</h3>
+                        {request.client_message && <p className="text-[#D1D5DB] text-sm leading-relaxed mt-3">{request.client_message}</p>}
+                        <div className="flex items-center gap-2 mt-4">
+                          <a href={request.creative_url} target="_blank" rel="noopener noreferrer" download className="btn-secondary text-xs py-2 px-4 flex-1 justify-center">
+                            <Download size={13} /> Download
+                          </a>
+                          {isCloutClub && (
+                            <button
+                              onClick={() => setFeedbackOpen(feedbackOpen === request.id ? null : request.id)}
+                              className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-xl font-medium transition-all"
+                              style={{
+                                background: feedbackOpen === request.id ? 'rgba(168,85,247,0.15)' : 'rgba(168,85,247,0.08)',
+                                border: '1px solid rgba(168,85,247,0.25)',
+                                color: '#C084FC',
+                              }}
+                            >
+                              <MessageSquare size={12} />
+                              {feedbackMessages.length > 0 ? `${feedbackMessages.length}` : 'Feedback'}
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Feedback panel */}
+                        {isCloutClub && feedbackOpen === request.id && (
+                          <div className="mt-3 rounded-xl overflow-hidden"
+                            style={{ background: 'rgba(168,85,247,0.05)', border: '1px solid rgba(168,85,247,0.2)' }}>
+                            {feedbackMessages.length > 0 && (
+                              <div className="p-3 space-y-2 max-h-40 overflow-y-auto">
+                                {feedbackMessages.map(m => (
+                                  <div key={m.id} className={`text-xs px-3 py-2 rounded-xl ${m.is_from_admin ? 'text-[#E2E8F0]' : 'text-[#F3E8FF]'}`}
+                                    style={{ background: m.is_from_admin ? 'rgba(99,102,241,0.1)' : 'rgba(168,85,247,0.12)' }}>
+                                    <span className="font-semibold text-[10px] block mb-0.5"
+                                      style={{ color: m.is_from_admin ? '#818CF8' : '#C084FC' }}>
+                                      {m.is_from_admin ? 'CloutKart' : 'You'}
+                                    </span>
+                                    {m.content}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            <div className="flex gap-2 p-2">
+                              <input
+                                value={feedbackText}
+                                onChange={e => setFeedbackText(e.target.value)}
+                                onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendFeedback(request.id); } }}
+                                placeholder="Leave feedback..."
+                                className="flex-1 rounded-lg px-3 py-2 text-xs text-white placeholder-[#6B7280] focus:outline-none bg-white/[0.05] border border-white/[0.1] focus:border-[rgba(168,85,247,0.4)]"
+                              />
+                              <button
+                                onClick={() => sendFeedback(request.id)}
+                                disabled={sendingFeedback || !feedbackText.trim()}
+                                className="w-8 h-8 rounded-lg flex items-center justify-center disabled:opacity-40"
+                                style={{ background: 'rgba(168,85,247,0.2)', border: '1px solid rgba(168,85,247,0.3)' }}>
+                                {sendingFeedback ? <Loader size={11} className="animate-spin text-[#C084FC]" /> : <Send size={11} className="text-[#C084FC]" />}
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    <div className="relative z-10 p-4">
-                      <p className="text-[#6B7280] text-[10px] font-semibold uppercase tracking-widest mb-1">{request.brand_name}</p>
-                      <h3 className="font-heading font-semibold text-white text-base">{request.creative_caption || 'Creative'}</h3>
-                      {request.client_message && <p className="text-[#D1D5DB] text-sm leading-relaxed mt-3">{request.client_message}</p>}
-                      <a href={request.creative_url} target="_blank" rel="noopener noreferrer" download className="btn-secondary text-xs mt-4 py-2 px-4"><Download size={13} /> Download</a>
-                    </div>
-                  </div>
-                );
-              })}</div>}
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
 
-        {/* MY PLAN */}
+        {/* ── MY PLAN ───────────────────────────────────────────────────────── */}
         {tab === 'plan' && (
           <div className="space-y-6">
             <h2 className="font-heading font-bold text-white text-2xl">My Plan</h2>
-
-            {/* Current plan */}
             <div className="glass-card rounded-2xl p-6">
               <div className="flex items-center justify-between mb-4">
                 <div>
@@ -508,16 +890,17 @@ export default function Dashboard() {
                 </div>
                 <span className="text-xs px-3 py-1 rounded-full font-semibold" style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)', color: '#10B981' }}>Active</span>
               </div>
-              <div className="mb-5 inline-flex items-center gap-3 rounded-2xl px-4 py-3" style={{ background: 'rgba(168,85,247,0.08)', border: '1px solid rgba(168,85,247,0.18)' }}>
-                <span className="font-mono font-bold gradient-text text-xl">{freeCreativesLeft}</span>
-                <div>
-                  <p className="text-white text-sm font-semibold">{freeCreativesLeft === 1 ? 'free creative left' : 'free creatives left'}</p>
-                  <p className="text-[#9CA3AF] text-xs">{creativeCount}/{FREE_CREATIVE_LIMIT} claimed</p>
+              {!isCloutClub && (
+                <div className="mb-5 inline-flex items-center gap-3 rounded-2xl px-4 py-3" style={{ background: 'rgba(168,85,247,0.08)', border: '1px solid rgba(168,85,247,0.18)' }}>
+                  <span className="font-mono font-bold gradient-text text-xl">{freeCreativesLeft}</span>
+                  <div>
+                    <p className="text-white text-sm font-semibold">{freeCreativesLeft === 1 ? 'free creative left' : 'free creatives left'}</p>
+                    <p className="text-[#9CA3AF] text-xs">{freeCreativeCount}/{FREE_CREATIVE_LIMIT} claimed</p>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
 
-            {/* Clout Club upgrade section */}
             <div className="glass-card rounded-2xl p-6 sm:p-8">
               <div className="flex items-start gap-3 mb-6">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(168,85,247,0.12)', border: '1px solid rgba(168,85,247,0.25)' }}>
@@ -528,7 +911,6 @@ export default function Dashboard() {
                   <p className="text-[#9CA3AF] text-sm mt-1">Recurring monthly creative production — built around your winning message.</p>
                 </div>
               </div>
-
               <div className="grid sm:grid-cols-2 gap-3 mb-6">
                 {['Monthly creative production', 'Priority turnaround', 'Hook, caption & visual direction', 'Fresh concepts each campaign'].map(f => (
                   <div key={f} className="flex items-start gap-2.5 text-sm text-[#D1D5DB] rounded-xl p-3" style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.06)' }}>
@@ -537,7 +919,6 @@ export default function Dashboard() {
                   </div>
                 ))}
               </div>
-
               {isCloutClub ? (
                 <div className="flex items-center gap-3 rounded-2xl p-4" style={{ background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.2)' }}>
                   <CheckCircle size={16} className="text-[#10B981] flex-shrink-0" />
@@ -547,7 +928,6 @@ export default function Dashboard() {
                   </div>
                 </div>
               ) : profile.clout_club_price ? (
-                // Price set by admin — show Razorpay button
                 <div className="space-y-4">
                   <div className="rounded-2xl p-4" style={{ background: 'rgba(168,85,247,0.06)', border: '1px solid rgba(168,85,247,0.2)' }}>
                     <p className="text-[#9CA3AF] text-xs mb-1 uppercase tracking-widest font-semibold">Your custom price</p>
@@ -563,10 +943,10 @@ export default function Dashboard() {
                     amountPaise={profile.clout_club_price}
                     userEmail={user?.email ?? ''}
                     userName={profile.full_name ?? user?.user_metadata?.full_name ?? ''}
+                    userId={user?.id ?? ''}
                   />
                 </div>
               ) : (
-                // No price set yet — show "Negotiable" state
                 <div className="space-y-4">
                   <div className="rounded-2xl p-5" style={{ background: 'rgba(255,255,255,0.03)', border: '1px dashed rgba(255,255,255,0.12)' }}>
                     <div className="flex items-center gap-3 mb-3">
@@ -578,19 +958,11 @@ export default function Dashboard() {
                         <p className="text-[#9CA3AF] text-xs">Pricing is personalised for each brand</p>
                       </div>
                     </div>
-                    <p className="text-[#9CA3AF] text-sm leading-relaxed">
-                      Clout Club pricing is set based on your brand's needs, volume, and goals. Get in touch and we'll put together a custom package for you.
-                    </p>
+                    <p className="text-[#9CA3AF] text-sm leading-relaxed">Clout Club pricing is set based on your brand's needs, volume, and goals. Get in touch and we'll put together a custom package for you.</p>
                   </div>
                   <div className="flex flex-col sm:flex-row gap-3">
-                    <a href="/#contact" className="btn-primary text-sm justify-center">
-                      <MessageCircle size={14} />
-                      Contact Us to Get Started
-                    </a>
-                    <a href="mailto:inquiry@clout-kart.com" className="btn-secondary text-sm justify-center">
-                      <ExternalLink size={14} />
-                      Email Us
-                    </a>
+                    <a href="/#contact" className="btn-primary text-sm justify-center"><MessageCircle size={14} />Contact Us to Get Started</a>
+                    <a href="mailto:inquiry@clout-kart.com" className="btn-secondary text-sm justify-center"><ExternalLink size={14} />Email Us</a>
                   </div>
                 </div>
               )}
@@ -598,7 +970,59 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* SETTINGS */}
+        {/* ── MESSAGES (Clout Club only) ─────────────────────────────────── */}
+        {tab === 'messages' && isCloutClub && (
+          <div className="space-y-4 flex flex-col" style={{ height: 'calc(100vh - 9rem)' }}>
+            <div>
+              <h2 className="font-heading font-bold text-white text-2xl">Messages</h2>
+              <p className="text-[#9CA3AF] text-sm mt-1">Chat with your CloutKart team. Feedback on specific creatives appears here too.</p>
+            </div>
+            <div className="flex-1 flex flex-col rounded-2xl overflow-hidden min-h-0"
+              style={{ background: 'rgba(168,85,247,0.04)', border: '1px solid rgba(168,85,247,0.18)' }}>
+              {/* Messages list */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-1">
+                {loadingMessages ? (
+                  <div className="flex items-center justify-center h-full"><Loader size={20} className="animate-spin text-[#A855F7]" /></div>
+                ) : messages.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-full text-center py-12">
+                    <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-3"
+                      style={{ background: 'rgba(168,85,247,0.1)', border: '1px solid rgba(168,85,247,0.2)' }}>
+                      <MessageCircle size={20} className="text-[#A855F7]" />
+                    </div>
+                    <p className="text-white font-heading font-semibold text-sm mb-1">Start a conversation</p>
+                    <p className="text-[#9CA3AF] text-xs max-w-xs">Send a message to your CloutKart team. They'll respond within 24 hours.</p>
+                  </div>
+                ) : (
+                  messages.map(msg => (
+                    <MessageBubble key={msg.id} msg={msg} creativeRequests={creativeRequests} />
+                  ))
+                )}
+                <div ref={chatEndRef} />
+              </div>
+              {/* Input */}
+              <div className="p-3 border-t border-white/[0.08]">
+                <div className="flex gap-2">
+                  <input
+                    value={messageInput}
+                    onChange={e => setMessageInput(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
+                    placeholder="Message your CloutKart team..."
+                    className="flex-1 rounded-xl px-4 py-2.5 text-sm text-white placeholder-[#6B7280] focus:outline-none bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(168,85,247,0.4)]"
+                  />
+                  <button
+                    onClick={sendMessage}
+                    disabled={sendingMessage || !messageInput.trim()}
+                    className="w-10 h-10 rounded-xl flex items-center justify-center transition-all disabled:opacity-40"
+                    style={{ background: 'linear-gradient(135deg, rgba(168,85,247,0.5), rgba(99,102,241,0.5))', border: '1px solid rgba(168,85,247,0.4)' }}>
+                    {sendingMessage ? <Loader size={14} className="animate-spin text-white" /> : <Send size={14} className="text-white" />}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── SETTINGS ──────────────────────────────────────────────────────── */}
         {tab === 'settings' && (
           <div className="space-y-6 max-w-lg">
             <h2 className="font-heading font-bold text-white text-2xl">Settings</h2>

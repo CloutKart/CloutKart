@@ -5,12 +5,13 @@ import {
   LayoutDashboard, Image, CreditCard, Users, Settings, LogOut,
   Plus, ArrowRight, Search, Upload, Loader,
   Eye, EyeOff, Trash2, RefreshCw, ChevronLeft, X, CheckCircle, Clock,
-  AlertCircle, IndianRupee, Sparkles, Edit2, Check
+  AlertCircle, IndianRupee, Sparkles, Edit2, Check, MessageSquare,
+  Send, Star, TrendingUp
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 
-type Tab = 'overview' | 'requests' | 'payments' | 'users' | 'portfolio' | 'cloutclub' | 'settings';
+type Tab = 'overview' | 'requests' | 'payments' | 'users' | 'portfolio' | 'cloutclub' | 'messages' | 'settings';
 type RequestFilter = 'all' | 'pending' | 'in_progress' | 'completed';
 
 interface Profile {
@@ -67,6 +68,18 @@ interface PortfolioImage {
   display_order: number;
 }
 
+interface Message {
+  id: string;
+  user_id: string;
+  sender_id: string;
+  is_from_admin: boolean;
+  content: string;
+  type: 'chat' | 'feedback';
+  creative_request_id?: string | null;
+  is_read: boolean;
+  created_at: string;
+}
+
 const statusColors: Record<string, { bg: string; border: string; text: string; label: string }> = {
   pending:     { bg: 'rgba(245,158,11,0.1)',  border: 'rgba(245,158,11,0.25)',  text: '#F59E0B', label: 'Pending'     },
   in_progress: { bg: 'rgba(59,130,246,0.1)',  border: 'rgba(59,130,246,0.25)',  text: '#3B82F6', label: 'In Progress' },
@@ -74,15 +87,11 @@ const statusColors: Record<string, { bg: string; border: string; text: string; l
 };
 
 const PlanBadge = ({ plan }: { plan: string }) => {
-  const isCloutClub = plan === 'clout_club';
+  const isCC = plan === 'clout_club';
   return (
     <span className="text-xs font-semibold px-2 py-0.5 rounded-md capitalize"
-      style={{
-        background: isCloutClub ? 'rgba(168,85,247,0.12)' : 'rgba(99,102,241,0.08)',
-        border: isCloutClub ? '1px solid rgba(168,85,247,0.3)' : '1px solid rgba(99,102,241,0.2)',
-        color: isCloutClub ? '#C084FC' : '#818CF8'
-      }}>
-      {isCloutClub ? 'Clout Club' : plan}
+      style={{ background: isCC ? 'rgba(168,85,247,0.12)' : 'rgba(99,102,241,0.08)', border: isCC ? '1px solid rgba(168,85,247,0.3)' : '1px solid rgba(99,102,241,0.2)', color: isCC ? '#C084FC' : '#818CF8' }}>
+      {isCC ? 'Clout Club' : plan}
     </span>
   );
 };
@@ -97,6 +106,11 @@ function storagePathFromUrl(url: string): string | null {
   const marker = '/storage/v1/object/public/portfolio/';
   const idx = url.indexOf(marker);
   return idx !== -1 ? url.slice(idx + marker.length) : null;
+}
+function getGreeting(name: string) {
+  const h = new Date().getHours();
+  const part = h < 12 ? 'morning' : h < 17 ? 'afternoon' : 'evening';
+  return `Good ${part}, ${name}`;
 }
 
 // ─── Status dropdown ────────────────────────────────────────────────────────
@@ -120,18 +134,13 @@ function StatusDropdown({ request, onUpdate }: {
   function updateDropdownPosition() {
     const rect = buttonRef.current?.getBoundingClientRect();
     if (!rect) return;
-    setDropdownPosition({
-      top: rect.bottom + 4,
-      left: Math.min(rect.left, window.innerWidth - 146),
-    });
+    setDropdownPosition({ top: rect.bottom + 4, left: Math.min(rect.left, window.innerWidth - 146) });
   }
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       const target = e.target as Node;
-      if (dropdownRef.current && !dropdownRef.current.contains(target) && !menuRef.current?.contains(target)) {
-        setOpen(false);
-      }
+      if (dropdownRef.current && !dropdownRef.current.contains(target) && !menuRef.current?.contains(target)) setOpen(false);
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
@@ -142,26 +151,19 @@ function StatusDropdown({ request, onUpdate }: {
     updateDropdownPosition();
     window.addEventListener('resize', updateDropdownPosition);
     window.addEventListener('scroll', updateDropdownPosition, true);
-    return () => {
-      window.removeEventListener('resize', updateDropdownPosition);
-      window.removeEventListener('scroll', updateDropdownPosition, true);
-    };
+    return () => { window.removeEventListener('resize', updateDropdownPosition); window.removeEventListener('scroll', updateDropdownPosition, true); };
   }, [open]);
 
   async function handleStatusClick(newStatus: string) {
     setOpen(false);
-    if (newStatus === 'completed') {
-      setShowUpload(true);
-    } else {
-      await supabase.from('free_creative_requests').update({ status: newStatus }).eq('id', request.id);
-      onUpdate(request.id, newStatus);
-    }
+    if (newStatus === 'completed') { setShowUpload(true); return; }
+    await supabase.from('free_creative_requests').update({ status: newStatus }).eq('id', request.id);
+    onUpdate(request.id, newStatus);
   }
 
   async function handleFileUpload(file: File) {
     if (file.size > 20 * 1024 * 1024) { setUploadError('File too large. Max 20MB.'); return; }
-    setUploading(true);
-    setUploadError('');
+    setUploading(true); setUploadError('');
     const ext = file.name.split('.').pop();
     const path = `${request.id}/${Date.now()}.${ext}`;
     const { error: uploadErr } = await supabase.storage.from('creatives').upload(path, file, { upsert: true });
@@ -170,19 +172,15 @@ function StatusDropdown({ request, onUpdate }: {
     const creative_url = urlData.publicUrl;
     await supabase.from('free_creative_requests').update({ status: 'completed', creative_url, creative_caption: creativeCaption.trim(), client_message: clientMessage.trim() }).eq('id', request.id);
     onUpdate(request.id, 'completed', creative_url, creativeCaption.trim(), clientMessage.trim());
-    setUploading(false);
-    setShowUpload(false);
+    setUploading(false); setShowUpload(false);
   }
 
   return (
     <>
       <div className="relative" ref={dropdownRef}>
-        <button
-          ref={buttonRef}
-          onClick={() => { updateDropdownPosition(); setOpen(o => !o); }}
+        <button ref={buttonRef} onClick={() => { updateDropdownPosition(); setOpen(o => !o); }}
           className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold transition-all"
-          style={{ background: s.bg, border: `1px solid ${s.border}`, color: s.text }}
-        >
+          style={{ background: s.bg, border: `1px solid ${s.border}`, color: s.text }}>
           {s.label}
           <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor">
             <path d="M2 3.5l3 3 3-3" stroke="currentColor" strokeWidth="1.2" fill="none" strokeLinecap="round"/>
@@ -191,7 +189,7 @@ function StatusDropdown({ request, onUpdate }: {
         {open && createPortal(
           <div ref={menuRef} className="fixed z-[220] rounded-xl p-1 min-w-[130px] shadow-xl"
             style={{ top: dropdownPosition.top, left: dropdownPosition.left, background: 'rgba(12,12,12,0.98)', border: '1px solid rgba(255,255,255,0.1)' }}>
-            {['pending', 'in_progress', 'completed'].map(st => {
+            {(['pending', 'in_progress', 'completed'] as const).map(st => {
               const sc = statusColors[st];
               return (
                 <button key={st} onClick={() => handleStatusClick(st)}
@@ -204,8 +202,7 @@ function StatusDropdown({ request, onUpdate }: {
                 </button>
               );
             })}
-          </div>,
-          document.body
+          </div>, document.body
         )}
       </div>
       {showUpload && createPortal(
@@ -229,30 +226,30 @@ function StatusDropdown({ request, onUpdate }: {
               onClick={() => !uploading && fileRef.current?.click()}
               onDragOver={e => e.preventDefault()}
               onDrop={e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) handleFileUpload(f); }}>
-              {uploading ? <><Loader size={24} className="animate-spin text-[#818CF8]" /><p className="text-[#9CA3AF] text-sm">Uploading...</p></> : <><div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.2)' }}><Upload size={20} className="text-[#818CF8]" /></div><p className="text-[#9CA3AF] text-sm text-center">Click or drag & drop the creative file</p><p className="text-[#6B7280] text-xs">Images, videos, ZIP — max 20MB</p></>}
+              {uploading
+                ? <><Loader size={24} className="animate-spin text-[#818CF8]" /><p className="text-[#9CA3AF] text-sm">Uploading...</p></>
+                : <><div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.2)' }}><Upload size={20} className="text-[#818CF8]" /></div><p className="text-[#9CA3AF] text-sm text-center">Click or drag & drop the creative file</p><p className="text-[#6B7280] text-xs">Images, videos, ZIP — max 20MB</p></>
+              }
               <input ref={fileRef} type="file" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handleFileUpload(f); }} />
             </div>
             {uploadError && <div className="flex items-center gap-2 bg-red-500/[0.06] border border-red-500/20 rounded-xl p-3"><AlertCircle size={14} className="text-red-400 flex-shrink-0" /><span className="text-red-300 text-xs">{uploadError}</span></div>}
             <p className="text-[#6B7280] text-xs text-center mt-3">Marked as <span className="text-[#10B981] font-semibold">Completed</span> once uploaded.</p>
           </div>
-        </div>,
-        document.body
+        </div>, document.body
       )}
     </>
   );
 }
 
-// ─── Price editor inline cell ────────────────────────────────────────────────
+// ─── Price editor ────────────────────────────────────────────────────────────
 function PriceEditor({ userId, currentPrice, onSave }: {
-  userId: string;
-  currentPrice: number | null;
+  userId: string; currentPrice: number | null;
   onSave: (userId: string, price: number | null) => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(currentPrice ? String(currentPrice / 100) : '');
   const [saving, setSaving] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-
   useEffect(() => { if (editing) inputRef.current?.focus(); }, [editing]);
 
   async function save() {
@@ -260,33 +257,23 @@ function PriceEditor({ userId, currentPrice, onSave }: {
     const parsed = value.trim() === '' ? null : Math.round(parseFloat(value) * 100);
     if (parsed !== null && (isNaN(parsed) || parsed <= 0)) { setSaving(false); return; }
     await supabase.from('profiles').update({ clout_club_price: parsed }).eq('id', userId);
-    onSave(userId, parsed);
-    setEditing(false);
-    setSaving(false);
+    onSave(userId, parsed); setEditing(false); setSaving(false);
   }
 
-  if (editing) {
-    return (
-      <div className="flex items-center gap-1.5">
-        <span className="text-[#9CA3AF] text-xs">₹</span>
-        <input
-          ref={inputRef}
-          type="number"
-          value={value}
-          onChange={e => setValue(e.target.value)}
-          onKeyDown={e => { if (e.key === 'Enter') save(); if (e.key === 'Escape') setEditing(false); }}
-          placeholder="amount"
-          className="w-24 rounded-lg px-2.5 py-1.5 text-xs text-white bg-white/[0.06] border border-white/[0.15] focus:border-[rgba(168,85,247,0.5)] focus:outline-none"
-        />
-        <button onClick={save} disabled={saving} className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)' }}>
-          {saving ? <Loader size={11} className="animate-spin text-[#10B981]" /> : <Check size={11} className="text-[#10B981]" />}
-        </button>
-        <button onClick={() => setEditing(false)} className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)' }}>
-          <X size={11} className="text-[#9CA3AF]" />
-        </button>
-      </div>
-    );
-  }
+  if (editing) return (
+    <div className="flex items-center gap-1.5">
+      <span className="text-[#9CA3AF] text-xs">₹</span>
+      <input ref={inputRef} type="number" value={value} onChange={e => setValue(e.target.value)}
+        onKeyDown={e => { if (e.key === 'Enter') save(); if (e.key === 'Escape') setEditing(false); }}
+        placeholder="amount" className="w-24 rounded-lg px-2.5 py-1.5 text-xs text-white bg-white/[0.06] border border-white/[0.15] focus:border-[rgba(168,85,247,0.5)] focus:outline-none" />
+      <button onClick={save} disabled={saving} className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)' }}>
+        {saving ? <Loader size={11} className="animate-spin text-[#10B981]" /> : <Check size={11} className="text-[#10B981]" />}
+      </button>
+      <button onClick={() => setEditing(false)} className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)' }}>
+        <X size={11} className="text-[#9CA3AF]" />
+      </button>
+    </div>
+  );
 
   return (
     <button onClick={() => setEditing(true)} className="flex items-center gap-2 group">
@@ -331,10 +318,24 @@ export default function Admin() {
   const [portfolioSections, setPortfolioSections] = useState<PortfolioSection[]>([]);
   const [loadingTab, setLoadingTab] = useState(false);
   const [ccSearch, setCcSearch] = useState('');
+  const [adminProfile, setAdminProfile] = useState<{ full_name: string | null } | null>(null);
+
+  // Messages state
+  const [msgUsers, setMsgUsers] = useState<Profile[]>([]);
+  const [selectedMsgUser, setSelectedMsgUser] = useState<Profile | null>(null);
+  const [threadMessages, setThreadMessages] = useState<Message[]>([]);
+  const [userCreatives, setUserCreatives] = useState<CreativeRequest[]>([]);
+  const [loadingThread, setLoadingThread] = useState(false);
+  const [replyText, setReplyText] = useState('');
+  const [sendingReply, setSendingReply] = useState(false);
+  const [msgFilter, setMsgFilter] = useState<'all' | 'chat' | 'feedback'>('all');
+  const [msgSearch, setMsgSearch] = useState('');
+  const [unreadByUser, setUnreadByUser] = useState<Record<string, number>>({});
+  const chatEndRef = useRef<HTMLDivElement>(null);
 
   const handleSignOut = async () => { await signOut(); navigate('/'); };
 
-  useEffect(() => { loadOverview(); }, []);
+  useEffect(() => { loadOverview(); loadAdminProfile(); }, []);
 
   useEffect(() => {
     if (!thumbnailFile) { setThumbnailPreview(''); return; }
@@ -349,7 +350,18 @@ export default function Admin() {
     else if (tab === 'users') loadUsers();
     else if (tab === 'portfolio') { setManagingSection(null); loadPortfolio(); }
     else if (tab === 'cloutclub') loadCloutClubUsers();
+    else if (tab === 'messages') loadMessageUsers();
   }, [tab]);
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [threadMessages]);
+
+  async function loadAdminProfile() {
+    if (!user) return;
+    const { data } = await supabase.from('profiles').select('full_name').eq('id', user.id).maybeSingle();
+    setAdminProfile(data);
+  }
 
   async function loadOverview() {
     setLoadingTab(true);
@@ -402,12 +414,7 @@ export default function Admin() {
 
   async function loadCloutClubUsers() {
     setLoadingTab(true);
-    // Load all non-admin users for Clout Club management
-    const { data } = await supabase
-      .from('profiles')
-      .select('id, full_name, company_name, plan, clout_club_price, created_at')
-      .not('plan', 'eq', 'admin')
-      .order('created_at', { ascending: false });
+    const { data } = await supabase.from('profiles').select('id, full_name, company_name, plan, clout_club_price, created_at').not('plan', 'eq', 'admin').order('created_at', { ascending: false });
     setCloutClubUsers((data as Profile[]) ?? []);
     setLoadingTab(false);
   }
@@ -422,16 +429,67 @@ export default function Admin() {
     setLoadingTab(false);
   }
 
+  async function loadMessageUsers() {
+    setLoadingTab(true);
+    // Load CC users who have sent messages
+    const { data: msgs } = await supabase.from('messages').select('user_id, is_read, is_from_admin').order('created_at', { ascending: false });
+    if (!msgs || msgs.length === 0) { setMsgUsers([]); setLoadingTab(false); return; }
+
+    const userIds = [...new Set((msgs as { user_id: string }[]).map(m => m.user_id))];
+    const { data: profiles } = await supabase.from('profiles').select('id, full_name, company_name, plan, clout_club_price, created_at').in('id', userIds);
+
+    // Count unread (client messages not yet replied = is_from_admin=false is what admin needs to read)
+    const unread: Record<string, number> = {};
+    (msgs as { user_id: string; is_read: boolean; is_from_admin: boolean }[]).forEach(m => {
+      if (!m.is_from_admin && !m.is_read) {
+        unread[m.user_id] = (unread[m.user_id] ?? 0) + 1;
+      }
+    });
+
+    setUnreadByUser(unread);
+    setMsgUsers((profiles as Profile[]) ?? []);
+    setLoadingTab(false);
+  }
+
+  async function openThread(u: Profile) {
+    setSelectedMsgUser(u);
+    setLoadingThread(true);
+    const [{ data: msgs }, { data: creatives }] = await Promise.all([
+      supabase.from('messages').select('*').eq('user_id', u.id).order('created_at', { ascending: true }),
+      supabase.from('free_creative_requests').select('*').eq('user_id', u.id),
+    ]);
+    setThreadMessages((msgs as Message[]) ?? []);
+    setUserCreatives((creatives as CreativeRequest[]) ?? []);
+    setLoadingThread(false);
+
+    // Mark client messages as read
+    await supabase.from('messages').update({ is_read: true }).eq('user_id', u.id).eq('is_from_admin', false);
+    setUnreadByUser(prev => ({ ...prev, [u.id]: 0 }));
+  }
+
+  async function sendReply() {
+    if (!replyText.trim() || !selectedMsgUser || !user) return;
+    setSendingReply(true);
+    const { data: inserted } = await supabase.from('messages').insert({
+      user_id: selectedMsgUser.id,
+      sender_id: user.id,
+      is_from_admin: true,
+      content: replyText.trim(),
+      type: 'chat',
+    }).select().single();
+    if (inserted) setThreadMessages(prev => [...prev, inserted as Message]);
+    setReplyText('');
+    setSendingReply(false);
+  }
+
   function handleRequestUpdate(id: string, status: string, creativeUrl?: string, creativeCaption?: string, clientMessage?: string) {
     setRequests(prev => prev.map(r => r.id === id ? { ...r, status, creative_url: creativeUrl ?? r.creative_url, creative_caption: creativeCaption ?? r.creative_caption, client_message: clientMessage ?? r.client_message } : r));
   }
 
   async function openImageManager(section: PortfolioSection) {
-    setManagingSection(section);
-    setLoadingImages(true);
+    setManagingSection(section); setLoadingImages(true);
     const { data } = await supabase.from('portfolio_images').select('*').eq('section_id', section.id).order('display_order', { ascending: true });
-    setSectionImages((data as PortfolioImage[]) ?? []);
-    setLoadingImages(false);
+    setSectionImages((data as PortfolioImage[]) ?? []); setLoadingImages(false);
   }
 
   async function uploadImagesToSection(files: FileList) {
@@ -525,6 +583,14 @@ export default function Admin() {
     month: (() => { const d = new Date(); d.setDate(1); return payments.filter(p => new Date(p.created_at) >= d).reduce((s, p) => s + p.amount, 0); })(),
     allTime: payments.reduce((s, p) => s + p.amount, 0),
   };
+  const filteredThread = msgFilter === 'all' ? threadMessages : threadMessages.filter(m => m.type === msgFilter);
+  const filteredMsgUsers = msgUsers.filter(u => !msgSearch || (u.full_name ?? '').toLowerCase().includes(msgSearch.toLowerCase()) || (u.company_name ?? '').toLowerCase().includes(msgSearch.toLowerCase()));
+  const totalUnread = Object.values(unreadByUser).reduce((a, b) => a + b, 0);
+
+  const adminName = adminProfile?.full_name
+    || user?.user_metadata?.full_name
+    || user?.email?.split('@')[0]
+    || 'Founder';
 
   const inputClass = "w-full rounded-xl px-4 py-3.5 text-sm text-white placeholder-[#6B7280] focus:outline-none transition-all duration-200 font-medium bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(99,102,241,0.5)]";
   const thClass = "text-left text-[10px] font-bold text-[#6B7280] uppercase tracking-widest px-4 py-3";
@@ -536,33 +602,50 @@ export default function Admin() {
     { id: 'payments',   icon: CreditCard,      label: 'Payments'          },
     { id: 'users',      icon: Users,           label: 'Users'             },
     { id: 'cloutclub',  icon: Sparkles,        label: 'Clout Club'        },
+    { id: 'messages',   icon: MessageSquare,   label: 'Messages'          },
     { id: 'portfolio',  icon: Image,           label: 'Portfolio'         },
     { id: 'settings',   icon: Settings,        label: 'Settings'          },
   ];
 
   return (
-    <div className="min-h-screen flex" style={{ background: '#080808', backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.04) 1px, transparent 1px)', backgroundSize: '28px 28px' }}>
+    <div className="min-h-screen flex"
+      style={{ background: '#060610', backgroundImage: 'radial-gradient(ellipse 100% 50% at 50% 0%, rgba(99,102,241,0.06) 0%, transparent 60%), radial-gradient(circle, rgba(255,255,255,0.025) 1px, transparent 1px)', backgroundSize: '100% 100%, 28px 28px' }}>
+
       {/* Sidebar */}
-      <aside className="hidden md:flex flex-col w-60 flex-shrink-0 border-r border-white/[0.06]" style={{ background: 'rgba(10,10,10,0.95)' }}>
+      <aside className="hidden md:flex flex-col w-60 flex-shrink-0 border-r"
+        style={{ background: 'linear-gradient(180deg, rgba(8,8,22,0.98) 0%, rgba(6,6,16,0.98) 100%)', borderColor: 'rgba(99,102,241,0.12)' }}>
         <div className="px-5 pt-6 pb-4">
           <Link to="/"><img src="/logo.png" alt="CloutKart" className="h-8 w-auto object-contain opacity-80" /></Link>
-          <p className="text-[10px] text-[#6B7280] mt-2 font-mono uppercase tracking-wider">Admin Panel</p>
+          <div className="mt-2 flex items-center gap-1.5">
+            <div className="w-1.5 h-1.5 rounded-full bg-[#818CF8]" />
+            <p className="text-[10px] text-[#818CF8] font-mono uppercase tracking-wider">Founder Panel</p>
+          </div>
         </div>
-        <div className="h-px mx-5 bg-white/[0.06]" />
-        <nav className="flex-1 px-3 pt-4 space-y-1 overflow-y-auto">
+        <div className="h-px mx-5" style={{ background: 'rgba(99,102,241,0.15)' }} />
+        <nav className="flex-1 px-3 pt-4 space-y-0.5 overflow-y-auto">
           {navItems.map(({ id, icon: Icon, label }) => {
             const active = tab === id;
             const isCC = id === 'cloutclub';
+            const isMsg = id === 'messages';
             return (
-              <button key={id} onClick={() => setTab(id)} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-left"
-                style={{ background: active ? (isCC ? 'rgba(168,85,247,0.08)' : 'rgba(99,102,241,0.08)') : 'transparent', borderLeft: active ? `2px solid ${isCC ? '#A855F7' : '#818CF8'}` : '2px solid transparent' }}>
-                <Icon size={16} style={{ color: active ? (isCC ? '#A855F7' : '#818CF8') : '#9CA3AF' }} />
-                <span style={active ? { background: isCC ? 'linear-gradient(135deg,#A855F7,#06B6D4)' : 'linear-gradient(135deg,#818CF8,#3B82F6,#06B6D4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' } : { color: '#D1D5DB' }}>{label}</span>
+              <button key={id} onClick={() => setTab(id)}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-left"
+                style={{ background: active ? (isCC ? 'rgba(168,85,247,0.1)' : 'rgba(99,102,241,0.1)') : 'transparent', borderLeft: active ? `2px solid ${isCC ? '#A855F7' : '#818CF8'}` : '2px solid transparent' }}>
+                <div className="relative">
+                  <Icon size={16} style={{ color: active ? (isCC ? '#A855F7' : '#818CF8') : '#9CA3AF' }} />
+                  {isMsg && totalUnread > 0 && (
+                    <span className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 rounded-full text-[8px] font-bold flex items-center justify-center"
+                      style={{ background: '#EF4444', color: '#fff' }}>{totalUnread > 9 ? '9+' : totalUnread}</span>
+                  )}
+                </div>
+                <span style={active ? { background: isCC ? 'linear-gradient(135deg,#A855F7,#06B6D4)' : 'linear-gradient(135deg,#818CF8,#3B82F6,#06B6D4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' } : { color: '#D1D5DB' }}>
+                  {label}
+                </span>
               </button>
             );
           })}
         </nav>
-        <div className="px-5 pb-6 pt-4 border-t border-white/[0.06]">
+        <div className="px-5 pb-6 pt-4 border-t" style={{ borderColor: 'rgba(99,102,241,0.12)' }}>
           <p className="text-[#6B7280] text-xs mb-3 truncate">{user?.email}</p>
           <button onClick={handleSignOut} className="flex items-center gap-2 text-[#9CA3AF] hover:text-white transition-colors text-sm"><LogOut size={14} /> Log Out</button>
         </div>
@@ -572,30 +655,69 @@ export default function Admin() {
         {/* Mobile nav */}
         <div className="md:hidden flex items-center gap-2 mb-6 overflow-x-auto pb-1">
           {navItems.map(({ id, icon: Icon, label }) => (
-            <button key={id} onClick={() => setTab(id)} className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium whitespace-nowrap flex-shrink-0 transition-all"
+            <button key={id} onClick={() => setTab(id)}
+              className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium whitespace-nowrap flex-shrink-0 transition-all"
               style={{ background: tab === id ? 'rgba(99,102,241,0.12)' : 'rgba(255,255,255,0.04)', border: tab === id ? '1px solid rgba(99,102,241,0.3)' : '1px solid rgba(255,255,255,0.08)', color: tab === id ? '#818CF8' : '#9CA3AF' }}>
               <Icon size={13} />{label}
             </button>
           ))}
         </div>
 
-        {/* OVERVIEW */}
+        {/* ── OVERVIEW ──────────────────────────────────────────────────────── */}
         {tab === 'overview' && (
           <div className="space-y-6">
+            {/* Founder welcome */}
+            <div className="rounded-2xl p-6 relative overflow-hidden"
+              style={{ background: 'linear-gradient(135deg, rgba(8,8,28,0.95), rgba(14,10,35,0.9))', border: '1px solid rgba(99,102,241,0.3)' }}>
+              <div className="absolute inset-0 pointer-events-none">
+                <div className="absolute top-0 right-0 w-48 h-48 opacity-15"
+                  style={{ background: 'radial-gradient(circle, #6366F1, transparent)', transform: 'translate(30%, -30%)' }} />
+                <div className="absolute bottom-0 left-20 w-32 h-32 opacity-10"
+                  style={{ background: 'radial-gradient(circle, #06B6D4, transparent)', transform: 'translateY(40%)' }} />
+              </div>
+              <div className="relative flex items-start justify-between">
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Star size={12} className="text-[#818CF8]" fill="#818CF8" />
+                    <span className="text-[10px] font-bold uppercase tracking-widest"
+                      style={{ background: 'linear-gradient(135deg,#818CF8,#06B6D4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                      Founder Dashboard
+                    </span>
+                  </div>
+                  <h2 className="font-heading font-bold text-white text-2xl mb-1">{getGreeting(adminName)}</h2>
+                  <p className="text-[#9CA3AF] text-sm" style={{ color: '#94A3B8' }}>Here's your business at a glance.</p>
+                </div>
+                <div className="flex-shrink-0 w-12 h-12 rounded-2xl flex items-center justify-center"
+                  style={{ background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.3)' }}>
+                  <TrendingUp size={20} className="text-[#818CF8]" />
+                </div>
+              </div>
+            </div>
+
             <div className="flex items-center justify-between">
-              <h2 className="font-heading font-bold text-white text-2xl">Overview</h2>
+              <h3 className="font-heading font-semibold text-white text-lg">Key Metrics</h3>
               <button onClick={loadOverview} className="flex items-center gap-2 text-xs text-[#9CA3AF] hover:text-white transition-colors"><RefreshCw size={13} /> Refresh</button>
             </div>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              {[{ label: 'Total Users', value: overviewStats.totalUsers.toString() }, { label: 'Requests Today', value: overviewStats.requestsToday.toString() }, { label: 'Total Revenue', value: formatCurrency(overviewStats.totalRevenue) }, { label: 'Clout Club Rate', value: `${conversionRate}%` }].map(s => (
-                <div key={s.label} className="glass-card rounded-2xl p-5">
+              {[
+                { label: 'Total Users', value: overviewStats.totalUsers.toString(), color: '#818CF8' },
+                { label: 'Requests Today', value: overviewStats.requestsToday.toString(), color: '#06B6D4' },
+                { label: 'Total Revenue', value: formatCurrency(overviewStats.totalRevenue), color: '#10B981' },
+                { label: 'Clout Club Rate', value: `${conversionRate}%`, color: '#A855F7' },
+              ].map(s => (
+                <div key={s.label} className="glass-card rounded-2xl p-5 relative overflow-hidden"
+                  style={{ border: `1px solid ${s.color}22` }}>
+                  <div className="absolute top-0 right-0 w-16 h-16 opacity-10 rounded-full"
+                    style={{ background: `radial-gradient(circle, ${s.color}, transparent)`, transform: 'translate(30%, -30%)' }} />
                   <p className="text-[#9CA3AF] text-xs font-medium mb-2">{s.label}</p>
-                  <p className="font-mono font-bold text-xl gradient-text">{s.value}</p>
+                  <p className="font-mono font-bold text-xl" style={{ color: s.color }}>{s.value}</p>
                 </div>
               ))}
             </div>
-            <div className="glass-card rounded-2xl overflow-hidden">
-              <div className="px-5 py-4 border-b border-white/[0.06]"><h3 className="font-heading font-semibold text-white text-base">Recent Signups</h3></div>
+            <div className="glass-card rounded-2xl overflow-hidden" style={{ border: '1px solid rgba(99,102,241,0.12)' }}>
+              <div className="px-5 py-4 border-b flex items-center justify-between" style={{ borderColor: 'rgba(99,102,241,0.1)' }}>
+                <h3 className="font-heading font-semibold text-white text-base">Recent Signups</h3>
+              </div>
               {loadingTab ? <div className="flex items-center justify-center p-10"><Loader size={20} className="animate-spin text-[#818CF8]" /></div>
                 : recentUsers.length === 0 ? <p className="text-[#6B7280] text-sm text-center p-10">No users yet.</p>
                 : <div className="overflow-x-auto"><table className="w-full"><thead><tr><th className={thClass}>Name</th><th className={thClass}>Company</th><th className={thClass}>Plan</th><th className={thClass}>Date</th></tr></thead><tbody>{recentUsers.map(u => (<tr key={u.id}><td className={tdClass}>{u.full_name || '—'}</td><td className={tdClass + ' text-[#9CA3AF]'}>{u.company_name || '—'}</td><td className={tdClass}><PlanBadge plan={u.plan} /></td><td className={tdClass + ' text-[#9CA3AF]'}>{formatDate(u.created_at)}</td></tr>))}</tbody></table></div>}
@@ -603,7 +725,7 @@ export default function Admin() {
           </div>
         )}
 
-        {/* CREATIVE REQUESTS */}
+        {/* ── CREATIVE REQUESTS ─────────────────────────────────────────────── */}
         {tab === 'requests' && (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
@@ -626,7 +748,7 @@ export default function Admin() {
           </div>
         )}
 
-        {/* PAYMENTS */}
+        {/* ── PAYMENTS ──────────────────────────────────────────────────────── */}
         {tab === 'payments' && (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
@@ -646,7 +768,7 @@ export default function Admin() {
           </div>
         )}
 
-        {/* USERS */}
+        {/* ── USERS ─────────────────────────────────────────────────────────── */}
         {tab === 'users' && (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
@@ -668,109 +790,198 @@ export default function Admin() {
           </div>
         )}
 
-        {/* CLOUT CLUB MANAGEMENT */}
+        {/* ── CLOUT CLUB MANAGEMENT ─────────────────────────────────────────── */}
         {tab === 'cloutclub' && (
           <div className="space-y-6">
             <div className="flex items-center justify-between flex-wrap gap-3">
               <div>
                 <h2 className="font-heading font-bold text-white text-2xl">Clout Club Management</h2>
-                <p className="text-[#9CA3AF] text-sm mt-1">Set custom Razorpay pricing for each client. Prices are shown to the client in their dashboard.</p>
+                <p className="text-[#9CA3AF] text-sm mt-1">Set custom Razorpay pricing for each client.</p>
               </div>
               <button onClick={loadCloutClubUsers} className="flex items-center gap-2 text-xs text-[#9CA3AF] hover:text-white transition-colors"><RefreshCw size={13} /> Refresh</button>
             </div>
-
-            {/* Info card */}
             <div className="glass-card rounded-2xl p-5" style={{ borderLeft: '3px solid #A855F7' }}>
               <div className="flex items-start gap-3">
                 <IndianRupee size={16} className="text-[#A855F7] mt-0.5 flex-shrink-0" />
                 <div>
                   <p className="text-white text-sm font-semibold mb-1">How Clout Club Pricing Works</p>
-                  <p className="text-[#9CA3AF] text-xs leading-relaxed">
-                    Set a custom monthly price per client (in INR). Once set, the client sees the exact amount in their dashboard with a Razorpay payment button. Until you set a price, they see "Negotiable — contact us". The Razorpay link is generated using your Razorpay Payment Link or UPI QR flow — make sure to keep your Razorpay key configured in your environment.
-                  </p>
+                  <p className="text-[#9CA3AF] text-xs leading-relaxed">Set a custom monthly price per client (in INR). Once set, the client sees the exact amount with a Razorpay payment button. Until you set a price, they see "Negotiable — contact us".</p>
                 </div>
               </div>
             </div>
-
-            {/* Search */}
             <div className="flex items-center gap-2 glass-card rounded-xl px-4 py-2.5">
               <Search size={13} className="text-[#9CA3AF]" />
               <input value={ccSearch} onChange={e => setCcSearch(e.target.value)} placeholder="Search by name or company..." className="bg-transparent text-sm text-white placeholder-[#6B7280] focus:outline-none flex-1" />
             </div>
-
-            {/* Stats row */}
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-              <div className="glass-card rounded-2xl p-5">
-                <p className="text-[#9CA3AF] text-xs font-medium mb-2">Total Free Users</p>
-                <p className="font-mono font-bold text-xl gradient-text">{cloutClubUsers.filter(u => u.plan === 'free').length}</p>
-              </div>
-              <div className="glass-card rounded-2xl p-5">
-                <p className="text-[#9CA3AF] text-xs font-medium mb-2">Clout Club Members</p>
-                <p className="font-mono font-bold text-xl" style={{ background: 'linear-gradient(135deg,#A855F7,#06B6D4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{cloutClubUsers.filter(u => u.plan === 'clout_club').length}</p>
-              </div>
-              <div className="glass-card rounded-2xl p-5">
-                <p className="text-[#9CA3AF] text-xs font-medium mb-2">Prices Set</p>
-                <p className="font-mono font-bold text-xl gradient-text">{cloutClubUsers.filter(u => u.clout_club_price).length}</p>
-              </div>
+              <div className="glass-card rounded-2xl p-5"><p className="text-[#9CA3AF] text-xs font-medium mb-2">Total Free Users</p><p className="font-mono font-bold text-xl gradient-text">{cloutClubUsers.filter(u => u.plan === 'free').length}</p></div>
+              <div className="glass-card rounded-2xl p-5"><p className="text-[#9CA3AF] text-xs font-medium mb-2">Clout Club Members</p><p className="font-mono font-bold text-xl" style={{ background: 'linear-gradient(135deg,#A855F7,#06B6D4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{cloutClubUsers.filter(u => u.plan === 'clout_club').length}</p></div>
+              <div className="glass-card rounded-2xl p-5"><p className="text-[#9CA3AF] text-xs font-medium mb-2">Prices Set</p><p className="font-mono font-bold text-xl gradient-text">{cloutClubUsers.filter(u => u.clout_club_price).length}</p></div>
             </div>
-
-            {/* Table */}
             <div className="glass-card rounded-2xl overflow-hidden">
-              {loadingTab ? (
-                <div className="flex items-center justify-center p-10"><Loader size={20} className="animate-spin text-[#A855F7]" /></div>
-              ) : filteredCCUsers.length === 0 ? (
-                <p className="text-[#6B7280] text-sm text-center p-10">No users found.</p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr>
-                        <th className={thClass}>Client</th>
-                        <th className={thClass}>Company</th>
-                        <th className={thClass}>Current Plan</th>
-                        <th className={thClass}>Monthly Price</th>
-                        <th className={thClass}>Client View</th>
-                        <th className={thClass}>Joined</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredCCUsers.map(u => (
-                        <tr key={u.id}>
-                          <td className={tdClass}>
-                            <div className="font-medium">{u.full_name || '—'}</div>
-                          </td>
-                          <td className={tdClass + ' text-[#9CA3AF]'}>{u.company_name || '—'}</td>
-                          <td className={tdClass}><PlanBadge plan={u.plan} /></td>
-                          <td className={tdClass}>
-                            <PriceEditor
-                              userId={u.id}
-                              currentPrice={u.clout_club_price}
-                              onSave={handlePriceSaved}
-                            />
-                          </td>
-                          <td className={tdClass}>
-                            {u.clout_club_price ? (
-                              <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full" style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)', color: '#10B981' }}>
-                                <CheckCircle size={11} /> Shows ₹{(u.clout_club_price / 100).toLocaleString('en-IN')}/mo
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: '#6B7280' }}>
-                                <Clock size={11} /> Shows "Negotiable"
-                              </span>
-                            )}
-                          </td>
-                          <td className={tdClass + ' text-[#9CA3AF]'}>{formatDate(u.created_at)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
+              {loadingTab ? <div className="flex items-center justify-center p-10"><Loader size={20} className="animate-spin text-[#A855F7]" /></div>
+                : filteredCCUsers.length === 0 ? <p className="text-[#6B7280] text-sm text-center p-10">No users found.</p>
+                : <div className="overflow-x-auto"><table className="w-full"><thead><tr><th className={thClass}>Client</th><th className={thClass}>Company</th><th className={thClass}>Current Plan</th><th className={thClass}>Monthly Price</th><th className={thClass}>Client View</th><th className={thClass}>Joined</th></tr></thead><tbody>{filteredCCUsers.map(u => (<tr key={u.id}><td className={tdClass}><div className="font-medium">{u.full_name || '—'}</div></td><td className={tdClass + ' text-[#9CA3AF]'}>{u.company_name || '—'}</td><td className={tdClass}><PlanBadge plan={u.plan} /></td><td className={tdClass}><PriceEditor userId={u.id} currentPrice={u.clout_club_price} onSave={handlePriceSaved} /></td><td className={tdClass}>{u.clout_club_price ? <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full" style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)', color: '#10B981' }}><CheckCircle size={11} /> Shows ₹{(u.clout_club_price / 100).toLocaleString('en-IN')}/mo</span> : <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: '#6B7280' }}><Clock size={11} /> Shows "Negotiable"</span>}</td><td className={tdClass + ' text-[#9CA3AF]'}>{formatDate(u.created_at)}</td></tr>))}</tbody></table></div>}
             </div>
           </div>
         )}
 
-        {/* PORTFOLIO */}
+        {/* ── MESSAGES / FEEDBACK ───────────────────────────────────────────── */}
+        {tab === 'messages' && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="font-heading font-bold text-white text-2xl">Messages & Feedback</h2>
+                <p className="text-[#9CA3AF] text-sm mt-1">Member conversations and creative feedback in one place.</p>
+              </div>
+              <button onClick={loadMessageUsers} className="flex items-center gap-2 text-xs text-[#9CA3AF] hover:text-white transition-colors"><RefreshCw size={13} /> Refresh</button>
+            </div>
+
+            <div className="grid md:grid-cols-[280px_1fr] gap-4" style={{ height: 'calc(100vh - 13rem)', minHeight: 500 }}>
+              {/* Member list */}
+              <div className="glass-card rounded-2xl overflow-hidden flex flex-col" style={{ border: '1px solid rgba(99,102,241,0.15)' }}>
+                <div className="px-4 py-3 border-b flex items-center gap-2" style={{ borderColor: 'rgba(99,102,241,0.1)' }}>
+                  <Search size={12} className="text-[#9CA3AF]" />
+                  <input value={msgSearch} onChange={e => setMsgSearch(e.target.value)} placeholder="Search members..." className="bg-transparent text-xs text-white placeholder-[#6B7280] focus:outline-none flex-1" />
+                </div>
+                <div className="flex-1 overflow-y-auto">
+                  {loadingTab ? (
+                    <div className="flex items-center justify-center p-8"><Loader size={16} className="animate-spin text-[#818CF8]" /></div>
+                  ) : filteredMsgUsers.length === 0 ? (
+                    <div className="p-6 text-center">
+                      <MessageSquare size={20} className="text-[#6B7280] mx-auto mb-2" />
+                      <p className="text-[#6B7280] text-xs">No messages yet.</p>
+                    </div>
+                  ) : filteredMsgUsers.map(u => {
+                    const unread = unreadByUser[u.id] ?? 0;
+                    const selected = selectedMsgUser?.id === u.id;
+                    return (
+                      <button key={u.id} onClick={() => openThread(u)}
+                        className="w-full text-left px-4 py-3 flex items-center gap-3 transition-all border-b"
+                        style={{ background: selected ? 'rgba(99,102,241,0.1)' : 'transparent', borderColor: 'rgba(255,255,255,0.04)', borderLeft: selected ? '2px solid #818CF8' : '2px solid transparent' }}>
+                        <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold"
+                          style={{ background: 'linear-gradient(135deg,rgba(99,102,241,0.3),rgba(168,85,247,0.3))', color: '#C4B5FD' }}>
+                          {(u.full_name || u.company_name || '?')[0].toUpperCase()}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-white text-xs font-semibold truncate">{u.full_name || u.company_name || 'Unknown'}</p>
+                          <p className="text-[#6B7280] text-[10px] truncate">{u.plan === 'clout_club' ? 'Clout Club' : 'Free'}</p>
+                        </div>
+                        {unread > 0 && (
+                          <span className="w-5 h-5 rounded-full text-[9px] font-bold flex items-center justify-center flex-shrink-0"
+                            style={{ background: '#EF4444', color: '#fff' }}>{unread}</span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Thread view */}
+              <div className="glass-card rounded-2xl overflow-hidden flex flex-col" style={{ border: '1px solid rgba(99,102,241,0.15)' }}>
+                {!selectedMsgUser ? (
+                  <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
+                    <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-3"
+                      style={{ background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.2)' }}>
+                      <MessageSquare size={22} className="text-[#818CF8]" />
+                    </div>
+                    <p className="text-white font-heading font-semibold text-sm mb-1">Select a member</p>
+                    <p className="text-[#9CA3AF] text-xs">Choose a member from the list to view their conversation.</p>
+                  </div>
+                ) : (
+                  <>
+                    {/* Thread header */}
+                    <div className="px-4 py-3 border-b flex items-center justify-between" style={{ borderColor: 'rgba(99,102,241,0.1)' }}>
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold"
+                          style={{ background: 'linear-gradient(135deg,rgba(99,102,241,0.3),rgba(168,85,247,0.3))', color: '#C4B5FD' }}>
+                          {(selectedMsgUser.full_name || selectedMsgUser.company_name || '?')[0].toUpperCase()}
+                        </div>
+                        <div>
+                          <p className="text-white text-sm font-semibold">{selectedMsgUser.full_name || selectedMsgUser.company_name || 'Unknown'}</p>
+                          <PlanBadge plan={selectedMsgUser.plan} />
+                        </div>
+                      </div>
+                      {/* Filter pills */}
+                      <div className="flex gap-1.5">
+                        {(['all', 'chat', 'feedback'] as const).map(f => (
+                          <button key={f} onClick={() => setMsgFilter(f)}
+                            className="px-2.5 py-1 rounded-full text-[10px] font-semibold capitalize transition-all"
+                            style={{ background: msgFilter === f ? 'rgba(99,102,241,0.2)' : 'transparent', border: msgFilter === f ? '1px solid rgba(99,102,241,0.4)' : '1px solid rgba(255,255,255,0.08)', color: msgFilter === f ? '#818CF8' : '#6B7280' }}>
+                            {f}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Messages */}
+                    <div className="flex-1 overflow-y-auto p-4 space-y-1">
+                      {loadingThread ? (
+                        <div className="flex items-center justify-center h-full"><Loader size={20} className="animate-spin text-[#818CF8]" /></div>
+                      ) : filteredThread.length === 0 ? (
+                        <div className="flex items-center justify-center h-full">
+                          <p className="text-[#6B7280] text-sm">No messages in this view.</p>
+                        </div>
+                      ) : (
+                        filteredThread.map(msg => {
+                          const fromAdmin = msg.is_from_admin;
+                          const creative = msg.creative_request_id
+                            ? userCreatives.find(r => r.id === msg.creative_request_id)
+                            : null;
+                          return (
+                            <div key={msg.id} className={`flex ${fromAdmin ? 'justify-end' : 'justify-start'} mb-3`}>
+                              <div className={`max-w-[80%] ${fromAdmin ? 'items-end' : 'items-start'} flex flex-col gap-1`}>
+                                {creative && (
+                                  <p className="text-[10px] font-semibold uppercase tracking-wider px-1 text-[#C084FC]">
+                                    Feedback: {creative.brand_name} — {creative.ad_format}
+                                  </p>
+                                )}
+                                <div className="px-4 py-2.5 rounded-2xl text-sm leading-relaxed"
+                                  style={fromAdmin
+                                    ? { background: 'linear-gradient(135deg, rgba(99,102,241,0.2), rgba(59,130,246,0.15))', border: '1px solid rgba(99,102,241,0.3)', color: '#E0E7FF', borderBottomRightRadius: 6 }
+                                    : { background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#E2E8F0', borderBottomLeftRadius: 6 }
+                                  }>
+                                  {msg.content}
+                                </div>
+                                <p className="text-[10px] text-[#6B7280] px-1">
+                                  {fromAdmin ? 'You (CloutKart)' : selectedMsgUser.full_name || 'Client'} · {new Date(msg.created_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+                                  {msg.type === 'feedback' && <span className="ml-1 text-[#A855F7]">· feedback</span>}
+                                </p>
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                      <div ref={chatEndRef} />
+                    </div>
+
+                    {/* Reply input */}
+                    <div className="p-3 border-t" style={{ borderColor: 'rgba(99,102,241,0.1)' }}>
+                      <div className="flex gap-2">
+                        <input
+                          value={replyText}
+                          onChange={e => setReplyText(e.target.value)}
+                          onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendReply(); } }}
+                          placeholder={`Reply to ${selectedMsgUser.full_name || 'client'}...`}
+                          className="flex-1 rounded-xl px-4 py-2.5 text-sm text-white placeholder-[#6B7280] focus:outline-none bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(99,102,241,0.4)]"
+                        />
+                        <button
+                          onClick={sendReply}
+                          disabled={sendingReply || !replyText.trim()}
+                          className="w-10 h-10 rounded-xl flex items-center justify-center transition-all disabled:opacity-40"
+                          style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.5), rgba(59,130,246,0.4))', border: '1px solid rgba(99,102,241,0.4)' }}>
+                          {sendingReply ? <Loader size={14} className="animate-spin text-white" /> : <Send size={14} className="text-white" />}
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── PORTFOLIO ─────────────────────────────────────────────────────── */}
         {tab === 'portfolio' && (
           <div className="space-y-6">
             {managingSection ? (
@@ -840,12 +1051,13 @@ export default function Admin() {
           </div>
         )}
 
-        {/* SETTINGS */}
+        {/* ── SETTINGS ──────────────────────────────────────────────────────── */}
         {tab === 'settings' && (
           <div className="space-y-6 max-w-lg">
             <h2 className="font-heading font-bold text-white text-2xl">Settings</h2>
-            <div className="glass-card rounded-2xl p-6">
+            <div className="glass-card rounded-2xl p-6" style={{ border: '1px solid rgba(99,102,241,0.15)' }}>
               <p className="text-[#9CA3AF] text-sm">Admin account: <span className="text-white">{user?.email}</span></p>
+              <p className="text-[#6B7280] text-xs mt-2">Logged in as <span className="text-[#818CF8] font-semibold">{adminName}</span></p>
             </div>
           </div>
         )}
@@ -853,7 +1065,8 @@ export default function Admin() {
 
       {/* Add Section Modal */}
       {showAddSection && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4" onClick={() => { setShowAddSection(false); setThumbnailFile(null); if (sectionFileRef.current) sectionFileRef.current.value = ''; }}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4"
+          onClick={() => { setShowAddSection(false); setThumbnailFile(null); if (sectionFileRef.current) sectionFileRef.current.value = ''; }}>
           <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
           <div className="relative w-full max-w-md glass-card rounded-3xl p-8" style={{ background: 'rgba(12,12,12,0.98)' }} onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-6">
@@ -866,11 +1079,10 @@ export default function Admin() {
                 <input type="text" value={newSectionName} onChange={e => setNewSectionName(e.target.value)} placeholder="e.g. E-Commerce Ads" className={inputClass} />
               </div>
               <div className="border-2 border-dashed border-white/[0.10] rounded-2xl overflow-hidden cursor-pointer hover:border-white/20 transition-colors" onClick={() => sectionFileRef.current?.click()}>
-                {thumbnailPreview ? (
-                  <div className="relative aspect-video bg-white/[0.04]"><img src={thumbnailPreview} alt="Preview" className="w-full h-full object-cover" /><div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/80 to-transparent"><p className="text-[#9CA3AF] text-xs">Click to change</p></div></div>
-                ) : (
-                  <div className="p-6 flex flex-col items-center gap-3"><div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'rgba(99,102,241,0.1)' }}><Upload size={18} className="text-[#818CF8]" /></div><p className="text-[#9CA3AF] text-sm text-center">Click to upload thumbnail</p></div>
-                )}
+                {thumbnailPreview
+                  ? <div className="relative aspect-video bg-white/[0.04]"><img src={thumbnailPreview} alt="Preview" className="w-full h-full object-cover" /><div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/80 to-transparent"><p className="text-[#9CA3AF] text-xs">Click to change</p></div></div>
+                  : <div className="p-6 flex flex-col items-center gap-3"><div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'rgba(99,102,241,0.1)' }}><Upload size={18} className="text-[#818CF8]" /></div><p className="text-[#9CA3AF] text-sm text-center">Click to upload thumbnail</p></div>
+                }
                 <input ref={sectionFileRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={e => setThumbnailFile(e.target.files?.[0] ?? null)} />
               </div>
               <button onClick={handleAddSection} disabled={addingSection || !newSectionName.trim()} className="btn-primary w-full justify-center text-sm disabled:opacity-50">
