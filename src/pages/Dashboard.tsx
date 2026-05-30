@@ -547,10 +547,7 @@ export default function Dashboard() {
         )}
 
         <div className="px-5 pb-6 pt-4 border-t border-white/[0.06]">
-          <div className="flex items-center justify-between mb-3">
-            <p className="text-[#6B7280] text-xs truncate max-w-[160px]">{user?.email}</p>
-            {user && <NotificationBell isAdmin={false} userId={user.id} />}
-          </div>
+          <p className="text-[#6B7280] text-xs mb-3 truncate">{user?.email}</p>
           <button onClick={handleSignOut} className="flex items-center gap-2 text-[#9CA3AF] hover:text-white transition-colors text-sm">
             <LogOut size={14} /> Log Out
           </button>
@@ -558,6 +555,10 @@ export default function Dashboard() {
       </aside>
 
       <main className="flex-1 p-6 md:p-10 overflow-y-auto">
+        {/* Notification bell — desktop top right */}
+        <div className="hidden md:flex justify-end mb-6">
+          {user && <NotificationBell isAdmin={false} userId={user.id} />}
+        </div>
         {/* Mobile nav */}
         <div className="md:hidden flex items-center gap-2 mb-6">
           <div className="flex items-center gap-2 overflow-x-auto pb-1 flex-1">
