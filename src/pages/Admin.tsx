@@ -352,6 +352,7 @@ export default function Admin() {
     else if (tab === 'portfolio') { setManagingSection(null); loadPortfolio(); }
     else if (tab === 'cloutclub') loadCloutClubUsers();
     else if (tab === 'messages') loadMessageUsers();
+    else if (tab === 'overview') loadOverview();
   }, [tab]);
 
   useEffect(() => {
