@@ -385,12 +385,17 @@ export default function Admin() {
           );
         }
 
-        // Increment unread badge for client messages (admin hasn't sent these)
+        // Increment unread badge for client messages — unless admin is already viewing that thread
         if (!incoming.is_from_admin) {
-          setUnreadByUser(prev => ({
-            ...prev,
-            [incoming.user_id]: (prev[incoming.user_id] ?? 0) + 1,
-          }));
+          if (selectedMsgUserRef.current?.id === incoming.user_id) {
+            // Admin is actively viewing this thread, mark it read immediately
+            supabase.from('messages').update({ is_read: true }).eq('id', incoming.id);
+          } else {
+            setUnreadByUser(prev => ({
+              ...prev,
+              [incoming.user_id]: (prev[incoming.user_id] ?? 0) + 1,
+            }));
+          }
           // Ensure this user appears in the member list
           setMsgUsers(prev =>
             prev.some(u => u.id === incoming.user_id) ? prev : prev

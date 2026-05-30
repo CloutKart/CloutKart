@@ -329,7 +329,19 @@ export default function Dashboard() {
       console.error('Failed to load messages:', error.message);
       setMessageError('Could not load messages. Make sure the messages table has been created in Supabase.');
     } else {
-      setMessages((data as Message[]) ?? []);
+      const msgs = (data as Message[]) ?? [];
+      const hasUnread = msgs.some(m => m.is_from_admin && !m.is_read);
+      if (hasUnread) {
+        await supabase
+          .from('messages')
+          .update({ is_read: true })
+          .eq('user_id', user.id)
+          .eq('is_from_admin', true)
+          .eq('is_read', false);
+        setMessages(msgs.map(m => m.is_from_admin ? { ...m, is_read: true } : m));
+      } else {
+        setMessages(msgs);
+      }
     }
     setLoadingMessages(false);
   }
