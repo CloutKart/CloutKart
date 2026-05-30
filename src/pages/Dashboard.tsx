@@ -4,10 +4,11 @@ import {
   LayoutDashboard, Image, CreditCard, Settings, LogOut, ArrowRight,
   Download, Clock, CheckCircle, Loader, ChevronRight, AlertCircle,
   Sparkles, Images, IndianRupee, MessageCircle, ExternalLink, Send,
-  Star, Zap, MessageSquare
+  Star, Zap, MessageSquare, Lock, RefreshCw
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
+import { NotificationBell } from '../components/NotificationBell';
 
 type Tab = 'overview' | 'creative' | 'gallery' | 'plan' | 'messages' | 'settings';
 const FREE_CREATIVE_LIMIT = 3;
@@ -32,6 +33,7 @@ interface UserProfile {
   phone: string | null;
   plan: string;
   clout_club_price: number | null;
+  subscription_expires_at: string | null;
 }
 
 interface Message {
@@ -223,7 +225,7 @@ export default function Dashboard() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
   const [form, setForm] = useState({ brandName: '', niche: '', adFormat: '', description: '', referenceUrl: '' });
-  const [profile, setProfile] = useState<UserProfile>({ full_name: null, company_name: null, phone: null, plan: 'free', clout_club_price: null });
+  const [profile, setProfile] = useState<UserProfile>({ full_name: null, company_name: null, phone: null, plan: 'free', clout_club_price: null, subscription_expires_at: null });
   const [settingsForm, setSettingsForm] = useState({ fullName: '', company: '', phone: '' });
   const [settingsSaving, setSettingsSaving] = useState(false);
   const [settingsSaved, setSettingsSaved] = useState(false);
@@ -244,7 +246,7 @@ export default function Dashboard() {
     if (!user) return;
     const { data } = await supabase
       .from('profiles')
-      .select('full_name, company_name, phone, plan, clout_club_price')
+      .select('full_name, company_name, phone, plan, clout_club_price, subscription_expires_at')
       .eq('id', user.id)
       .maybeSingle();
     if (data) {
@@ -288,6 +290,32 @@ export default function Dashboard() {
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // Create a subscription expiry notification once per day when within 7 days of expiry
+  useEffect(() => {
+    if (!user || profile.plan !== 'clout_club' || !profile.subscription_expires_at) return;
+    const msLeft = new Date(profile.subscription_expires_at).getTime() - Date.now();
+    const daysLeft = Math.ceil(msLeft / (1000 * 60 * 60 * 24));
+    if (daysLeft > 7) return;
+
+    const today = new Date().toISOString().split('T')[0];
+    const storageKey = `ck_sub_notif_${user.id}`;
+    if (localStorage.getItem(storageKey) === today) return;
+
+    const expired = msLeft <= 0;
+    supabase.from('notifications').insert({
+      user_id: user.id,
+      type: expired ? 'subscription_expired' : 'subscription_expiring',
+      title: expired
+        ? 'Subscription expired'
+        : `Renew soon — ${Math.max(0, daysLeft)} day${daysLeft === 1 ? '' : 's'} left`,
+      body: expired
+        ? 'Your Clout Club subscription has expired. Renew to continue using chat and feedback.'
+        : `Your subscription expires on ${new Date(profile.subscription_expires_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}. Renew to avoid interruption.`,
+      data: { expires_at: profile.subscription_expires_at },
+      is_admin_notification: false,
+    }).then(() => localStorage.setItem(storageKey, today));
+  }, [user?.id, profile.plan, profile.subscription_expires_at]);
 
   async function loadMessages() {
     if (!user) return;
@@ -410,7 +438,18 @@ export default function Dashboard() {
   const creativeCount = creativeRequests.length;
   const freeCreativeCount = Math.min(creativeCount, FREE_CREATIVE_LIMIT);
   const freeCreativesLeft = Math.max(0, FREE_CREATIVE_LIMIT - freeCreativeCount);
-  const isCloutClub = profile.plan === 'clout_club';
+
+  // Subscription expiry state
+  const isCloutClubMember = profile.plan === 'clout_club';
+  const _expiresAt = profile.subscription_expires_at ? new Date(profile.subscription_expires_at) : null;
+  const subscriptionExpired = isCloutClubMember && _expiresAt !== null && _expiresAt < new Date();
+  const isCloutClub = isCloutClubMember && !subscriptionExpired;
+  const subscriptionExpiringSoon = isCloutClub && _expiresAt !== null &&
+    _expiresAt < new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+  const daysUntilExpiry = isCloutClub && _expiresAt
+    ? Math.max(0, Math.ceil((_expiresAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+    : null;
+
   const freeCreativesClaimed = !isCloutClub && creativeCount >= FREE_CREATIVE_LIMIT;
   const galleryCreatives = creativeRequests.filter(r => r.status === 'completed' && r.creative_url);
   const getActiveStep = (request: CreativeRequest) => statusToStep[request.status] ?? 0;
@@ -436,7 +475,7 @@ export default function Dashboard() {
     { id: 'plan', icon: CreditCard, label: 'My Plan' },
     { id: 'messages', icon: MessageCircle, label: 'Messages', ccOnly: true },
     { id: 'settings', icon: Settings, label: 'Settings' },
-  ].filter(item => !item.ccOnly || isCloutClub);
+  ].filter(item => !item.ccOnly || isCloutClubMember);
 
   return (
     <div className="min-h-screen flex" style={mainBg}>
@@ -460,6 +499,7 @@ export default function Dashboard() {
           {navItems.map(({ id, icon: Icon, label }) => {
             const active = tab === id;
             const isMsg = id === 'messages';
+            const isLocked = isMsg && subscriptionExpired;
             return (
               <button key={id} onClick={() => setTab(id)}
                 className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 text-left"
@@ -468,15 +508,20 @@ export default function Dashboard() {
                   borderLeft: active ? `2px solid ${isCloutClub ? '#C084FC' : '#A855F7'}` : '2px solid transparent',
                 }}>
                 <div className="relative">
-                  <Icon size={16} style={{ color: active ? (isCloutClub ? '#C084FC' : '#A855F7') : '#9CA3AF' }} />
-                  {isMsg && unreadCount > 0 && (
+                  <Icon size={16} style={{ color: isLocked ? '#6B7280' : active ? (isCloutClub ? '#C084FC' : '#A855F7') : '#9CA3AF' }} />
+                  {isMsg && !isLocked && unreadCount > 0 && (
                     <span className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 rounded-full text-[8px] font-bold flex items-center justify-center"
                       style={{ background: '#A855F7', color: '#fff' }}>{unreadCount}</span>
                   )}
+                  {isLocked && (
+                    <Lock size={9} className="absolute -top-1 -right-1 text-[#6B7280]" />
+                  )}
                 </div>
-                <span style={active
-                  ? { background: isCloutClub ? 'linear-gradient(135deg,#C084FC,#818CF8)' : 'linear-gradient(135deg,#A855F7,#3B82F6,#06B6D4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }
-                  : { color: '#D1D5DB' }}>
+                <span style={isLocked
+                  ? { color: '#6B7280' }
+                  : active
+                    ? { background: isCloutClub ? 'linear-gradient(135deg,#C084FC,#818CF8)' : 'linear-gradient(135deg,#A855F7,#3B82F6,#06B6D4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }
+                    : { color: '#D1D5DB' }}>
                   {label}
                 </span>
               </button>
@@ -502,7 +547,10 @@ export default function Dashboard() {
         )}
 
         <div className="px-5 pb-6 pt-4 border-t border-white/[0.06]">
-          <p className="text-[#6B7280] text-xs mb-3 truncate">{user?.email}</p>
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-[#6B7280] text-xs truncate max-w-[160px]">{user?.email}</p>
+            {user && <NotificationBell isAdmin={false} userId={user.id} />}
+          </div>
           <button onClick={handleSignOut} className="flex items-center gap-2 text-[#9CA3AF] hover:text-white transition-colors text-sm">
             <LogOut size={14} /> Log Out
           </button>
@@ -511,19 +559,62 @@ export default function Dashboard() {
 
       <main className="flex-1 p-6 md:p-10 overflow-y-auto">
         {/* Mobile nav */}
-        <div className="md:hidden flex items-center gap-2 mb-6 overflow-x-auto pb-1">
-          {navItems.map(({ id, icon: Icon, label }) => (
-            <button key={id} onClick={() => setTab(id)}
-              className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium whitespace-nowrap flex-shrink-0 transition-all"
-              style={{ background: tab === id ? 'rgba(168,85,247,0.12)' : 'rgba(255,255,255,0.04)', border: tab === id ? '1px solid rgba(168,85,247,0.3)' : '1px solid rgba(255,255,255,0.08)', color: tab === id ? '#A855F7' : '#9CA3AF' }}>
-              <Icon size={13} />{label}
-            </button>
-          ))}
+        <div className="md:hidden flex items-center gap-2 mb-6">
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 flex-1">
+            {navItems.map(({ id, icon: Icon, label }) => (
+              <button key={id} onClick={() => setTab(id)}
+                className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium whitespace-nowrap flex-shrink-0 transition-all"
+                style={{ background: tab === id ? 'rgba(168,85,247,0.12)' : 'rgba(255,255,255,0.04)', border: tab === id ? '1px solid rgba(168,85,247,0.3)' : '1px solid rgba(255,255,255,0.08)', color: tab === id ? '#A855F7' : '#9CA3AF' }}>
+                <Icon size={13} />{label}
+              </button>
+            ))}
+          </div>
+          {user && <div className="flex-shrink-0"><NotificationBell isAdmin={false} userId={user.id} /></div>}
         </div>
 
         {/* ── OVERVIEW ──────────────────────────────────────────────────────── */}
         {tab === 'overview' && (
           <div className="space-y-6">
+            {/* Subscription expired banner */}
+            {subscriptionExpired && (
+              <div className="rounded-2xl p-4 flex items-start justify-between gap-4"
+                style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)' }}>
+                <div className="flex items-start gap-3">
+                  <Lock size={16} className="text-red-400 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-red-300 font-semibold text-sm">Subscription Expired</p>
+                    <p className="text-red-400/70 text-xs mt-0.5">Chat and feedback are locked. Your gallery and creatives are still accessible.</p>
+                  </div>
+                </div>
+                <button onClick={() => setTab('plan')}
+                  className="flex-shrink-0 flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-xl transition-all"
+                  style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', color: '#FCA5A5' }}>
+                  <RefreshCw size={11} /> Renew
+                </button>
+              </div>
+            )}
+            {/* Subscription expiring soon banner */}
+            {subscriptionExpiringSoon && daysUntilExpiry !== null && (
+              <div className="rounded-2xl p-4 flex items-start justify-between gap-4"
+                style={{ background: 'rgba(245,158,11,0.07)', border: '1px solid rgba(245,158,11,0.25)' }}>
+                <div className="flex items-start gap-3">
+                  <Clock size={16} className="text-amber-400 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-amber-300 font-semibold text-sm">
+                      Subscription expires in {daysUntilExpiry} day{daysUntilExpiry === 1 ? '' : 's'}
+                    </p>
+                    <p className="text-amber-400/70 text-xs mt-0.5">
+                      Renews on {_expiresAt!.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}.
+                    </p>
+                  </div>
+                </div>
+                <button onClick={() => setTab('plan')}
+                  className="flex-shrink-0 flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-xl transition-all"
+                  style={{ background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.3)', color: '#FCD34D' }}>
+                  <RefreshCw size={11} /> Renew Now
+                </button>
+              </div>
+            )}
             {/* Welcome card — CC variant */}
             {isCloutClub ? (
               <div className="rounded-2xl p-6 relative overflow-hidden"
@@ -873,18 +964,21 @@ export default function Dashboard() {
                           <a href={request.creative_url} target="_blank" rel="noopener noreferrer" download className="btn-secondary text-xs py-2 px-4 flex-1 justify-center">
                             <Download size={13} /> Download
                           </a>
-                          {isCloutClub && (
+                          {isCloutClubMember && (
                             <button
-                              onClick={() => setFeedbackOpen(feedbackOpen === request.id ? null : request.id)}
+                              onClick={() => isCloutClub && setFeedbackOpen(feedbackOpen === request.id ? null : request.id)}
+                              title={subscriptionExpired ? 'Renew subscription to leave feedback' : undefined}
                               className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-xl font-medium transition-all"
                               style={{
                                 background: feedbackOpen === request.id ? 'rgba(168,85,247,0.15)' : 'rgba(168,85,247,0.08)',
                                 border: '1px solid rgba(168,85,247,0.25)',
-                                color: '#C084FC',
+                                color: subscriptionExpired ? '#6B7280' : '#C084FC',
+                                cursor: subscriptionExpired ? 'not-allowed' : 'pointer',
+                                opacity: subscriptionExpired ? 0.5 : 1,
                               }}
                             >
-                              <MessageSquare size={12} />
-                              {feedbackMessages.length > 0 ? `${feedbackMessages.length}` : 'Feedback'}
+                              {subscriptionExpired ? <Lock size={12} /> : <MessageSquare size={12} />}
+                              {feedbackMessages.length > 0 && !subscriptionExpired ? `${feedbackMessages.length}` : 'Feedback'}
                             </button>
                           )}
                         </div>
@@ -945,9 +1039,27 @@ export default function Dashboard() {
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <p className="text-[#9CA3AF] text-xs uppercase tracking-widest mb-1">Current Plan</p>
-                  <h3 className="font-heading font-bold text-white text-xl">{isCloutClub ? 'Clout Club' : 'Free Plan'}</h3>
+                  <h3 className="font-heading font-bold text-white text-xl">
+                    {isCloutClub ? 'Clout Club' : subscriptionExpired ? 'Clout Club (Expired)' : 'Free Plan'}
+                  </h3>
+                  {isCloutClub && _expiresAt && (
+                    <p className="text-[#9CA3AF] text-xs mt-1">
+                      {subscriptionExpiringSoon
+                        ? `Expires in ${daysUntilExpiry} day${daysUntilExpiry === 1 ? '' : 's'} — `
+                        : 'Renews '}
+                      {_expiresAt.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                    </p>
+                  )}
                 </div>
-                <span className="text-xs px-3 py-1 rounded-full font-semibold" style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)', color: '#10B981' }}>Active</span>
+                <span className="text-xs px-3 py-1 rounded-full font-semibold"
+                  style={subscriptionExpired
+                    ? { background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', color: '#F87171' }
+                    : subscriptionExpiringSoon
+                      ? { background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.2)', color: '#F59E0B' }
+                      : { background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)', color: '#10B981' }
+                  }>
+                  {subscriptionExpired ? 'Expired' : subscriptionExpiringSoon ? 'Expiring Soon' : 'Active'}
+                </span>
               </div>
               {!isCloutClub && (
                 <div className="mb-5 inline-flex items-center gap-3 rounded-2xl px-4 py-3" style={{ background: 'rgba(168,85,247,0.08)', border: '1px solid rgba(168,85,247,0.18)' }}>
@@ -982,8 +1094,34 @@ export default function Dashboard() {
                 <div className="flex items-center gap-3 rounded-2xl p-4" style={{ background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.2)' }}>
                   <CheckCircle size={16} className="text-[#10B981] flex-shrink-0" />
                   <div>
-                    <p className="text-[#10B981] font-semibold text-sm">You're a Clout Club member</p>
-                    <p className="text-[#9CA3AF] text-xs mt-0.5">Your membership is active. The team is working on your campaigns.</p>
+                    <p className="text-[#10B981] font-semibold text-sm">Active Clout Club member</p>
+                    <p className="text-[#9CA3AF] text-xs mt-0.5">
+                      {_expiresAt ? `Subscription active until ${_expiresAt.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}` : 'Your membership is active.'}
+                    </p>
+                  </div>
+                </div>
+              ) : subscriptionExpired && profile.clout_club_price ? (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3 rounded-2xl p-4" style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)' }}>
+                    <Lock size={16} className="text-red-400 flex-shrink-0" />
+                    <div>
+                      <p className="text-red-300 font-semibold text-sm">Subscription expired</p>
+                      <p className="text-[#9CA3AF] text-xs mt-0.5">Chat and feedback are locked. Renew to restore full access.</p>
+                    </div>
+                  </div>
+                  <RazorpayButton
+                    amountPaise={profile.clout_club_price}
+                    userEmail={user?.email ?? ''}
+                    userName={profile.full_name ?? user?.user_metadata?.full_name ?? ''}
+                    userId={user?.id ?? ''}
+                  />
+                </div>
+              ) : subscriptionExpired ? (
+                <div className="flex items-center gap-3 rounded-2xl p-4" style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)' }}>
+                  <Lock size={16} className="text-red-400 flex-shrink-0" />
+                  <div>
+                    <p className="text-red-300 font-semibold text-sm">Subscription expired</p>
+                    <p className="text-[#9CA3AF] text-xs mt-0.5">Contact us to renew your Clout Club membership.</p>
                   </div>
                 </div>
               ) : profile.clout_club_price ? (
@@ -1030,6 +1168,25 @@ export default function Dashboard() {
         )}
 
         {/* ── MESSAGES (Clout Club only) ─────────────────────────────────── */}
+        {tab === 'messages' && isCloutClubMember && !isCloutClub && (
+          <div className="space-y-4">
+            <h2 className="font-heading font-bold text-white text-2xl">Messages</h2>
+            <div className="rounded-2xl p-10 flex flex-col items-center text-center"
+              style={{ background: 'rgba(239,68,68,0.05)', border: '1px solid rgba(239,68,68,0.2)' }}>
+              <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4"
+                style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)' }}>
+                <Lock size={24} className="text-red-400" />
+              </div>
+              <h3 className="font-heading font-semibold text-white text-lg mb-2">Subscription Expired</h3>
+              <p className="text-[#9CA3AF] text-sm mb-6 max-w-sm">
+                Your Clout Club subscription has expired. Renew to continue chatting with your CloutKart team.
+              </p>
+              <button onClick={() => setTab('plan')} className="btn-primary text-sm">
+                <RefreshCw size={14} /> Renew Subscription
+              </button>
+            </div>
+          </div>
+        )}
         {tab === 'messages' && isCloutClub && (
           <div className="space-y-4 flex flex-col" style={{ height: 'calc(100vh - 9rem)' }}>
             <div>

@@ -84,9 +84,10 @@ Deno.serve(async (req) => {
       });
     }
 
+    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
     const { error: planError } = await supabase
       .from("profiles")
-      .update({ plan: "clout_club" })
+      .update({ plan: "clout_club", subscription_expires_at: expiresAt })
       .eq("id", user_id);
 
     if (planError) {
