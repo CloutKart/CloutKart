@@ -721,16 +721,17 @@ export default function Dashboard() {
               </div>
             )}
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {[
-                { label: 'Creatives', value: isCloutClub ? `${creativeCount}` : `${freeCreativeCount}/${FREE_CREATIVE_LIMIT}` },
-                { label: 'Current Plan', value: isCloutClub ? 'Clout Club' : 'Free Plan' },
-                { label: 'Member Since', value: memberSince }
-              ].map(s => (
+            <div className={`grid gap-4 ${isCloutClubMember && _expiresAt ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-1 sm:grid-cols-3'}`}>
+              {([
+                { label: 'Creatives', value: isCloutClub ? `${creativeCount}` : `${freeCreativeCount}/${FREE_CREATIVE_LIMIT}`, color: null as string | null },
+                { label: 'Current Plan', value: isCloutClub ? 'Clout Club' : 'Free Plan', color: null },
+                ...(isCloutClubMember && _expiresAt ? [{ label: 'Days Left', value: subscriptionExpired ? 'Expired' : `${daysUntilExpiry ?? 0}d`, color: subscriptionExpired ? '#EF4444' : subscriptionExpiringSoon ? '#F59E0B' : '#10B981' }] : []),
+                { label: 'Member Since', value: memberSince, color: null },
+              ]).map(s => (
                 <div key={s.label} className="glass-card rounded-2xl p-5"
                   style={isCloutClub ? { border: '1px solid rgba(168,85,247,0.18)', background: 'rgba(168,85,247,0.04)' } : {}}>
                   <p className="text-[#9CA3AF] text-xs font-medium mb-2">{s.label}</p>
-                  <p className="font-mono font-bold text-lg gradient-text">{s.value}</p>
+                  <p className={`font-mono font-bold text-lg ${s.color ? '' : 'gradient-text'}`} style={s.color ? { color: s.color } : {}}>{s.value}</p>
                 </div>
               ))}
             </div>
@@ -1057,13 +1058,21 @@ export default function Dashboard() {
                   <h3 className="font-heading font-bold text-white text-xl">
                     {isCloutClub ? 'Clout Club' : subscriptionExpired ? 'Clout Club (Expired)' : 'Free Plan'}
                   </h3>
-                  {isCloutClub && _expiresAt && (
-                    <p className="text-[#9CA3AF] text-xs mt-1">
-                      {subscriptionExpiringSoon
-                        ? `Expires in ${daysUntilExpiry} day${daysUntilExpiry === 1 ? '' : 's'} — `
-                        : 'Renews '}
-                      {_expiresAt.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
-                    </p>
+                  {isCloutClubMember && _expiresAt && (
+                    <div className="flex items-center gap-2 mt-2 flex-wrap">
+                      <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full"
+                        style={subscriptionExpired
+                          ? { background: 'rgba(239,68,68,0.12)', color: '#F87171' }
+                          : subscriptionExpiringSoon
+                            ? { background: 'rgba(245,158,11,0.12)', color: '#F59E0B' }
+                            : { background: 'rgba(16,185,129,0.12)', color: '#10B981' }
+                        }>
+                        {subscriptionExpired ? '0 days left' : `${daysUntilExpiry} day${daysUntilExpiry === 1 ? '' : 's'} left`}
+                      </span>
+                      <span className="text-[#6B7280] text-xs">
+                        · {subscriptionExpired ? 'expired' : 'expires'} {_expiresAt.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      </span>
+                    </div>
                   )}
                 </div>
                 <span className="text-xs px-3 py-1 rounded-full font-semibold flex-shrink-0"

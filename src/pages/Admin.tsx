@@ -24,6 +24,7 @@ interface Profile {
   plan: string;
   clout_club_price: number | null;
   created_at: string;
+  subscription_expires_at?: string | null;
 }
 
 interface CreativeRequest {
@@ -109,6 +110,11 @@ function storagePathFromUrl(url: string): string | null {
   const idx = url.indexOf(marker);
   return idx !== -1 ? url.slice(idx + marker.length) : null;
 }
+function subDaysLeft(expiresAt: string | null): number | null {
+  if (!expiresAt) return null;
+  return Math.ceil((new Date(expiresAt).getTime() - Date.now()) / 86400000);
+}
+
 function getGreeting(name: string) {
   const h = new Date().getHours();
   const part = h < 12 ? 'morning' : h < 17 ? 'afternoon' : 'evening';
@@ -466,7 +472,7 @@ export default function Admin() {
 
   async function loadCloutClubUsers() {
     setLoadingTab(true);
-    const { data } = await supabase.from('profiles').select('id, full_name, company_name, plan, clout_club_price, created_at').not('plan', 'eq', 'admin').order('created_at', { ascending: false });
+    const { data } = await supabase.from('profiles').select('id, full_name, company_name, plan, clout_club_price, created_at, subscription_expires_at').not('plan', 'eq', 'admin').order('created_at', { ascending: false });
     setCloutClubUsers((data as Profile[]) ?? []);
     setLoadingTab(false);
   }
@@ -888,7 +894,7 @@ export default function Admin() {
             <div className="glass-card rounded-2xl overflow-hidden">
               {loadingTab ? <div className="flex items-center justify-center p-10"><Loader size={20} className="animate-spin text-[#A855F7]" /></div>
                 : filteredCCUsers.length === 0 ? <p className="text-[#6B7280] text-sm text-center p-10">No users found.</p>
-                : <div className="overflow-x-auto"><table className="w-full"><thead><tr><th className={thClass}>Client</th><th className={thClass}>Company</th><th className={thClass}>Current Plan</th><th className={thClass}>Monthly Price</th><th className={thClass}>Client View</th><th className={thClass}>Joined</th></tr></thead><tbody>{filteredCCUsers.map(u => (<tr key={u.id}><td className={tdClass}><div className="font-medium">{u.full_name || '—'}</div></td><td className={tdClass + ' text-[#9CA3AF]'}>{u.company_name || '—'}</td><td className={tdClass}><PlanBadge plan={u.plan} /></td><td className={tdClass}><PriceEditor userId={u.id} currentPrice={u.clout_club_price} onSave={handlePriceSaved} /></td><td className={tdClass}>{u.clout_club_price ? <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full" style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)', color: '#10B981' }}><CheckCircle size={11} /> Shows ₹{(u.clout_club_price / 100).toLocaleString('en-IN')}/mo</span> : <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: '#6B7280' }}><Clock size={11} /> Shows "Negotiable"</span>}</td><td className={tdClass + ' text-[#9CA3AF]'}>{formatDate(u.created_at)}</td></tr>))}</tbody></table></div>}
+                : <div className="overflow-x-auto"><table className="w-full"><thead><tr><th className={thClass}>Client</th><th className={thClass}>Company</th><th className={thClass}>Plan</th><th className={thClass}>Monthly Price</th><th className={thClass}>Days Left</th><th className={thClass}>Client View</th><th className={thClass}>Joined</th></tr></thead><tbody>{filteredCCUsers.map(u => (<tr key={u.id}><td className={tdClass}><div className="font-medium">{u.full_name || '—'}</div></td><td className={tdClass + ' text-[#9CA3AF]'}>{u.company_name || '—'}</td><td className={tdClass}><PlanBadge plan={u.plan} /></td><td className={tdClass}><PriceEditor userId={u.id} currentPrice={u.clout_club_price} onSave={handlePriceSaved} /></td><td className={tdClass}>{(() => { if (u.plan !== 'clout_club' || !u.subscription_expires_at) return <span className="text-[#6B7280] text-xs">—</span>; const d = subDaysLeft(u.subscription_expires_at)!; const expired = d <= 0; const soon = !expired && d <= 7; return <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={expired ? { background: 'rgba(239,68,68,0.1)', color: '#F87171' } : soon ? { background: 'rgba(245,158,11,0.1)', color: '#F59E0B' } : { background: 'rgba(16,185,129,0.1)', color: '#10B981' }}>{expired ? 'Expired' : `${d}d`}</span>; })()}</td><td className={tdClass}>{u.clout_club_price ? <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full" style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)', color: '#10B981' }}><CheckCircle size={11} /> Shows ₹{(u.clout_club_price / 100).toLocaleString('en-IN')}/mo</span> : <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: '#6B7280' }}><Clock size={11} /> Shows "Negotiable"</span>}</td><td className={tdClass + ' text-[#9CA3AF]'}>{formatDate(u.created_at)}</td></tr>))}</tbody></table></div>}
             </div>
           </div>
         )}
