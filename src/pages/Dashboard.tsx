@@ -9,6 +9,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { NotificationBell } from '../components/NotificationBell';
+import { usePushNotifications } from '../hooks/usePushNotifications';
 
 type Tab = 'overview' | 'creative' | 'gallery' | 'plan' | 'messages' | 'settings';
 const FREE_CREATIVE_LIMIT = 3;
@@ -218,6 +219,7 @@ function MessageBubble({ msg, creativeRequests }: { msg: Message; creativeReques
 export default function Dashboard() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  usePushNotifications(user?.id ?? null, false);
   const [tab, setTab] = useState<Tab>('overview');
   const [creativeRequests, setCreativeRequests] = useState<CreativeRequest[]>([]);
   const [loadingRequest, setLoadingRequest] = useState(true);

@@ -11,6 +11,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { NotificationBell } from '../components/NotificationBell';
+import { usePushNotifications } from '../hooks/usePushNotifications';
 
 type Tab = 'overview' | 'requests' | 'payments' | 'users' | 'portfolio' | 'cloutclub' | 'messages' | 'settings';
 type RequestFilter = 'all' | 'pending' | 'in_progress' | 'completed';
@@ -291,6 +292,7 @@ function PriceEditor({ userId, currentPrice, onSave }: {
 export default function Admin() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  usePushNotifications(user?.id ?? null, true);
   const [tab, setTab] = useState<Tab>('overview');
   const [requestFilter, setRequestFilter] = useState<RequestFilter>('all');
   const [userSearch, setUserSearch] = useState('');

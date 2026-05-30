@@ -73,6 +73,22 @@ export function NotificationBell({ isAdmin, userId }: NotificationBellProps) {
     return () => clearInterval(id);
   }, [userId, loadNotifications]);
 
+  // ── Browser push notification when tab is hidden ────────────────────────────
+  async function showBrowserNotification(title: string, body: string) {
+    if (Notification.permission !== 'granted') return;
+    if (document.visibilityState === 'visible') return; // bell is in view — no need to duplicate
+    try {
+      const reg = await navigator.serviceWorker?.ready;
+      if (reg) {
+        reg.showNotification(title, { body, icon: '/app-icon-512.webp', badge: '/app-icon-512.webp', tag: 'ck-notif', renotify: true } as NotificationOptions);
+      } else {
+        new Notification(title, { body, icon: '/app-icon-512.webp' });
+      }
+    } catch {
+      // Notification API not available in this context — silent fail
+    }
+  }
+
   // ── Realtime — bonus on top of polling ──────────────────────────────────────
   useEffect(() => {
     if (!userId) return;
@@ -95,6 +111,7 @@ export function NotificationBell({ isAdmin, userId }: NotificationBellProps) {
           setNotifications(prev =>
             prev.some(n => n.id === row.id) ? prev : [row, ...prev]
           );
+          showBrowserNotification(row.title, row.body);
         }
       )
       .on(
