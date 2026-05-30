@@ -60,7 +60,7 @@ export function NotificationBell({ isAdmin, userId }: NotificationBellProps) {
     if (userId) loadNotifications();
   }, [userId, loadNotifications]);
 
-  // Real-time new notifications
+  // Real-time: new notifications (INSERT) + read-state sync (UPDATE)
   useEffect(() => {
     if (!userId) return;
     const channelName = isAdmin ? 'notif-admin' : `notif-${userId}`;
@@ -76,6 +76,17 @@ export function NotificationBell({ isAdmin, userId }: NotificationBellProps) {
         const incoming = payload.new as Notification;
         setNotifications(prev =>
           prev.some(n => n.id === incoming.id) ? prev : [incoming, ...prev]
+        );
+      })
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'notifications',
+        filter,
+      }, (payload) => {
+        const updated = payload.new as Notification;
+        setNotifications(prev =>
+          prev.map(n => n.id === updated.id ? { ...n, is_read: updated.is_read } : n)
         );
       })
       .subscribe();
