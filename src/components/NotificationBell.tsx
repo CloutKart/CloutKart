@@ -60,30 +60,38 @@ export function NotificationBell({ isAdmin, userId }: NotificationBellProps) {
     if (userId) loadNotifications();
   }, [userId, loadNotifications]);
 
-  // Real-time: new notifications (INSERT) + read-state sync (UPDATE)
+  // Real-time: INSERT + UPDATE
+  // Admin uses no filter (boolean filters are unreliable in Supabase Realtime) — RLS
+  // enforces access server-side. Client uses user_id filter (same proven pattern as messages).
   useEffect(() => {
     if (!userId) return;
-    const channelName = isAdmin ? 'notif-admin' : `notif-${userId}`;
-    const filter = isAdmin ? 'is_admin_notification=eq.true' : `user_id=eq.${userId}`;
+    const channelName = isAdmin ? `notif-admin-${userId}` : `notif-${userId}`;
+
+    type ChangeConfig = {
+      event: 'INSERT' | 'UPDATE';
+      schema: string;
+      table: string;
+      filter?: string;
+    };
+
+    const baseConfig: ChangeConfig = {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'notifications',
+      ...(!isAdmin && { filter: `user_id=eq.${userId}` }),
+    };
 
     const channel = supabase.channel(channelName)
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'notifications',
-        filter,
-      }, (payload) => {
+      .on('postgres_changes', baseConfig, (payload) => {
         const incoming = payload.new as Notification;
+        // Client-side guard in case RLS lets through an unrelated row
+        if (isAdmin && !incoming.is_admin_notification) return;
+        if (!isAdmin && (incoming.user_id !== userId || incoming.is_admin_notification)) return;
         setNotifications(prev =>
           prev.some(n => n.id === incoming.id) ? prev : [incoming, ...prev]
         );
       })
-      .on('postgres_changes', {
-        event: 'UPDATE',
-        schema: 'public',
-        table: 'notifications',
-        filter,
-      }, (payload) => {
+      .on('postgres_changes', { ...baseConfig, event: 'UPDATE' }, (payload) => {
         const updated = payload.new as Notification;
         setNotifications(prev =>
           prev.map(n => n.id === updated.id ? { ...n, is_read: updated.is_read } : n)
@@ -93,6 +101,15 @@ export function NotificationBell({ isAdmin, userId }: NotificationBellProps) {
 
     return () => { supabase.removeChannel(channel); };
   }, [isAdmin, userId]);
+
+  // Reload when the tab regains focus — guarantees freshness if realtime missed an event
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === 'visible' && userId) loadNotifications();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [userId, loadNotifications]);
 
   // Close dropdown on outside click
   useEffect(() => {

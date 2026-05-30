@@ -14,6 +14,9 @@ CREATE TABLE IF NOT EXISTS notifications (
 CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications(user_id) WHERE user_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_notifications_admin ON notifications(created_at DESC) WHERE is_admin_notification = true;
 
+-- Required for realtime filtered subscriptions to broadcast full row payloads
+ALTER TABLE notifications REPLICA IDENTITY FULL;
+
 -- ─── RLS ────────────────────────────────────────────────────────────────────
 ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
 
