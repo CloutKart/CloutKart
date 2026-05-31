@@ -27,7 +27,16 @@ function VisionPreview() {
         style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.10)', backdropFilter: 'blur(12px)' }}
       >
         <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: '#A855F7' }} />
-        <span className="text-[11px] font-medium text-white/60 font-mono">Brief received · Brewora Coffee Scrub</span>
+        <span className="text-[11px] font-medium text-white/60 font-mono">Brief submitted · Brewora Coffee Scrub</span>
+      </div>
+
+      {/* Status pill — floats top right */}
+      <div
+        className="absolute -top-5 right-2 z-10 flex items-center gap-2 rounded-full px-3 py-1.5 animate-float"
+        style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)', backdropFilter: 'blur(12px)' }}
+      >
+        <div className="w-1.5 h-1.5 rounded-full" style={{ background: '#10B981' }} />
+        <span className="text-[10px] font-semibold font-mono" style={{ color: '#10B981' }}>In Review</span>
       </div>
 
       {/* Main vision card */}
@@ -121,9 +130,18 @@ function VisionPreview() {
         </div>
       </div>
 
-      {/* Stat pill — floats bottom right */}
+      {/* Deliverable ready pill — floats bottom left */}
       <div
-        className="absolute -bottom-5 right-4 z-10 flex items-center gap-2.5 rounded-full px-4 py-2 animate-float-slow"
+        className="absolute -bottom-5 left-4 z-10 flex items-center gap-2 rounded-full px-3.5 py-2 animate-float-slow"
+        style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.10)', backdropFilter: 'blur(12px)' }}
+      >
+        <CheckCircle size={11} style={{ color: '#10B981', flexShrink: 0 }} />
+        <span className="text-[10px] font-medium text-white/55 font-mono">Creatives delivered · 48h</span>
+      </div>
+
+      {/* ROAS pill — floats bottom right */}
+      <div
+        className="absolute -bottom-5 right-2 z-10 flex items-center gap-2.5 rounded-full px-4 py-2 animate-float-delayed"
         style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.10)', backdropFilter: 'blur(12px)' }}
       >
         <span className="font-mono text-sm font-bold gradient-text">+284%</span>
@@ -174,20 +192,20 @@ export default function Hero({ onSignupOpen }: Props) {
           <div className="text-left">
             <div className="eyebrow-pill mb-6 sm:mb-8 animate-fade-up">
               <span className="w-1.5 h-1.5 rounded-full bg-brand-purple animate-pulse" />
-              AI Creative Agency
+              AI Creative Operations Platform
             </div>
 
             <h1
               className="font-heading font-bold leading-[1.06] tracking-[-0.03em] mb-6 animate-fade-up delay-100"
               style={{ fontSize: 'clamp(2.6rem, 6vw, 4.75rem)' }}
             >
-              <span className="text-white block">Ads that stop</span>
-              <span className="text-white block">the scroll.</span>
-              <span className="gradient-text-animated block">Built by AI.</span>
+              <span className="text-white block">AI-Powered Ads</span>
+              <span className="text-white block">That Actually</span>
+              <span className="gradient-text-animated block">Convert.</span>
             </h1>
 
             <p className="text-[#9CA3AF] text-base sm:text-lg leading-[1.8] mb-9 max-w-md animate-fade-up delay-200">
-              Submit a brief. Pixie reads your brand and writes the vision — hook, color story, ad copy, and deliverables — before a single pixel is created.
+              A complete creative operations platform — submit briefs, manage requests, review deliverables, and collaborate with your team in one place. Powered by <span className="text-white font-medium">Pixie</span>, our AI engine that turns product info into campaign-ready hooks, color stories, and visual direction before production begins.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 animate-fade-up delay-300">
