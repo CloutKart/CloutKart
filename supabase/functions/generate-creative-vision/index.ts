@@ -1,6 +1,8 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 // @ts-ignore — groq-sdk ships a browser-compatible build usable in Deno via npm:
 import Groq from "npm:groq-sdk";
+// @ts-ignore
+import { MongoClient } from "npm:mongodb";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -20,8 +22,11 @@ Name the world the campaign lives in. 2–3 words that feel like a subculture, a
 **Visual Direction**
 Direct this like you're on set. Name the exact shot (macro texture close-up, low-angle hero, over-shoulder POV), the exact light (practical tungsten spill, overexposed midday bleach, single hard key with deep shadow fall-off), and the ONE visual detail that makes this frame unforgettable. 3 sentences max. No "vibrant" or "sleek" — describe what the camera actually sees.
 
-**Color Story**
-3 colors pulled directly from the brand's actual world — product, packaging, environment, emotion. Not generic palette presets. Name each color like it has a backstory: "Petrol Slick", "Split Milk", "Furious Yellow". Provide the exact hex.
+**Product Colors**
+3 colors grounded in the product's physical reality — the packaging hue, the material texture, the hero ingredient or substance. These are factual, not aspirational. Name each like it has a backstory: "Petrol Slick", "Split Milk", "Furious Yellow". Provide the exact hex.
+
+**Creative Vibe Colors**
+3 colors that define the campaign's emotional atmosphere — the environment, the light, the feeling the viewer should have when they see this ad. These may or may not match the product's actual colors. They build the visual world around the product. Name each with the same evocative naming style. Provide the exact hex. Then write one sentence — the vibeColorRationale — explaining what emotional direction this palette creates and why it specifically serves this brief.
 
 **Hook**
 Generate ONE hook under 8 words. It must stop a thumb mid-scroll — even if the viewer knows nothing about the product.
@@ -104,11 +109,17 @@ Exact structure required:
     "description": "1–2 sentences on mood, brand positioning, and emotional provocation"
   },
   "visualDirection": "2–3 sentences of specific directorial instruction — shot, light, the one unforgettable detail",
-  "colorStory": [
-    { "name": "Evocative color name with backstory", "hex": "#RRGGBB" },
-    { "name": "Evocative color name with backstory", "hex": "#RRGGBB" },
-    { "name": "Evocative color name with backstory", "hex": "#RRGGBB" }
+  "productColors": [
+    { "name": "Evocative name tied to the physical product", "hex": "#RRGGBB" },
+    { "name": "Evocative name tied to the physical product", "hex": "#RRGGBB" },
+    { "name": "Evocative name tied to the physical product", "hex": "#RRGGBB" }
   ],
+  "vibeColors": [
+    { "name": "Evocative name tied to campaign atmosphere", "hex": "#RRGGBB" },
+    { "name": "Evocative name tied to campaign atmosphere", "hex": "#RRGGBB" },
+    { "name": "Evocative name tied to campaign atmosphere", "hex": "#RRGGBB" }
+  ],
+  "vibeColorRationale": "One sentence on the emotional direction this palette creates for this specific brief",
   "hook": "Single scroll-stopping line under 8 words — no commas, no ellipsis, no exclamation marks",
   "adCaption": "3 sentences: product truth → desire gap → inevitable CTA",
   "whatWeWillCreate": [
@@ -121,6 +132,47 @@ Exact structure required:
 
 const TEXT_MODEL = "llama-3.3-70b-versatile";
 const VISION_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct";
+
+async function getQueryEmbedding(text: string, hfKey: string): Promise<number[]> {
+  const res = await fetch(
+    "https://api-inference.huggingface.co/pipeline/feature-extraction/sentence-transformers/all-MiniLM-L6-v2",
+    {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${hfKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ inputs: text, options: { wait_for_model: true } }),
+      signal: AbortSignal.timeout(8000),
+    }
+  );
+  if (!res.ok) throw new Error(`HF embedding error: ${res.status}`);
+  const data = await res.json();
+  return Array.isArray(data[0]) ? data[0] : data;
+}
+
+async function searchVisionChunks(queryVector: number[], mongoUri: string): Promise<string[]> {
+  const client = new MongoClient(mongoUri);
+  try {
+    await client.connect();
+    const results = await client
+      .db("cloutkart")
+      .collection("vision_chunks")
+      .aggregate([
+        {
+          $vectorSearch: {
+            index: "vision_index",
+            path: "embedding",
+            queryVector,
+            numCandidates: 60,
+            limit: 4,
+          },
+        },
+        { $project: { _id: 0, text_content: 1, section: 1, score: { $meta: "vectorSearchScore" } } },
+      ])
+      .toArray();
+    return (results as Array<{ text_content: string }>).map((r) => r.text_content);
+  } finally {
+    await client.close();
+  }
+}
 
 async function scrapeUrl(url: string): Promise<string> {
   try {
@@ -198,6 +250,22 @@ HOOK INSTRUCTION — you have the brand's actual website content above. Before w
 Use at least one of these extracted specifics in the hook so it is provably non-interchangeable with any other product or brand.`;
     } else if (referenceUrl) {
       userPrompt += `\nReference URL (could not fetch): ${referenceUrl}`;
+    }
+
+    // RAG: retrieve relevant creative intelligence chunks
+    const HF_API_KEY   = Deno.env.get("HF_API_KEY");
+    const MONGODB_URI  = Deno.env.get("MONGODB_URI");
+    if (HF_API_KEY && MONGODB_URI) {
+      try {
+        const queryText  = `${brandName} ${niche} ${adFormat} ${description}`;
+        const vector     = await getQueryEmbedding(queryText, HF_API_KEY);
+        const chunks     = await searchVisionChunks(vector, MONGODB_URI);
+        if (chunks.length > 0) {
+          userPrompt += `\n\n## CLOUT KART CREATIVE INTELLIGENCE — RELEVANT REFERENCES\n\nThe following have been retrieved from CloutKart's knowledge base as most relevant to this brief. Use them as direct creative grounding — hooks, vibes, color logic, visual direction, and category rules that have proven to work for this type of product:\n\n${chunks.map((c, i) => `[Ref ${i + 1}]\n${c}`).join("\n\n")}`;
+        }
+      } catch (ragErr) {
+        console.warn("[RAG] Skipping — retrieval failed:", (ragErr as Error).message);
+      }
     }
 
     userPrompt += "\n\nReturn only the JSON object.";

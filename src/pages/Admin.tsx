@@ -30,7 +30,10 @@ interface Profile {
 interface ApprovedVision {
   creativeVibe: { label: string; description: string };
   visualDirection: string;
-  colorStory: Array<{ name: string; hex: string }>;
+  productColors?: Array<{ name: string; hex: string }>;
+  vibeColors?: Array<{ name: string; hex: string }>;
+  vibeColorRationale?: string;
+  colorStory?: Array<{ name: string; hex: string }>; // legacy fallback
   hook: string;
   adCaption: string;
   whatWeWillCreate: string[];
@@ -185,11 +188,11 @@ function VisionModal({ vision, brandName, onClose }: { vision: ApprovedVision; b
 
           <div className="h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />
 
-          {/* Color Story */}
+          {/* Product Colors */}
           <div>
-            <span className={sectionLabel}>Color Story</span>
+            <span className={sectionLabel}>Product Colors</span>
             <div className="flex gap-4 flex-wrap">
-              {vision.colorStory.map((c, i) => (
+              {(vision.productColors ?? vision.colorStory ?? []).map((c, i) => (
                 <div key={i} className="flex items-center gap-2">
                   <div className="w-6 h-6 rounded-full border border-white/20 flex-shrink-0" style={{ background: c.hex }} />
                   <div>
@@ -200,6 +203,34 @@ function VisionModal({ vision, brandName, onClose }: { vision: ApprovedVision; b
               ))}
             </div>
           </div>
+
+          {(vision.vibeColors ?? []).length > 0 && (
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <span className={sectionLabel} style={{ marginBottom: 0 }}>Vibe Colors</span>
+                <span className="text-[9px] font-semibold px-2 py-0.5 rounded-full"
+                  style={{ background: 'rgba(168,85,247,0.1)', border: '1px solid rgba(168,85,247,0.2)', color: '#C084FC' }}>
+                  Campaign Atmosphere
+                </span>
+              </div>
+              <div className="flex gap-4 flex-wrap mb-2">
+                {(vision.vibeColors ?? []).map((c, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-full border border-white/20 flex-shrink-0" style={{ background: c.hex }} />
+                    <div>
+                      <p className="text-[#E5E7EB] text-xs font-medium">{c.name}</p>
+                      <p className="text-[#6B7280] text-[10px] font-mono">{c.hex}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {vision.vibeColorRationale && (
+                <p className="text-[11px] leading-relaxed italic" style={{ color: 'rgba(192,132,252,0.7)' }}>
+                  {vision.vibeColorRationale}
+                </p>
+              )}
+            </div>
+          )}
 
           <div className="h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />
 

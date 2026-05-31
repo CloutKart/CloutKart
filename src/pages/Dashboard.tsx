@@ -32,7 +32,10 @@ interface CreativeRequest {
 interface VisionData {
   creativeVibe: { label: string; description: string };
   visualDirection: string;
-  colorStory: Array<{ name: string; hex: string }>;
+  productColors: Array<{ name: string; hex: string }>;
+  vibeColors: Array<{ name: string; hex: string }>;
+  vibeColorRationale: string;
+  colorStory?: Array<{ name: string; hex: string }>; // legacy fallback
   hook: string;
   adCaption: string;
   whatWeWillCreate: string[];
@@ -313,13 +316,17 @@ function VisionPanel({ vision, onChange, onApprove, submitting, submitError }: {
   submitting: boolean;
   submitError: string;
 }) {
-  const colorRef0 = useRef<HTMLInputElement>(null);
-  const colorRef1 = useRef<HTMLInputElement>(null);
-  const colorRef2 = useRef<HTMLInputElement>(null);
-  const colorRefs: React.RefObject<HTMLInputElement>[] = [colorRef0, colorRef1, colorRef2];
+  const prodColorRef0 = useRef<HTMLInputElement>(null);
+  const prodColorRef1 = useRef<HTMLInputElement>(null);
+  const prodColorRef2 = useRef<HTMLInputElement>(null);
+  const vibeColorRef0 = useRef<HTMLInputElement>(null);
+  const vibeColorRef1 = useRef<HTMLInputElement>(null);
+  const vibeColorRef2 = useRef<HTMLInputElement>(null);
+  const prodColorRefs: React.RefObject<HTMLInputElement>[] = [prodColorRef0, prodColorRef1, prodColorRef2];
+  const vibeColorRefs: React.RefObject<HTMLInputElement>[] = [vibeColorRef0, vibeColorRef1, vibeColorRef2];
 
-  function updateColor(idx: number, field: 'name' | 'hex', value: string) {
-    const next = vision.colorStory.map((c, i) => {
+  function updateColor(array: 'productColors' | 'vibeColors', idx: number, field: 'name' | 'hex', value: string) {
+    const next = (vision[array] ?? []).map((c, i) => {
       if (i !== idx) return c;
       if (field === 'hex') {
         const normalized = value.startsWith('#') ? value : `#${value}`;
@@ -330,7 +337,7 @@ function VisionPanel({ vision, onChange, onApprove, submitting, submitError }: {
       }
       return { ...c, [field]: value };
     });
-    onChange({ ...vision, colorStory: next });
+    onChange({ ...vision, [array]: next });
   }
 
   function updateDeliverable(idx: number, value: string) {
@@ -398,44 +405,87 @@ function VisionPanel({ vision, onChange, onApprove, submitting, submitError }: {
         </div>
         {divider}
 
-        {/* COLOR STORY — matches screenshot: circle + name on one row, hex below */}
+        {/* PRODUCT COLORS */}
         <div className="px-5 py-4">
-          <span className={sectionLabel}>Color Story</span>
+          <span className={sectionLabel}>Product Colors</span>
           <div className="grid grid-cols-3 gap-2">
-            {vision.colorStory.slice(0, 3).map((color, idx) => (
+            {(vision.productColors ?? vision.colorStory ?? []).slice(0, 3).map((color, idx) => (
               <div key={idx} className="rounded-xl px-3 py-3 flex flex-col gap-1.5"
                 style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
-                {/* Circle (overlaid color input) + name on same row */}
                 <div className="flex items-center gap-2">
                   <div className="relative w-5 h-5 flex-shrink-0">
-                    <div
-                      className="w-5 h-5 rounded-full border border-white/20 hover:scale-110 transition-transform"
-                      style={{ background: color.hex }}
-                    />
+                    <div className="w-5 h-5 rounded-full border border-white/20 hover:scale-110 transition-transform"
+                      style={{ background: color.hex }} />
                     <input
-                      ref={colorRefs[idx]}
+                      ref={prodColorRefs[idx]}
                       type="color"
                       value={color.hex.length === 7 ? color.hex : '#000000'}
-                      onChange={e => updateColor(idx, 'hex', e.target.value)}
-                      title="Click to change color"
+                      onChange={e => updateColor('productColors', idx, 'hex', e.target.value)}
                       style={{ position: 'absolute', inset: 0, opacity: 0, width: '100%', height: '100%', cursor: 'pointer', padding: 0, border: 'none' }}
                     />
                   </div>
                   <input
                     value={color.name}
-                    onChange={e => updateColor(idx, 'name', e.target.value)}
+                    onChange={e => updateColor('productColors', idx, 'name', e.target.value)}
                     className="bg-transparent focus:outline-none text-[#E5E7EB] text-xs font-medium w-full min-w-0"
                   />
                 </div>
-                {/* Hex below */}
                 <input
                   value={color.hex}
-                  onChange={e => updateColor(idx, 'hex', e.target.value)}
+                  onChange={e => updateColor('productColors', idx, 'hex', e.target.value)}
                   className="bg-transparent focus:outline-none font-mono text-[#6B7280] text-[11px] w-full"
                 />
               </div>
             ))}
           </div>
+        </div>
+        {divider}
+
+        {/* VIBE COLORS */}
+        <div className="px-5 py-4">
+          <div className="flex items-center justify-between mb-3">
+            <span className={sectionLabel} style={{ marginBottom: 0 }}>Vibe Colors</span>
+            <span className="text-[9px] font-semibold px-2 py-0.5 rounded-full"
+              style={{ background: 'rgba(168,85,247,0.1)', border: '1px solid rgba(168,85,247,0.2)', color: '#C084FC' }}>
+              Campaign Atmosphere
+            </span>
+          </div>
+          <div className="grid grid-cols-3 gap-2 mb-3">
+            {(vision.vibeColors ?? []).slice(0, 3).map((color, idx) => (
+              <div key={idx} className="rounded-xl px-3 py-3 flex flex-col gap-1.5"
+                style={{ background: 'rgba(168,85,247,0.04)', border: '1px solid rgba(168,85,247,0.12)' }}>
+                <div className="flex items-center gap-2">
+                  <div className="relative w-5 h-5 flex-shrink-0">
+                    <div className="w-5 h-5 rounded-full border border-white/20 hover:scale-110 transition-transform"
+                      style={{ background: color.hex }} />
+                    <input
+                      ref={vibeColorRefs[idx]}
+                      type="color"
+                      value={color.hex.length === 7 ? color.hex : '#000000'}
+                      onChange={e => updateColor('vibeColors', idx, 'hex', e.target.value)}
+                      style={{ position: 'absolute', inset: 0, opacity: 0, width: '100%', height: '100%', cursor: 'pointer', padding: 0, border: 'none' }}
+                    />
+                  </div>
+                  <input
+                    value={color.name}
+                    onChange={e => updateColor('vibeColors', idx, 'name', e.target.value)}
+                    className="bg-transparent focus:outline-none text-[#E5E7EB] text-xs font-medium w-full min-w-0"
+                  />
+                </div>
+                <input
+                  value={color.hex}
+                  onChange={e => updateColor('vibeColors', idx, 'hex', e.target.value)}
+                  className="bg-transparent focus:outline-none font-mono text-[#6B7280] text-[11px] w-full"
+                />
+              </div>
+            ))}
+          </div>
+          {vision.vibeColorRationale && (
+            <p className="text-[11px] leading-relaxed italic"
+              style={{ color: 'rgba(192,132,252,0.7)' }}>
+              {vision.vibeColorRationale}
+            </p>
+          )}
         </div>
         {divider}
 
