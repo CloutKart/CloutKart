@@ -24,12 +24,36 @@ Direct this like you're on set. Name the exact shot (macro texture close-up, low
 3 colors pulled directly from the brand's actual world — product, packaging, environment, emotion. Not generic palette presets. Name each color like it has a backstory: "Petrol Slick", "Split Milk", "Furious Yellow". Provide the exact hex.
 
 **Hook**
-This is the most important line in the document. Write the one sentence that would make someone freeze mid-scroll. Rules:
-— Under 10 words
-— Cannot start with "Discover", "Introducing", "Meet", or any verb that sounds like a press release
-— Should feel like something a real person would text a friend, not read in an ad
-— Should create a gap — make the viewer feel like they're missing something, doing something wrong, or about to understand something for the first time
-— Must be specific to THIS product and THIS audience. Generic = disqualified.
+Generate ONE hook under 8 words. It must stop a thumb mid-scroll.
+
+HOOK PSYCHOLOGY — use exactly ONE of these triggers:
+- CURIOSITY GAP: Leave an information loop open. "The skincare step everyone skips."
+- PAIN POINT: Name a frustration the buyer feels daily. Make them feel seen instantly.
+- PATTERN INTERRUPT: Say something the reader didn't expect from this product category.
+- BOLD CLAIM: Make a specific, provable promise. Not vague. Not generic.
+- REVERSE PSYCHOLOGY: Tell them NOT to buy it. "Don't buy this if your skin is fine."
+- SHARP OBSERVATION: State something true about their life that no one else has said out loud.
+
+STRICT RULES:
+- Under 8 words. Non-negotiable.
+- No commas, no ellipsis, no exclamation marks
+- Must reference something SPECIFIC to this product — not interchangeable with any other product
+- Read it back — could it work for a competitor's product? If yes, rewrite it.
+- BANNED WORDS: Unleash, Elevate, Level up, Game changer, Power, Transform, Discover, Unlock, Revolutionize, Experience, Journey, Ultimate, Premium, World-class, Next-level
+- Do NOT start with "Introducing" or "Meet" or "This is"
+- Do NOT use questions ending in "?" — statements hit harder than questions
+- Gut check: would a 22-year-old in Mumbai stop scrolling for this? If no, rewrite.
+
+EXAMPLES OF GOOD HOOKS BY CATEGORY:
+- Skincare: "Your moisturiser is lying to your skin"
+- Activewear: "Rough lines? Blame the pencil"
+- Supplements: "You sleep 8 hours. Your skin doesn't"
+- Food: "Happiness is a $3 problem"
+- Fashion: "Wear it once. Hear about it forever"
+- Home: "Clean house. Zero effort. Pick one — just kidding"
+- Tech: "Your phone is smarter than your charger"
+
+Generate the hook, then internally ask: is this specific? is this unexpected? is it under 8 words? Only output if all three are yes.
 
 **Ad Caption**
 3 sentences. First: land the hook's promise hard with a product truth. Second: make the reader feel the gap between their current life and their life with this product. Third: one short, confident directional — not a pleading CTA, a statement of inevitability. No exclamation marks unless they're earned.
@@ -59,7 +83,7 @@ Exact structure required:
     { "name": "Evocative color name with backstory", "hex": "#RRGGBB" },
     { "name": "Evocative color name with backstory", "hex": "#RRGGBB" }
   ],
-  "hook": "Single scroll-stopping line under 10 words",
+  "hook": "Single scroll-stopping line under 8 words — no commas, no ellipsis, no exclamation marks",
   "adCaption": "3 sentences: product truth → desire gap → inevitable CTA",
   "whatWeWillCreate": [
     "Specific deliverable — platform, format, dimensions, creative descriptor",
@@ -134,7 +158,18 @@ Ad Format: ${adFormat}
 Description: ${description}`;
 
     if (urlContent) {
-      userPrompt += `\n\nContent scraped from the client's reference URL (${referenceUrl}). Use anything relevant — product details, brand language, aesthetic cues:\n---\n${urlContent}\n---`;
+      userPrompt += `\n\nContent scraped from the client's reference URL (${referenceUrl}):
+---
+${urlContent}
+---
+
+HOOK INSTRUCTION — you have the brand's actual website content above. Before writing the hook, extract:
+- Any specific product name, SKU, or variant mentioned
+- Any price point, offer, or quantified claim (e.g. "0.5mm lead", "lasts 72 hours", "ships in 2 days")
+- Any customer-language phrases or headlines the brand uses about itself
+- Any concrete product truth that a competitor CANNOT truthfully claim
+
+Use at least one of these extracted specifics in the hook so it is provably non-interchangeable with any other product or brand.`;
     } else if (referenceUrl) {
       userPrompt += `\nReference URL (could not fetch): ${referenceUrl}`;
     }

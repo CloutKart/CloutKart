@@ -321,7 +321,13 @@ function VisionPanel({ vision, onChange, onApprove, submitting, submitError }: {
   function updateColor(idx: number, field: 'name' | 'hex', value: string) {
     const next = vision.colorStory.map((c, i) => {
       if (i !== idx) return c;
-      if (field === 'hex' && value.length === 7) return { name: nameColor(value), hex: value };
+      if (field === 'hex') {
+        const normalized = value.startsWith('#') ? value : `#${value}`;
+        if (/^#[0-9a-fA-F]{6}$/.test(normalized)) {
+          return { name: nameColor(normalized), hex: normalized };
+        }
+        return { ...c, hex: value };
+      }
       return { ...c, [field]: value };
     });
     onChange({ ...vision, colorStory: next });
