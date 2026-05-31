@@ -287,34 +287,29 @@ const phases = [
 ];
 
 export default function ScrollStory() {
-  const outerRef = useRef<HTMLDivElement>(null);
+  const driverRef = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(0);
   const [progress, setProgress] = useState(0);
   const [localProg, setLocalProg] = useState(0);
-  const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
-    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) setVisible(true); }, { threshold: 0.02 });
-    if (outerRef.current) obs.observe(outerRef.current);
-    return () => obs.disconnect();
-  }, []);
+  const [show, setShow] = useState(false);
 
   useEffect(() => {
     const onScroll = () => {
-      if (!outerRef.current) return;
-      const rect = outerRef.current.getBoundingClientRect();
-      const scrollable = outerRef.current.offsetHeight - window.innerHeight;
+      if (!driverRef.current) return;
+      const rect = driverRef.current.getBoundingClientRect();
+      const scrollable = driverRef.current.offsetHeight - window.innerHeight;
       if (scrollable <= 0) return;
-      const earlyTrigger = window.innerHeight * 0.02;
-      const scrolled = -rect.top + earlyTrigger;
-      const pct = Math.max(0, Math.min(1, scrolled / scrollable));
+
+      // Show fixed panel only while driver is actively scrolling through viewport
+      setShow(rect.top <= 0 && rect.bottom >= window.innerHeight);
+
+      const pct = Math.max(0, Math.min(1, -rect.top / scrollable));
       setProgress(pct);
 
-      const phaseCount = phases.length;
-      const phasePct = Math.min(pct / 0.98, 1);
-      const phaseIdx = Math.min(phaseCount - 1, Math.floor(phasePct * phaseCount));
-      const phaseStart = phaseIdx / phaseCount;
-      const phaseEnd = (phaseIdx + 1) / phaseCount;
+      const phasePct = Math.min(pct / 0.97, 1);
+      const phaseIdx = Math.min(phases.length - 1, Math.floor(phasePct * phases.length));
+      const phaseStart = phaseIdx / phases.length;
+      const phaseEnd = (phaseIdx + 1) / phases.length;
       const lp = Math.max(0, Math.min(1, (phasePct - phaseStart) / (phaseEnd - phaseStart)));
       setActive(phaseIdx);
       setLocalProg(lp);
@@ -331,166 +326,156 @@ export default function ScrollStory() {
     <CartScene localProg={localProg} />,
   ];
 
-  // Parallax offsets for different depth layers
-  const bgOffset = progress * -60;   // slow — feels far back
-  const midOffset = progress * -30;  // medium
-  const fgOffset = progress * 20;    // forward — floats toward viewer
+  const bgOffset = progress * -50;
+  const midOffset = progress * -25;
+  const fgOffset = progress * 18;
+
+  // ── Panel content (shared between fixed overlay and mobile fallback) ──
+  const PanelContent = () => (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full h-full flex flex-col justify-center">
+      <div className="text-center mb-8 md:mb-12">
+        <div className="eyebrow-pill inline-flex mb-4">
+          <span className="w-1 h-1 rounded-full bg-brand-purple" />
+          How It Works
+        </div>
+        <h2 className="font-heading font-bold text-white leading-tight tracking-tight"
+          style={{ fontSize: 'clamp(1.6rem, 3.5vw, 2.8rem)' }}>
+          From brief to{' '}
+          <span className="gradient-text">converting creative</span>
+          {' '}in four steps
+        </h2>
+      </div>
+
+      <div className="grid lg:grid-cols-[320px_1fr] gap-8 lg:gap-14 items-center">
+        {/* Left: phase tracker */}
+        <div className="hidden lg:block space-y-1">
+          {phases.map((p, i) => {
+            const isActive = i === active;
+            const isPast = i < active;
+            return (
+              <div key={p.num}
+                className="flex items-start gap-4 p-3.5 rounded-xl transition-all duration-300"
+                style={{
+                  background: isActive ? 'rgba(168,85,247,0.07)' : 'transparent',
+                  border: isActive ? '1px solid rgba(168,85,247,0.2)' : '1px solid transparent',
+                }}
+              >
+                <div className="flex flex-col items-center gap-1 flex-shrink-0 mt-0.5">
+                  <div className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold font-mono transition-all duration-300"
+                    style={{
+                      background: isActive ? 'linear-gradient(135deg,#A855F7,#6366F1)' : isPast ? 'rgba(168,85,247,0.15)' : 'rgba(255,255,255,0.04)',
+                      border: isActive ? 'none' : isPast ? '1px solid rgba(168,85,247,0.3)' : '1px solid rgba(255,255,255,0.07)',
+                      color: isActive ? '#fff' : isPast ? '#A855F7' : 'rgba(255,255,255,0.2)',
+                    }}>
+                    {isPast ? '✓' : p.num}
+                  </div>
+                  {i < phases.length - 1 && (
+                    <div className="w-px h-4 transition-all duration-300"
+                      style={{ background: isPast ? 'rgba(168,85,247,0.4)' : 'rgba(255,255,255,0.06)' }} />
+                  )}
+                </div>
+                <div>
+                  <div className="font-heading font-bold text-sm leading-snug mb-0.5 transition-colors duration-300"
+                    style={{ color: isActive ? '#fff' : isPast ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.18)' }}>
+                    {p.title}
+                  </div>
+                  <p className="text-[11px] leading-relaxed transition-colors duration-300 hidden xl:block"
+                    style={{ color: isActive ? 'rgba(255,255,255,0.45)' : 'rgba(255,255,255,0.1)' }}>
+                    {p.sub}
+                  </p>
+                </div>
+              </div>
+            );
+          })}
+          <div className="mt-4 ml-8">
+            <div className="h-px bg-white/[0.06] rounded-full overflow-hidden">
+              <div className="h-full rounded-full transition-all duration-150"
+                style={{ width: `${Math.min(progress / 0.97, 1) * 100}%`, background: 'linear-gradient(90deg,#A855F7,#3B82F6,#06B6D4)' }} />
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile phase label */}
+        <div className="lg:hidden text-center mb-2">
+          <div className="text-[10px] font-mono text-white/30 uppercase tracking-widest mb-1">Phase {phases[active].num}</div>
+          <div className="font-heading font-bold text-white text-base">{phases[active].title}</div>
+        </div>
+
+        {/* Right: scene */}
+        <div className="flex items-center justify-center"
+          style={{ transform: `translateY(${midOffset * 0.4}px)`, transition: 'transform 0.08s linear' }}>
+          <div className="relative w-full">
+            <div className="absolute -inset-8 rounded-3xl pointer-events-none"
+              style={{ background: 'radial-gradient(ellipse at center, rgba(168,85,247,0.05) 0%, transparent 70%)', transform: `translateY(${fgOffset * 0.4}px)`, transition: 'transform 0.08s linear' }} />
+            <div className="flex items-center justify-center">
+              {scenes.map((scene, i) => (
+                <div key={i} className="transition-all duration-450"
+                  style={{
+                    position: i === active ? 'relative' : 'absolute',
+                    opacity: i === active ? 1 : 0,
+                    transform: i === active ? 'scale(1) translateY(0)' : i < active ? 'scale(0.95) translateY(-14px)' : 'scale(0.97) translateY(14px)',
+                    pointerEvents: i === active ? 'auto' : 'none',
+                    zIndex: i === active ? 1 : 0,
+                    width: '100%',
+                  }}>
+                  {scene}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile dots */}
+      <div className="flex items-center justify-center gap-2 mt-6 lg:hidden">
+        {phases.map((_, i) => (
+          <div key={i} className="rounded-full transition-all duration-400"
+            style={{ width: i === active ? 18 : 4, height: 4, background: i <= active ? 'linear-gradient(90deg,#A855F7,#06B6D4)' : 'rgba(255,255,255,0.1)' }} />
+        ))}
+      </div>
+    </div>
+  );
 
   return (
-    <section id="story" className="relative" style={{ background: 'transparent' }}>
-      <div ref={outerRef} style={{ height: '200vh' }}>
-        <div className="sticky top-0 h-screen overflow-hidden flex flex-col justify-center">
+    <section id="story" style={{ background: 'transparent', position: 'relative' }}>
+      {/* ── Scroll driver: provides scroll distance, occupies page space ── */}
+      <div ref={driverRef} style={{ height: '220vh' }}>
 
-          {/* Parallax background glow — moves slowest */}
-          <div
-            className="absolute inset-0 pointer-events-none"
-            style={{ transform: `translateY(${bgOffset}px)`, transition: 'transform 0.1s linear' }}
-          >
+        {/* ── Fixed panel: visible only while driver is in active scroll zone ── */}
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0,
+          height: '100vh',
+          zIndex: 10,
+          background: '#080808',
+          opacity: show ? 1 : 0,
+          pointerEvents: show ? 'auto' : 'none',
+          transition: 'opacity 0.15s ease',
+          overflow: 'hidden',
+        }}>
+          {/* Parallax background glow */}
+          <div className="absolute inset-0 pointer-events-none"
+            style={{ transform: `translateY(${bgOffset}px)`, transition: 'transform 0.08s linear' }}>
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] rounded-full"
-              style={{ background: 'radial-gradient(ellipse, rgba(168,85,247,0.06) 0%, transparent 70%)' }} />
+              style={{ background: 'radial-gradient(ellipse, rgba(168,85,247,0.07) 0%, transparent 70%)' }} />
             <div className="absolute top-1/3 left-1/4 w-[300px] h-[300px] rounded-full"
               style={{ background: 'radial-gradient(circle, rgba(59,130,246,0.04) 0%, transparent 70%)' }} />
           </div>
 
-          {/* Parallax mid dots — medium speed */}
-          <div
-            className="absolute inset-0 pointer-events-none"
-            style={{ transform: `translateY(${midOffset}px)`, transition: 'transform 0.1s linear' }}
-          >
+          {/* Mid dots */}
+          <div className="absolute inset-0 pointer-events-none"
+            style={{ transform: `translateY(${midOffset}px)`, transition: 'transform 0.08s linear' }}>
             {[[15, 20], [80, 70], [10, 75], [85, 25], [50, 85]].map(([x, y], i) => (
               <div key={i} className="absolute rounded-full"
                 style={{ left: `${x}%`, top: `${y}%`, width: 3, height: 3, background: `rgba(168,85,247,${0.1 + i * 0.04})` }} />
             ))}
           </div>
 
-          <div className={`transition-all duration-700 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-
-            {/* Section label */}
-            <div className="text-center mb-10 md:mb-14">
-              <div className="eyebrow-pill inline-flex mb-5">
-                <span className="w-1 h-1 rounded-full bg-brand-purple" />
-                How It Works
-              </div>
-              <h2 className="font-heading font-bold text-white leading-tight tracking-tight"
-                style={{ fontSize: 'clamp(1.8rem, 4vw, 3.2rem)' }}>
-                From brief to{' '}
-                <span className="gradient-text">converting creative</span>
-                {' '}in four steps
-              </h2>
-            </div>
-
-            {/* Split layout: phases left + scene right */}
-            <div className="grid lg:grid-cols-[340px_1fr] gap-10 lg:gap-16 items-center">
-
-              {/* Left: phase list */}
-              <div className="hidden lg:block space-y-1">
-                {phases.map((p, i) => {
-                  const isActive = i === active;
-                  const isPast = i < active;
-                  return (
-                    <div key={p.num}
-                      className="flex items-start gap-4 p-4 rounded-xl transition-all duration-400"
-                      style={{
-                        background: isActive ? 'rgba(168,85,247,0.07)' : 'transparent',
-                        border: isActive ? '1px solid rgba(168,85,247,0.2)' : '1px solid transparent',
-                      }}
-                    >
-                      {/* Step indicator */}
-                      <div className="flex flex-col items-center gap-1 flex-shrink-0 mt-0.5">
-                        <div
-                          className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold font-mono transition-all duration-400"
-                          style={{
-                            background: isActive ? 'linear-gradient(135deg,#A855F7,#6366F1)' : isPast ? 'rgba(168,85,247,0.15)' : 'rgba(255,255,255,0.04)',
-                            border: isActive ? 'none' : isPast ? '1px solid rgba(168,85,247,0.3)' : '1px solid rgba(255,255,255,0.07)',
-                            color: isActive ? '#fff' : isPast ? '#A855F7' : 'rgba(255,255,255,0.2)',
-                          }}
-                        >
-                          {isPast ? '✓' : p.num}
-                        </div>
-                        {i < phases.length - 1 && (
-                          <div className="w-px h-5 transition-all duration-400"
-                            style={{ background: isPast ? 'rgba(168,85,247,0.4)' : 'rgba(255,255,255,0.06)' }} />
-                        )}
-                      </div>
-
-                      <div>
-                        <div className="font-heading font-bold text-sm leading-snug mb-1 transition-colors duration-300"
-                          style={{ color: isActive ? '#fff' : isPast ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.2)' }}>
-                          {p.title}
-                        </div>
-                        <p className="text-[12px] leading-relaxed transition-colors duration-300 hidden xl:block"
-                          style={{ color: isActive ? 'rgba(255,255,255,0.45)' : 'rgba(255,255,255,0.12)' }}>
-                          {p.sub}
-                        </p>
-                      </div>
-                    </div>
-                  );
-                })}
-
-                {/* Progress bar */}
-                <div className="mt-5 ml-8">
-                  <div className="h-px bg-white/[0.06] rounded-full overflow-hidden">
-                    <div className="h-full rounded-full transition-all duration-200"
-                      style={{ width: `${Math.min(progress / 0.98, 1) * 100}%`, background: 'linear-gradient(90deg,#A855F7,#3B82F6,#06B6D4)' }} />
-                  </div>
-                </div>
-              </div>
-
-              {/* Mobile: active phase text */}
-              <div className="lg:hidden text-center mb-4">
-                <div className="text-[10px] font-mono text-white/30 uppercase tracking-widest mb-1">Phase {phases[active].num}</div>
-                <div className="font-heading font-bold text-white text-lg">{phases[active].title}</div>
-              </div>
-
-              {/* Right: animated scene — parallax midground layer */}
-              <div
-                className="flex items-center justify-center"
-                style={{ transform: `translateY(${midOffset * 0.5}px)`, transition: 'transform 0.1s linear' }}
-              >
-                {/* Scene wrapper — foreground floating accent moves faster */}
-                <div className="relative w-full">
-                  {/* Foreground glow — moves faster (toward viewer) */}
-                  <div
-                    className="absolute -inset-8 rounded-3xl pointer-events-none"
-                    style={{
-                      background: 'radial-gradient(ellipse at center, rgba(168,85,247,0.05) 0%, transparent 70%)',
-                      transform: `translateY(${fgOffset * 0.5}px)`,
-                      transition: 'transform 0.1s linear',
-                    }}
-                  />
-
-                  {/* Scene — smooth cross-fade between phases */}
-                  <div className="flex items-center justify-center">
-                    {scenes.map((scene, i) => (
-                      <div
-                        key={i}
-                        className="transition-all duration-500"
-                        style={{
-                          position: i === active ? 'relative' : 'absolute',
-                          opacity: i === active ? 1 : 0,
-                          transform: i === active ? 'scale(1) translateY(0)' : i < active ? 'scale(0.95) translateY(-16px)' : 'scale(0.97) translateY(16px)',
-                          pointerEvents: i === active ? 'auto' : 'none',
-                          zIndex: i === active ? 1 : 0,
-                          width: '100%',
-                        }}
-                      >
-                        {scene}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Mobile: progress dots */}
-            <div className="flex items-center justify-center gap-2 mt-8 lg:hidden">
-              {phases.map((_, i) => (
-                <div key={i} className="rounded-full transition-all duration-500"
-                  style={{ width: i === active ? 20 : 4, height: 4, background: i <= active ? 'linear-gradient(90deg,#A855F7,#06B6D4)' : 'rgba(255,255,255,0.1)' }} />
-              ))}
-            </div>
-          </div>
+          <PanelContent />
         </div>
+
+        {/* ── Placeholder height so layout doesn't collapse when panel is fixed ── */}
+        {/* (the driver div already provides this — nothing extra needed) */}
       </div>
     </section>
   );
