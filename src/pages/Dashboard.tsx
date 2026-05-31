@@ -251,6 +251,60 @@ function resizeImageToBase64(file: File, maxPx = 1000): Promise<RefImage> {
   });
 }
 
+// ─── Color Naming ────────────────────────────────────────────────────────────
+const COLOR_PALETTE = [
+  { name: 'Signal Red', hex: '#FF2B2B' }, { name: 'Dried Blood', hex: '#8B1A1A' },
+  { name: 'Rust Ember', hex: '#C0392B' }, { name: 'Faded Crimson', hex: '#DC143C' },
+  { name: 'Brick Dust', hex: '#CB4154' }, { name: 'Furnace Glow', hex: '#FF6B35' },
+  { name: 'Burnt Sienna', hex: '#E97451' }, { name: 'Desert Clay', hex: '#C2713A' },
+  { name: 'Smoked Tangerine', hex: '#E8730A' }, { name: 'Amber Residue', hex: '#FFBF00' },
+  { name: 'Furious Yellow', hex: '#FFD700' }, { name: 'Sulfur Flare', hex: '#E8E040' },
+  { name: 'Pale Voltage', hex: '#F0F020' }, { name: 'Honeycomb Static', hex: '#FFC30F' },
+  { name: 'Aged Parchment', hex: '#F5DEB3' }, { name: 'Acid Wash', hex: '#7FFF00' },
+  { name: 'Sage Smoke', hex: '#78866B' }, { name: 'Olive Skin', hex: '#6B8E23' },
+  { name: 'Dead Leaf', hex: '#4F7942' }, { name: 'Petrol Slick', hex: '#2E8B57' },
+  { name: 'Malachite Bruise', hex: '#0BDA51' }, { name: 'Hospital Green', hex: '#00A86B' },
+  { name: 'Drowned Teal', hex: '#008080' }, { name: 'Ice Burn', hex: '#00CED1' },
+  { name: 'Absinthe Mist', hex: '#7FFFD4' }, { name: 'Frozen Pipeline', hex: '#40E0D0' },
+  { name: 'Midnight Ink', hex: '#191970' }, { name: 'Navy Séance', hex: '#000080' },
+  { name: 'Petrol Drift', hex: '#003153' }, { name: 'Denim Ghost', hex: '#1560BD' },
+  { name: 'Cold Signal', hex: '#4169E1' }, { name: 'Washed Indigo', hex: '#5865A0' },
+  { name: 'Gunmetal Sky', hex: '#2F4F4F' }, { name: 'Storm Front', hex: '#708090' },
+  { name: 'Bruised Violet', hex: '#8B008B' }, { name: 'Ink Stain', hex: '#4B0082' },
+  { name: 'Dusk Plum', hex: '#673AB7' }, { name: 'Acetone Purple', hex: '#7B2FBE' },
+  { name: 'Toxic Lavender', hex: '#9B59B6' }, { name: 'Faded Orchid', hex: '#DA70D6' },
+  { name: 'Pale Séance', hex: '#C9B1FF' }, { name: 'Overexposed Rose', hex: '#FF007F' },
+  { name: 'Fever Pink', hex: '#FF6B8A' }, { name: 'Washed Flamingo', hex: '#FC8EAC' },
+  { name: 'Blush Static', hex: '#FFB6C1' }, { name: 'Raw Skin', hex: '#FFCBA4' },
+  { name: 'Tobacco Stain', hex: '#8B4513' }, { name: 'Wet Earth', hex: '#6B4423' },
+  { name: 'Coffee Dregs', hex: '#3C1A0E' }, { name: 'Driftwood', hex: '#A0785A' },
+  { name: 'Bone Residue', hex: '#E8DCC8' }, { name: 'Ash Drift', hex: '#B2BEB5' },
+  { name: 'Quarry Dust', hex: '#9E9E9E' }, { name: 'Worn Concrete', hex: '#808080' },
+  { name: 'Cold Steel', hex: '#6D6D6D' }, { name: 'Lead Fog', hex: '#4A4A4A' },
+  { name: 'Split Milk', hex: '#FFFFF0' }, { name: 'Bleached Linen', hex: '#FAF0E6' },
+  { name: 'Salt Crust', hex: '#F5F5F5' }, { name: 'Overexposed', hex: '#FFFFFF' },
+  { name: 'Crude Black', hex: '#1C1C1C' }, { name: 'Charred Grain', hex: '#2B2B2B' },
+  { name: 'Void', hex: '#080808' },
+];
+
+function hexToRgb(hex: string): [number, number, number] {
+  const h = hex.replace('#', '');
+  return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+}
+
+function nameColor(hex: string): string {
+  if (!hex || hex.length !== 7) return '';
+  const [r1, g1, b1] = hexToRgb(hex);
+  let closest = COLOR_PALETTE[0].name;
+  let minDist = Infinity;
+  for (const entry of COLOR_PALETTE) {
+    const [r2, g2, b2] = hexToRgb(entry.hex);
+    const dist = (r1 - r2) ** 2 + (g1 - g2) ** 2 + (b1 - b2) ** 2;
+    if (dist < minDist) { minDist = dist; closest = entry.name; }
+  }
+  return closest;
+}
+
 // ─── Vision Panel ────────────────────────────────────────────────────────────
 function VisionPanel({ vision, onChange, onApprove, submitting, submitError }: {
   vision: VisionData;
@@ -265,7 +319,11 @@ function VisionPanel({ vision, onChange, onApprove, submitting, submitError }: {
   const colorRefs: React.RefObject<HTMLInputElement>[] = [colorRef0, colorRef1, colorRef2];
 
   function updateColor(idx: number, field: 'name' | 'hex', value: string) {
-    const next = vision.colorStory.map((c, i) => i === idx ? { ...c, [field]: value } : c);
+    const next = vision.colorStory.map((c, i) => {
+      if (i !== idx) return c;
+      if (field === 'hex' && value.length === 7) return { name: nameColor(value), hex: value };
+      return { ...c, [field]: value };
+    });
     onChange({ ...vision, colorStory: next });
   }
 
