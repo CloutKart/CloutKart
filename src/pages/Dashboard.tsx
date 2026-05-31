@@ -249,136 +249,139 @@ function VisionPanel({ vision, onChange, onApprove, submitting, submitError }: {
     onChange({ ...vision, whatWeWillCreate: next });
   }
 
-  const sectionLabel = "block text-[10px] font-bold text-[#6B7280] uppercase tracking-[0.12em] mb-2";
-  const editableText = "w-full bg-transparent text-white resize-none focus:outline-none leading-relaxed text-sm";
-  const editableInput = "w-full bg-transparent text-white focus:outline-none text-sm";
+  const divider = <div className="h-px" style={{ background: 'rgba(255,255,255,0.07)' }} />;
+  const sectionLabel = "block text-[10px] font-bold text-[#6B7280] uppercase tracking-[0.12em] mb-3";
+  const editableText = "w-full bg-transparent text-[#D1D5DB] resize-none focus:outline-none leading-relaxed text-sm";
+  const editableInput = "w-full bg-transparent text-white focus:outline-none text-sm leading-relaxed";
 
   return (
-    <div className="rounded-2xl overflow-hidden" style={{ background: 'rgba(12,8,24,0.95)', border: '1px solid rgba(168,85,247,0.2)' }}>
+    <div className="rounded-2xl overflow-hidden flex flex-col"
+      style={{ background: 'rgba(14,10,26,0.97)', border: '1px solid rgba(255,255,255,0.1)' }}>
+
       {/* Header */}
-      <div className="px-6 py-4 flex items-center justify-between border-b" style={{ borderColor: 'rgba(168,85,247,0.12)', background: 'rgba(168,85,247,0.05)' }}>
+      <div className="px-5 py-3.5 flex items-center justify-between border-b"
+        style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
         <div className="flex items-center gap-2">
-          <Sparkles size={15} className="text-[#C084FC]" />
-          <h3 className="font-heading font-bold text-white text-base">Our vision</h3>
+          <Sparkles size={14} className="text-[#C084FC]" />
+          <h3 className="font-heading font-semibold text-white text-sm">Our vision</h3>
         </div>
-        <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full uppercase tracking-wider"
-          style={{ background: 'rgba(168,85,247,0.12)', border: '1px solid rgba(168,85,247,0.25)', color: '#C084FC' }}>
+        <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full"
+          style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#9CA3AF' }}>
           AI generated
         </span>
       </div>
 
-      <div className="p-6 space-y-5">
-        {/* Creative Vibe */}
-        <div>
+      <div className="flex-1 overflow-y-auto">
+        {/* CREATIVE VIBE */}
+        <div className="px-5 py-4">
           <span className={sectionLabel}>Creative Vibe</span>
           <div className="flex items-start gap-3">
-            <div className="flex-shrink-0 px-3 py-1 rounded-full border text-xs font-semibold"
-              style={{ background: 'rgba(168,85,247,0.1)', borderColor: 'rgba(168,85,247,0.3)', color: '#C084FC', whiteSpace: 'nowrap' }}>
+            {/* Editable pill tag */}
+            <div className="flex-shrink-0 rounded-full px-3 py-1"
+              style={{ background: 'rgba(168,85,247,0.12)', border: '1px solid rgba(168,85,247,0.25)' }}>
               <input
                 value={vision.creativeVibe.label}
                 onChange={e => onChange({ ...vision, creativeVibe: { ...vision.creativeVibe, label: e.target.value } })}
-                className="bg-transparent text-[#C084FC] focus:outline-none text-xs font-semibold w-auto"
-                style={{ minWidth: 60, maxWidth: 140 }}
+                className="bg-transparent focus:outline-none text-xs font-semibold text-[#C084FC]"
+                style={{ minWidth: 50, maxWidth: 130 }}
               />
             </div>
             <textarea
               value={vision.creativeVibe.description}
               onChange={e => onChange({ ...vision, creativeVibe: { ...vision.creativeVibe, description: e.target.value } })}
               rows={2}
-              className={`${editableText} text-[#D1D5DB]`}
+              className={editableText}
             />
           </div>
         </div>
+        {divider}
 
-        <div className="h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />
-
-        {/* Visual Direction */}
-        <div>
+        {/* VISUAL DIRECTION */}
+        <div className="px-5 py-4">
           <span className={sectionLabel}>Visual Direction</span>
           <textarea
             value={vision.visualDirection}
             onChange={e => onChange({ ...vision, visualDirection: e.target.value })}
             rows={3}
-            className={`${editableText} text-[#D1D5DB]`}
+            className={editableText}
           />
         </div>
+        {divider}
 
-        <div className="h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />
-
-        {/* Color Story */}
-        <div>
+        {/* COLOR STORY — matches screenshot: circle + name on one row, hex below */}
+        <div className="px-5 py-4">
           <span className={sectionLabel}>Color Story</span>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-3 gap-2">
             {vision.colorStory.slice(0, 3).map((color, idx) => (
-              <div key={idx} className="rounded-xl p-3 flex flex-col gap-2"
+              <div key={idx} className="rounded-xl px-3 py-3 flex flex-col gap-1.5"
                 style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
-                {/* Color circle — click to open picker */}
+                {/* Circle (click → picker) + name on same row */}
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
                     onClick={() => colorRefs[idx].current?.click()}
-                    className="w-7 h-7 rounded-full flex-shrink-0 border border-white/20 transition-transform hover:scale-110"
+                    title="Click to change color"
+                    className="w-5 h-5 rounded-full flex-shrink-0 border border-white/20 hover:scale-110 transition-transform"
                     style={{ background: color.hex }}
                   />
                   <input
                     ref={colorRefs[idx]}
                     type="color"
-                    value={color.hex}
+                    value={color.hex.length === 7 ? color.hex : '#000000'}
                     onChange={e => updateColor(idx, 'hex', e.target.value)}
                     className="sr-only"
                   />
+                  <input
+                    value={color.name}
+                    onChange={e => updateColor(idx, 'name', e.target.value)}
+                    className="bg-transparent focus:outline-none text-[#E5E7EB] text-xs font-medium w-full min-w-0"
+                  />
                 </div>
-                <input
-                  value={color.name}
-                  onChange={e => updateColor(idx, 'name', e.target.value)}
-                  className={`${editableInput} font-medium text-[#E5E7EB] text-xs`}
-                />
+                {/* Hex below */}
                 <input
                   value={color.hex}
                   onChange={e => updateColor(idx, 'hex', e.target.value)}
-                  className={`${editableInput} font-mono text-[#9CA3AF] text-[11px]`}
+                  className="bg-transparent focus:outline-none font-mono text-[#6B7280] text-[11px] w-full"
                 />
               </div>
             ))}
           </div>
         </div>
+        {divider}
 
-        <div className="h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />
-
-        {/* Hook */}
-        <div>
+        {/* HOOK */}
+        <div className="px-5 py-4">
           <span className={sectionLabel}>Hook</span>
-          <div className="rounded-xl px-4 py-3" style={{ background: 'rgba(168,85,247,0.06)', border: '1px solid rgba(168,85,247,0.12)' }}>
+          <div className="rounded-xl px-4 py-3"
+            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
             <input
               value={vision.hook}
               onChange={e => onChange({ ...vision, hook: e.target.value })}
-              className="w-full bg-transparent text-white focus:outline-none font-heading font-bold text-base leading-snug"
+              className="w-full bg-transparent focus:outline-none font-heading font-bold text-white text-base leading-snug"
             />
           </div>
         </div>
+        {divider}
 
-        <div className="h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />
-
-        {/* Ad Caption */}
-        <div>
+        {/* AD CAPTION */}
+        <div className="px-5 py-4">
           <span className={sectionLabel}>Ad Caption</span>
           <textarea
             value={vision.adCaption}
             onChange={e => onChange({ ...vision, adCaption: e.target.value })}
             rows={3}
-            className={`${editableText} text-[#D1D5DB]`}
+            className={editableText}
           />
         </div>
+        {divider}
 
-        <div className="h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />
-
-        {/* What We Will Create */}
-        <div>
+        {/* WHAT WE WILL CREATE */}
+        <div className="px-5 py-4">
           <span className={sectionLabel}>What We Will Create</span>
-          <div className="space-y-2">
+          <div className="space-y-2.5">
             {vision.whatWeWillCreate.map((item, idx) => (
-              <div key={idx} className="flex items-start gap-2.5">
-                <CheckCircle size={15} className="text-[#10B981] flex-shrink-0 mt-0.5" />
+              <div key={idx} className="flex items-center gap-2.5">
+                <CheckCircle size={15} className="text-[#10B981] flex-shrink-0" />
                 <input
                   value={item}
                   onChange={e => updateDeliverable(idx, e.target.value)}
@@ -388,21 +391,32 @@ function VisionPanel({ vision, onChange, onApprove, submitting, submitError }: {
             ))}
           </div>
         </div>
+      </div>
+
+      {/* Footer: CTA mock + Approve button — matches screenshot */}
+      <div className="border-t px-5 py-4 flex items-center justify-between gap-3"
+        style={{ borderColor: 'rgba(255,255,255,0.07)', background: 'rgba(255,255,255,0.02)' }}>
+        {/* Shop Now CTA preview */}
+        <div className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium"
+          style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#9CA3AF', cursor: 'default' }}>
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ opacity: 0.6 }}>
+            <path d="M1 6h10M7 2l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          Shop Now
+        </div>
 
         {submitError && (
-          <div className="flex items-center gap-2 bg-red-500/[0.06] border border-red-500/20 rounded-xl p-3">
-            <AlertCircle size={14} className="text-red-400 flex-shrink-0" />
-            <span className="text-red-300 text-xs">{submitError}</span>
-          </div>
+          <span className="text-red-300 text-xs flex-1 text-right">{submitError}</span>
         )}
 
-        {/* Approve button */}
         <button
           onClick={onApprove}
           disabled={submitting}
-          className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl text-sm font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-          style={{ background: 'linear-gradient(135deg,#A855F7,#6366F1,#3B82F6)', color: '#fff' }}>
-          {submitting ? <><Loader size={14} className="animate-spin" />Sending brief…</> : <><CheckCircle size={14} />Approve Vision</>}
+          className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          style={{ background: 'linear-gradient(135deg,#A855F7,#6366F1)', color: '#fff' }}>
+          {submitting
+            ? <><Loader size={13} className="animate-spin" />Sending…</>
+            : <>Approve vision</>}
         </button>
       </div>
     </div>
