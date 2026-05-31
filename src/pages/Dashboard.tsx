@@ -23,6 +23,7 @@ interface CreativeRequest {
   reference_url: string;
   status: string;
   creative_url: string;
+  creative_urls?: string[];
   creative_caption?: string;
   client_message?: string;
   created_at: string;
@@ -843,9 +844,13 @@ export default function Dashboard() {
             {/* Creative cards */}
             {!loadingRequest && creativeRequests.map((request, index) => {
               const activeStep = getActiveStep(request);
-              const creativeUrl = request.creative_url ?? '';
-              const creativeIsImage = isImageUrl(creativeUrl);
-              const creativeIsVideo = isVideoUrl(creativeUrl);
+              // Normalise to array, falling back to singular creative_url for old records
+              const allUrls: string[] = request.creative_urls?.length
+                ? request.creative_urls
+                : (request.creative_url ? [request.creative_url] : []);
+              const primaryUrl = allUrls[0] ?? '';
+              const primaryIsImage = isImageUrl(primaryUrl);
+              const primaryIsVideo = isVideoUrl(primaryUrl);
               return (
                 <div key={request.id} className="glass-card rounded-2xl p-6 sm:p-8"
                   style={isCloutClub ? { border: '1px solid rgba(168,85,247,0.15)' } : {}}>
@@ -888,15 +893,19 @@ export default function Dashboard() {
                     <div className="rounded-2xl overflow-hidden border border-white/[0.08]" style={{ background: 'rgba(255,255,255,0.035)' }}>
                       <div className="px-4 py-3 border-b border-white/[0.06] flex items-center justify-between">
                         <p className="text-[11px] font-semibold text-[#9CA3AF] uppercase tracking-[0.08em]">Creative Preview</p>
-                        {request.status === 'completed' && <span className="text-[11px] font-semibold text-[#10B981]">Ready</span>}
+                        {request.status === 'completed' && (
+                          <span className="text-[11px] font-semibold text-[#10B981]">
+                            {allUrls.length > 1 ? `${allUrls.length} files ready` : 'Ready'}
+                          </span>
+                        )}
                       </div>
                       <div className="min-h-[280px] sm:min-h-[360px] flex items-center justify-center p-4">
-                        {request.status === 'completed' && creativeUrl ? (
-                          creativeIsVideo ? (
-                            <video src={creativeUrl} controls className="w-full max-h-[520px] rounded-xl" preload="metadata" />
-                          ) : creativeIsImage ? (
-                            <a href={creativeUrl} target="_blank" rel="noopener noreferrer" className="block w-full">
-                              <img src={creativeUrl} alt={`${request.brand_name} creative`} className="w-full max-h-[520px] object-contain rounded-xl" />
+                        {request.status === 'completed' && primaryUrl ? (
+                          primaryIsVideo ? (
+                            <video src={primaryUrl} controls className="w-full max-h-[520px] rounded-xl" preload="metadata" />
+                          ) : primaryIsImage ? (
+                            <a href={primaryUrl} target="_blank" rel="noopener noreferrer" className="block w-full">
+                              <img src={primaryUrl} alt={`${request.brand_name} creative`} className="w-full max-h-[520px] object-contain rounded-xl" />
                             </a>
                           ) : (
                             <div className="text-center max-w-xs mx-auto">
@@ -923,9 +932,24 @@ export default function Dashboard() {
                           {request.client_message && <p className="text-[#D1D5DB] text-sm leading-relaxed">{request.client_message}</p>}
                         </div>
                       )}
-                      <a href={request.creative_url || '#'} target="_blank" rel="noopener noreferrer" download className="btn-primary text-sm">
-                        <Download size={14} />Download Creative<ArrowRight size={14} />
-                      </a>
+                      {allUrls.length === 1 ? (
+                        <a href={allUrls[0]} target="_blank" rel="noopener noreferrer" download className="btn-primary text-sm">
+                          <Download size={14} />Download Creative<ArrowRight size={14} />
+                        </a>
+                      ) : (
+                        <div className="space-y-2">
+                          <p className="text-[11px] font-semibold text-[#9CA3AF] uppercase tracking-[0.08em]">{allUrls.length} Files</p>
+                          {allUrls.map((url, i) => (
+                            <a key={i} href={url} target="_blank" rel="noopener noreferrer" download
+                              className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all"
+                              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: '#D1D5DB' }}>
+                              {isImageUrl(url) ? <Image size={14} className="text-[#818CF8] flex-shrink-0" /> : isVideoUrl(url) ? <ChevronRight size={14} className="text-[#818CF8] flex-shrink-0" /> : <Download size={14} className="text-[#818CF8] flex-shrink-0" />}
+                              <span className="flex-1 truncate">File {i + 1}</span>
+                              <Download size={13} className="text-[#6B7280] flex-shrink-0" />
+                            </a>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -952,18 +976,23 @@ export default function Dashboard() {
             ) : (
               <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
                 {galleryCreatives.map(request => {
-                  const creativeIsImage = isImageUrl(request.creative_url);
-                  const creativeIsVideo = isVideoUrl(request.creative_url);
+                  const allUrls: string[] = request.creative_urls?.length
+                    ? request.creative_urls
+                    : (request.creative_url ? [request.creative_url] : []);
+                  const primaryUrl = allUrls[0] ?? '';
+                  const primaryIsImage = isImageUrl(primaryUrl);
+                  const primaryIsVideo = isVideoUrl(primaryUrl);
                   const feedbackMessages = messages.filter(m => m.creative_request_id === request.id);
                   return (
                     <div key={request.id} className="glass-card rounded-2xl overflow-hidden"
                       style={isCloutClub ? { border: '1px solid rgba(168,85,247,0.15)' } : {}}>
-                      <div className="relative aspect-square bg-white/[0.04] flex items-center justify-center">
-                        {creativeIsVideo ? (
-                          <video src={request.creative_url} controls className="w-full h-full object-contain" preload="metadata" />
-                        ) : creativeIsImage ? (
-                          <a href={request.creative_url} target="_blank" rel="noopener noreferrer" className="block w-full h-full">
-                            <img src={request.creative_url} alt={request.creative_caption || `${request.brand_name} creative`} className="w-full h-full object-cover" loading="lazy" />
+                      {/* Primary preview */}
+                      <div className="relative bg-white/[0.04] flex items-center justify-center" style={{ aspectRatio: '1' }}>
+                        {primaryIsVideo ? (
+                          <video src={primaryUrl} controls className="w-full h-full object-contain" preload="metadata" />
+                        ) : primaryIsImage ? (
+                          <a href={primaryUrl} target="_blank" rel="noopener noreferrer" className="block w-full h-full">
+                            <img src={primaryUrl} alt={request.creative_caption || `${request.brand_name} creative`} className="w-full h-full object-cover" loading="lazy" />
                           </a>
                         ) : (
                           <div className="text-center p-6">
@@ -971,15 +1000,54 @@ export default function Dashboard() {
                             <p className="text-white font-heading font-semibold text-sm">Download file</p>
                           </div>
                         )}
+                        {allUrls.length > 1 && (
+                          <span className="absolute top-2 right-2 text-[10px] font-bold px-2 py-0.5 rounded-full"
+                            style={{ background: 'rgba(0,0,0,0.65)', color: '#D1D5DB', border: '1px solid rgba(255,255,255,0.15)' }}>
+                            +{allUrls.length - 1} more
+                          </span>
+                        )}
                       </div>
+                      {/* Extra file thumbnails strip */}
+                      {allUrls.length > 1 && (
+                        <div className="flex gap-1.5 px-3 pt-3 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+                          {allUrls.slice(1).map((url, i) => (
+                            <a key={i} href={url} target="_blank" rel="noopener noreferrer" download
+                              className="flex-shrink-0 rounded-lg overflow-hidden border border-white/[0.1]"
+                              style={{ width: 48, height: 48 }}>
+                              {isImageUrl(url) ? (
+                                <img src={url} alt="" className="w-full h-full object-cover" loading="lazy" />
+                              ) : isVideoUrl(url) ? (
+                                <video src={url} className="w-full h-full object-cover" muted playsInline preload="metadata" />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center bg-white/[0.06]">
+                                  <Download size={14} className="text-[#818CF8]" />
+                                </div>
+                              )}
+                            </a>
+                          ))}
+                        </div>
+                      )}
                       <div className="relative z-10 p-4">
                         <p className="text-[#6B7280] text-[10px] font-semibold uppercase tracking-widest mb-1">{request.brand_name}</p>
                         <h3 className="font-heading font-semibold text-white text-base">{request.creative_caption || 'Creative'}</h3>
                         {request.client_message && <p className="text-[#D1D5DB] text-sm leading-relaxed mt-3">{request.client_message}</p>}
                         <div className="flex items-center gap-2 mt-4">
-                          <a href={request.creative_url} target="_blank" rel="noopener noreferrer" download className="btn-secondary text-xs py-2 px-4 flex-1 justify-center">
-                            <Download size={13} /> Download
-                          </a>
+                          {allUrls.length === 1 ? (
+                            <a href={allUrls[0]} target="_blank" rel="noopener noreferrer" download className="btn-secondary text-xs py-2 px-4 flex-1 justify-center">
+                              <Download size={13} /> Download
+                            </a>
+                          ) : (
+                            <div className="flex flex-col gap-1.5 flex-1">
+                              {allUrls.map((url, i) => (
+                                <a key={i} href={url} target="_blank" rel="noopener noreferrer" download
+                                  className="flex items-center gap-2 text-xs py-2 px-3 rounded-xl font-medium transition-all"
+                                  style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: '#D1D5DB' }}>
+                                  <Download size={12} className="text-[#818CF8] flex-shrink-0" />
+                                  <span className="truncate">File {i + 1}</span>
+                                </a>
+                              ))}
+                            </div>
+                          )}
                           {isCloutClubMember && (
                             <button
                               onClick={() => isCloutClub && setFeedbackOpen(feedbackOpen === request.id ? null : request.id)}

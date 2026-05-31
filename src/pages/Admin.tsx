@@ -36,6 +36,7 @@ interface CreativeRequest {
   description: string;
   status: string;
   creative_url: string;
+  creative_urls?: string[];
   creative_caption?: string;
   client_message?: string;
   created_at: string;
@@ -122,16 +123,50 @@ function getGreeting(name: string) {
 }
 
 // ─── Status dropdown ────────────────────────────────────────────────────────
+interface StagedFile { url: string; storagePath: string; fileName: string; }
+
+function isImageFileName(name: string) { return /\.(apng|avif|gif|jpe?g|png|webp)$/i.test(name); }
+function isVideoFileName(name: string) { return /\.(mp4|mov|webm|avi|m4v|mkv|ogv)$/i.test(name); }
+
+function FileThumb({ file, onRemove }: { file: StagedFile; onRemove: () => void }) {
+  const isImg = isImageFileName(file.fileName);
+  const isVid = isVideoFileName(file.fileName);
+  return (
+    <div className="relative rounded-xl overflow-hidden border border-white/[0.10] bg-white/[0.04] flex flex-col" style={{ width: 120, flexShrink: 0 }}>
+      <div className="relative w-full" style={{ height: 80 }}>
+        {isImg ? (
+          <img src={file.url} alt={file.fileName} className="w-full h-full object-cover" />
+        ) : isVid ? (
+          <video src={file.url} className="w-full h-full object-cover" muted playsInline preload="metadata" />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center">
+            <Upload size={22} className="text-[#818CF8] opacity-60" />
+          </div>
+        )}
+        <button
+          onClick={onRemove}
+          className="absolute top-1 right-1 w-5 h-5 rounded-full flex items-center justify-center z-10"
+          style={{ background: 'rgba(0,0,0,0.75)', border: '1px solid rgba(255,255,255,0.15)' }}>
+          <X size={10} className="text-white" />
+        </button>
+      </div>
+      <p className="text-[#9CA3AF] text-[10px] px-2 py-1.5 truncate">{file.fileName}</p>
+    </div>
+  );
+}
+
 function StatusDropdown({ request, onUpdate }: {
   request: CreativeRequest;
-  onUpdate: (id: string, status: string, creativeUrl?: string, creativeCaption?: string, clientMessage?: string) => void;
+  onUpdate: (id: string, status: string, creativeUrl?: string, creativeCaption?: string, clientMessage?: string, creativeUrls?: string[]) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [showUpload, setShowUpload] = useState(false);
-  const [uploading, setUploading] = useState(false);
+  const [stagingFile, setStagingFile] = useState(false);
+  const [confirming, setConfirming] = useState(false);
   const [uploadError, setUploadError] = useState('');
   const [creativeCaption, setCreativeCaption] = useState(request.creative_caption ?? '');
   const [clientMessage, setClientMessage] = useState(request.client_message ?? '');
+  const [stagedFiles, setStagedFiles] = useState<StagedFile[]>([]);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
   const fileRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -164,23 +199,52 @@ function StatusDropdown({ request, onUpdate }: {
 
   async function handleStatusClick(newStatus: string) {
     setOpen(false);
-    if (newStatus === 'completed') { setShowUpload(true); return; }
+    if (newStatus === 'completed') { setStagedFiles([]); setUploadError(''); setShowUpload(true); return; }
     await supabase.from('free_creative_requests').update({ status: newStatus }).eq('id', request.id);
     onUpdate(request.id, newStatus);
   }
 
-  async function handleFileUpload(file: File) {
+  async function stageFile(file: File) {
     if (file.size > 20 * 1024 * 1024) { setUploadError('File too large. Max 20MB.'); return; }
-    setUploading(true); setUploadError('');
+    setStagingFile(true); setUploadError('');
     const ext = file.name.split('.').pop();
     const path = `${request.id}/${Date.now()}.${ext}`;
-    const { error: uploadErr } = await supabase.storage.from('creatives').upload(path, file, { upsert: true });
-    if (uploadErr) { setUploadError('Upload failed: ' + uploadErr.message); setUploading(false); return; }
+    const { error } = await supabase.storage.from('creatives').upload(path, file, { upsert: true });
+    if (error) { setUploadError('Upload failed: ' + error.message); setStagingFile(false); return; }
     const { data: urlData } = supabase.storage.from('creatives').getPublicUrl(path);
-    const creative_url = urlData.publicUrl;
-    await supabase.from('free_creative_requests').update({ status: 'completed', creative_url, creative_caption: creativeCaption.trim(), client_message: clientMessage.trim() }).eq('id', request.id);
-    onUpdate(request.id, 'completed', creative_url, creativeCaption.trim(), clientMessage.trim());
-    setUploading(false); setShowUpload(false);
+    setStagedFiles(prev => [...prev, { url: urlData.publicUrl, storagePath: path, fileName: file.name }]);
+    setStagingFile(false);
+    if (fileRef.current) fileRef.current.value = '';
+  }
+
+  async function removeStagedFile(idx: number) {
+    const f = stagedFiles[idx];
+    await supabase.storage.from('creatives').remove([f.storagePath]);
+    setStagedFiles(prev => prev.filter((_, i) => i !== idx));
+  }
+
+  async function confirmAndPost() {
+    if (stagedFiles.length === 0) { setUploadError('Please add at least one file.'); return; }
+    setConfirming(true);
+    const urls = stagedFiles.map(f => f.url);
+    await supabase.from('free_creative_requests').update({
+      status: 'completed',
+      creative_url: urls[0],
+      creative_urls: urls,
+      creative_caption: creativeCaption.trim(),
+      client_message: clientMessage.trim(),
+    }).eq('id', request.id);
+    onUpdate(request.id, 'completed', urls[0], creativeCaption.trim(), clientMessage.trim(), urls);
+    setConfirming(false);
+    setShowUpload(false);
+    setStagedFiles([]);
+  }
+
+  function closeModal() {
+    if (stagingFile || confirming) return;
+    setShowUpload(false);
+    setStagedFiles([]);
+    setUploadError('');
   }
 
   return (
@@ -213,35 +277,90 @@ function StatusDropdown({ request, onUpdate }: {
           </div>, document.body
         )}
       </div>
+
       {showUpload && createPortal(
-        <div className="fixed inset-0 z-[200] flex items-center justify-center px-4" onClick={() => !uploading && setShowUpload(false)}>
+        <div className="fixed inset-0 z-[200] flex items-center justify-center px-4" onClick={closeModal}>
           <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
-          <div className="relative w-full max-w-md glass-card rounded-3xl p-8" style={{ background: 'rgba(12,12,12,0.98)' }} onClick={e => e.stopPropagation()}>
-            <button onClick={() => !uploading && setShowUpload(false)} className="absolute top-5 right-5 w-8 h-8 rounded-lg flex items-center justify-center text-[#6B7280] hover:text-white" style={{ border: '1px solid rgba(255,255,255,0.08)' }}><X size={14} /></button>
-            <h3 className="font-heading font-bold text-white text-xl mb-1">Upload Creative</h3>
-            <p className="text-[#9CA3AF] text-sm mb-6">Upload the finished creative for <span className="text-white font-semibold">{request.brand_name}</span>.</p>
-            <div className="space-y-3 mb-4">
+          <div className="relative w-full max-w-lg glass-card rounded-3xl p-8 max-h-[92vh] overflow-y-auto" style={{ background: 'rgba(12,12,12,0.98)' }} onClick={e => e.stopPropagation()}>
+            <button onClick={closeModal} className="absolute top-5 right-5 w-8 h-8 rounded-lg flex items-center justify-center text-[#6B7280] hover:text-white" style={{ border: '1px solid rgba(255,255,255,0.08)' }}><X size={14} /></button>
+            <h3 className="font-heading font-bold text-white text-xl mb-1">Upload Creatives</h3>
+            <p className="text-[#9CA3AF] text-sm mb-6">Add one or more files for <span className="text-white font-semibold">{request.brand_name}</span>. Review before posting.</p>
+
+            {/* Caption + message */}
+            <div className="space-y-3 mb-5">
               <div>
                 <label className="block text-[11px] font-semibold text-[#9CA3AF] mb-2 uppercase tracking-[0.08em]">Creative Caption</label>
                 <input type="text" value={creativeCaption} onChange={e => setCreativeCaption(e.target.value)} placeholder="e.g. Product launch creative" className="w-full rounded-xl px-4 py-3 text-sm text-white placeholder-[#6B7280] focus:outline-none bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(99,102,241,0.5)]" />
               </div>
               <div>
                 <label className="block text-[11px] font-semibold text-[#9CA3AF] mb-2 uppercase tracking-[0.08em]">Message for Client</label>
-                <textarea value={clientMessage} onChange={e => setClientMessage(e.target.value)} rows={3} placeholder="Add a short note..." className="w-full resize-none rounded-xl px-4 py-3 text-sm text-white placeholder-[#6B7280] focus:outline-none bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(99,102,241,0.5)]" />
+                <textarea value={clientMessage} onChange={e => setClientMessage(e.target.value)} rows={2} placeholder="Add a short note..." className="w-full resize-none rounded-xl px-4 py-3 text-sm text-white placeholder-[#6B7280] focus:outline-none bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(99,102,241,0.5)]" />
               </div>
             </div>
-            <div className="border-2 border-dashed border-white/[0.12] rounded-2xl p-8 flex flex-col items-center gap-3 hover:border-white/25 transition-colors cursor-pointer mb-4"
-              onClick={() => !uploading && fileRef.current?.click()}
+
+            {/* Staged files preview */}
+            {stagedFiles.length > 0 && (
+              <div className="mb-4">
+                <p className="text-[11px] font-semibold text-[#9CA3AF] uppercase tracking-[0.08em] mb-2">
+                  Files to post ({stagedFiles.length})
+                </p>
+                <div className="flex gap-3 overflow-x-auto pb-2" style={{ scrollbarWidth: 'thin' }}>
+                  {stagedFiles.map((f, idx) => (
+                    <FileThumb key={idx} file={f} onRemove={() => removeStagedFile(idx)} />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Drop zone */}
+            <div
+              className="border-2 border-dashed rounded-2xl p-6 flex flex-col items-center gap-3 transition-colors cursor-pointer mb-4"
+              style={{ borderColor: stagingFile ? 'rgba(99,102,241,0.5)' : 'rgba(255,255,255,0.12)' }}
+              onClick={() => !stagingFile && fileRef.current?.click()}
               onDragOver={e => e.preventDefault()}
-              onDrop={e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) handleFileUpload(f); }}>
-              {uploading
-                ? <><Loader size={24} className="animate-spin text-[#818CF8]" /><p className="text-[#9CA3AF] text-sm">Uploading...</p></>
-                : <><div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.2)' }}><Upload size={20} className="text-[#818CF8]" /></div><p className="text-[#9CA3AF] text-sm text-center">Click or drag & drop the creative file</p><p className="text-[#6B7280] text-xs">Images, videos, ZIP — max 20MB</p></>
-              }
-              <input ref={fileRef} type="file" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handleFileUpload(f); }} />
+              onDrop={e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f && !stagingFile) stageFile(f); }}>
+              {stagingFile ? (
+                <><Loader size={22} className="animate-spin text-[#818CF8]" /><p className="text-[#9CA3AF] text-sm">Uploading file…</p></>
+              ) : (
+                <>
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.2)' }}>
+                    <Upload size={18} className="text-[#818CF8]" />
+                  </div>
+                  <p className="text-[#9CA3AF] text-sm text-center">{stagedFiles.length > 0 ? 'Add another file' : 'Click or drag & drop a file'}</p>
+                  <p className="text-[#6B7280] text-xs">Images, videos, ZIP — max 20MB each</p>
+                </>
+              )}
+              <input ref={fileRef} type="file" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) stageFile(f); }} />
             </div>
-            {uploadError && <div className="flex items-center gap-2 bg-red-500/[0.06] border border-red-500/20 rounded-xl p-3"><AlertCircle size={14} className="text-red-400 flex-shrink-0" /><span className="text-red-300 text-xs">{uploadError}</span></div>}
-            <p className="text-[#6B7280] text-xs text-center mt-3">Marked as <span className="text-[#10B981] font-semibold">Completed</span> once uploaded.</p>
+
+            {uploadError && (
+              <div className="flex items-center gap-2 bg-red-500/[0.06] border border-red-500/20 rounded-xl p-3 mb-4">
+                <AlertCircle size={14} className="text-red-400 flex-shrink-0" />
+                <span className="text-red-300 text-xs">{uploadError}</span>
+              </div>
+            )}
+
+            {/* Actions */}
+            <div className="flex items-center gap-3">
+              <button
+                onClick={confirmAndPost}
+                disabled={stagedFiles.length === 0 || confirming || stagingFile}
+                className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-semibold transition-all"
+                style={{
+                  background: stagedFiles.length > 0 && !confirming && !stagingFile ? 'linear-gradient(135deg,rgba(99,102,241,0.9),rgba(59,130,246,0.9))' : 'rgba(255,255,255,0.06)',
+                  color: stagedFiles.length > 0 && !confirming && !stagingFile ? '#fff' : '#6B7280',
+                  cursor: stagedFiles.length === 0 || confirming || stagingFile ? 'not-allowed' : 'pointer',
+                }}>
+                {confirming ? <><Loader size={14} className="animate-spin" />Posting…</> : <><CheckCircle size={14} />Post {stagedFiles.length > 0 ? `${stagedFiles.length} Creative${stagedFiles.length > 1 ? 's' : ''}` : 'Creatives'}</>}
+              </button>
+              <button
+                onClick={closeModal}
+                disabled={stagingFile || confirming}
+                className="px-5 py-3 rounded-2xl text-sm font-medium text-[#9CA3AF] hover:text-white transition-colors"
+                style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                Cancel
+              </button>
+            </div>
           </div>
         </div>, document.body
       )}
@@ -603,8 +722,8 @@ export default function Admin() {
     setSendingReply(false);
   }
 
-  function handleRequestUpdate(id: string, status: string, creativeUrl?: string, creativeCaption?: string, clientMessage?: string) {
-    setRequests(prev => prev.map(r => r.id === id ? { ...r, status, creative_url: creativeUrl ?? r.creative_url, creative_caption: creativeCaption ?? r.creative_caption, client_message: clientMessage ?? r.client_message } : r));
+  function handleRequestUpdate(id: string, status: string, creativeUrl?: string, creativeCaption?: string, clientMessage?: string, creativeUrls?: string[]) {
+    setRequests(prev => prev.map(r => r.id === id ? { ...r, status, creative_url: creativeUrl ?? r.creative_url, creative_urls: creativeUrls ?? r.creative_urls, creative_caption: creativeCaption ?? r.creative_caption, client_message: clientMessage ?? r.client_message } : r));
   }
 
   async function openImageManager(section: PortfolioSection) {
