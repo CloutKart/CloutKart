@@ -737,6 +737,15 @@ function ExpiryEditor({ userId, currentExpiry, onSave }: {
   );
 }
 
+// ─── Constants (outside component to avoid recreation on every render) ────────
+const DISCOVER_DEFAULTS = {
+  local:  { niche: '', stage: 'early_0_1yr',   geography: 'india', platform: 'instagram_dm', budget: 'lt_50k',  followers: '0_5k',   funding: 'bootstrapped', runningAds: 'no_ads',      creativeSetup: 'founder_diy', painPoint: 'cant_afford_agency', employeeRange: '1-10' },
+  growth: { niche: '', stage: 'growing_1_3yr', geography: 'india', platform: 'instagram_dm', budget: '50k_2l', followers: '5k_25k', funding: 'bootstrapped', runningAds: 'inconsistent', creativeSetup: 'founder_diy', painPoint: 'ads_not_converting',  employeeRange: '1-10' },
+} as const;
+const DEFAULT_SCORE_FORM    = { brandName: '', brandUrl: '', niche: '', platform: 'instagram_dm' };
+const DEFAULT_ADD_LEAD_FORM = { brand_name: '', business_name: '', niche: '', platform: 'instagram_dm', score: '', contact_info: '', status: 'prospect', notes: '', outreach_used: '' };
+const DEFAULT_CONTACT_FORM  = { name: '', role: '', email: '', phone: '', linkedin_url: '', instagram_handle: '', notes: '' };
+
 // ─── Main Admin component ─────────────────────────────────────────────────────
 export default function Admin() {
   const { user, signOut } = useAuth();
@@ -790,27 +799,21 @@ export default function Admin() {
   const selectedMsgUserRef = useRef<Profile | null>(null);
 
   // Lead Agent state
-  const discoverDefaults = {
-    local:  { niche: '', stage: 'early_0_1yr',    geography: 'india', platform: 'instagram_dm', budget: 'lt_50k',  followers: '0_5k',    funding: 'bootstrapped', runningAds: 'no_ads',      creativeSetup: 'founder_diy', painPoint: 'cant_afford_agency', employeeRange: '1-10' },
-    growth: { niche: '', stage: 'growing_1_3yr',  geography: 'india', platform: 'instagram_dm', budget: '50k_2l', followers: '5k_25k',  funding: 'bootstrapped', runningAds: 'inconsistent', creativeSetup: 'founder_diy', painPoint: 'ads_not_converting',  employeeRange: '1-10' },
-  };
   const [discoverMode, setDiscoverMode] = useState<'local' | 'growth'>('local');
-  const [discoverForm, setDiscoverForm] = useState({ ...discoverDefaults.local });
+  const [discoverForm, setDiscoverForm] = useState({ ...DISCOVER_DEFAULTS.local });
   const [discovering, setDiscovering] = useState(false);
   const [discoverResults, setDiscoverResults] = useState<LeadResult[]>([]);
   const [discoverError, setDiscoverError] = useState('');
 
-  const defaultScoreForm = { brandName: '', brandUrl: '', niche: '', platform: 'instagram_dm' };
-  const [scoreForm, setScoreForm] = useState({ ...defaultScoreForm });
+  const [scoreForm, setScoreForm] = useState({ ...DEFAULT_SCORE_FORM });
   const [scoring, setScoring] = useState(false);
   const [scoreResult, setScoreResult] = useState<LeadResult | null>(null);
   const [scoreError, setScoreError] = useState('');
 
-  const defaultAddLeadForm = { brand_name: '', business_name: '', niche: '', platform: 'instagram_dm', score: '', contact_info: '', status: 'prospect', notes: '', outreach_used: '' };
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loadingLeads, setLoadingLeads] = useState(false);
   const [showAddLead, setShowAddLead] = useState(false);
-  const [addLeadForm, setAddLeadForm] = useState({ ...defaultAddLeadForm });
+  const [addLeadForm, setAddLeadForm] = useState({ ...DEFAULT_ADD_LEAD_FORM });
   const [savingLead, setSavingLead] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
@@ -820,8 +823,7 @@ export default function Admin() {
   const [loadingContacts, setLoadingContacts] = useState(false);
   const [fetchingContacts, setFetchingContacts] = useState(false);
   const [hunterDomain, setHunterDomain] = useState('');
-  const defaultContactForm = { name: '', role: '', email: '', phone: '', linkedin_url: '', instagram_handle: '', notes: '' };
-  const [contactForm, setContactForm] = useState({ ...defaultContactForm });
+  const [contactForm, setContactForm] = useState({ ...DEFAULT_CONTACT_FORM });
   const [showAddContact, setShowAddContact] = useState(false);
   const [savingContact, setSavingContact] = useState(false);
   const [deletingContactId, setDeletingContactId] = useState<string | null>(null);
@@ -1216,7 +1218,7 @@ export default function Admin() {
     };
     const { data } = await supabase.from('leads').insert(payload).select().single();
     if (data) setLeads(prev => [data as Lead, ...prev]);
-    setAddLeadForm({ ...defaultAddLeadForm });
+    setAddLeadForm({ ...DEFAULT_ADD_LEAD_FORM });
     setShowAddLead(false);
     setSavingLead(false);
   }
@@ -1281,7 +1283,7 @@ export default function Admin() {
   function openAddLeadFromResult(result: LeadResult) {
     const platformMap: Record<string, string> = { 'Instagram DM': 'instagram_dm', 'WhatsApp': 'whatsapp', 'Email': 'email', 'LinkedIn': 'linkedin' };
     setAddLeadForm({
-      ...defaultAddLeadForm,
+      ...DEFAULT_ADD_LEAD_FORM,
       brand_name: result.name,
       score: result.compositeScore.toString(),
       outreach_used: result.outreachMessage ?? result.outreachAngle ?? '',
@@ -1310,7 +1312,7 @@ export default function Admin() {
   async function openContactsModal(lead: Lead) {
     setContactsLead(lead);
     setShowAddContact(false);
-    setContactForm({ ...defaultContactForm });
+    setContactForm({ ...DEFAULT_CONTACT_FORM });
     setHunterDomain('');
     setLoadingContacts(true);
     const { data } = await supabase
@@ -1356,7 +1358,7 @@ export default function Admin() {
     };
     const { data } = await supabase.from('lead_contacts').insert(payload).select().single();
     if (data) setLeadContacts(prev => [...prev, data as LeadContact]);
-    setContactForm({ ...defaultContactForm });
+    setContactForm({ ...DEFAULT_CONTACT_FORM });
     setShowAddContact(false);
     setSavingContact(false);
   }
@@ -1882,7 +1884,7 @@ export default function Admin() {
                   {(['local', 'growth'] as const).map(m => {
                     const active = discoverMode === m;
                     return (
-                      <button key={m} onClick={() => { setDiscoverMode(m); setDiscoverForm({ ...discoverDefaults[m] }); setDiscoverResults([]); setDiscoverError(''); }}
+                      <button key={m} onClick={() => { setDiscoverMode(m); setDiscoverForm({ ...DISCOVER_DEFAULTS[m] }); setDiscoverResults([]); setDiscoverError(''); }}
                         className="px-4 py-2 rounded-lg text-xs font-semibold transition-all"
                         style={active ? {
                           background: m === 'local' ? 'linear-gradient(135deg,rgba(16,185,129,0.25),rgba(5,150,105,0.2))' : 'linear-gradient(135deg,rgba(99,102,241,0.25),rgba(59,130,246,0.2))',
@@ -2285,7 +2287,7 @@ export default function Admin() {
                       <ArrowRight size={11} style={{ transform: 'rotate(90deg)' }} /> Export CSV
                     </button>
                   )}
-                  <button onClick={() => { setAddLeadForm({ ...defaultAddLeadForm }); setShowAddLead(true); }}
+                  <button onClick={() => { setAddLeadForm({ ...DEFAULT_ADD_LEAD_FORM }); setShowAddLead(true); }}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold"
                     style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)', color: '#10B981' }}>
                     <Plus size={11} /> Add Lead
@@ -2485,7 +2487,7 @@ export default function Admin() {
                           Hunter
                         </button>
                       </div>
-                      <button onClick={() => { setShowAddContact(s => !s); setContactForm({ ...defaultContactForm }); }}
+                      <button onClick={() => { setShowAddContact(s => !s); setContactForm({ ...DEFAULT_CONTACT_FORM }); }}
                         className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold"
                         style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)', color: '#10B981' }}>
                         <Plus size={11} /> Add
