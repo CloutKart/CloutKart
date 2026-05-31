@@ -119,6 +119,7 @@ interface LeadResult {
 interface Lead {
   id: string;
   brand_name: string;
+  business_name: string | null;
   niche: string | null;
   platform: string | null;
   score: number | null;
@@ -176,6 +177,54 @@ function ScoreBar({ value, max = 10 }: { value: number; max?: number }) {
       </div>
       <span className="text-xs font-mono w-6 text-right flex-shrink-0" style={{ color }}>{value}</span>
     </div>
+  );
+}
+
+function LeadStatusDropdown({ lead, onUpdate }: {
+  lead: Lead;
+  onUpdate: (id: string, status: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [pos, setPos] = useState({ top: 0, left: 0 });
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const sc = leadStatusColors[lead.status] ?? leadStatusColors.prospect;
+
+  useEffect(() => {
+    if (!open) return;
+    const rect = btnRef.current?.getBoundingClientRect();
+    if (rect) setPos({ top: rect.bottom + 4, left: rect.left });
+    const handler = (e: MouseEvent) => {
+      if (!btnRef.current?.contains(e.target as Node) && !menuRef.current?.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  return (
+    <>
+      <button ref={btnRef} onClick={() => setOpen(o => !o)}
+        className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold whitespace-nowrap"
+        style={{ background: sc.bg, border: `1px solid ${sc.border}`, color: sc.text }}>
+        {sc.label} <ChevronDown size={9} />
+      </button>
+      {open && createPortal(
+        <div ref={menuRef} className="fixed z-[220] rounded-xl p-1 min-w-[130px] shadow-xl"
+          style={{ top: pos.top, left: pos.left, background: 'rgba(12,12,12,0.98)', border: '1px solid rgba(255,255,255,0.1)' }}>
+          {Object.entries(leadStatusColors).map(([status, colors]) => (
+            <button key={status} onClick={() => { onUpdate(lead.id, status); setOpen(false); }}
+              className="w-full text-left px-3 py-2 text-xs rounded-lg transition-colors flex items-center gap-2"
+              style={{ color: colors.text }}
+              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+              <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: colors.text }} />
+              {colors.label}
+            </button>
+          ))}
+        </div>,
+        document.body
+      )}
+    </>
   );
 }
 
@@ -757,7 +806,7 @@ export default function Admin() {
   const [scoreResult, setScoreResult] = useState<LeadResult | null>(null);
   const [scoreError, setScoreError] = useState('');
 
-  const defaultAddLeadForm = { brand_name: '', niche: '', platform: 'instagram_dm', score: '', contact_info: '', status: 'prospect', notes: '', outreach_used: '' };
+  const defaultAddLeadForm = { brand_name: '', business_name: '', niche: '', platform: 'instagram_dm', score: '', contact_info: '', status: 'prospect', notes: '', outreach_used: '' };
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loadingLeads, setLoadingLeads] = useState(false);
   const [showAddLead, setShowAddLead] = useState(false);
@@ -1156,6 +1205,7 @@ export default function Admin() {
     setSavingLead(true);
     const payload = {
       brand_name: addLeadForm.brand_name.trim(),
+      business_name: addLeadForm.business_name.trim() || null,
       niche: addLeadForm.niche.trim() || null,
       platform: addLeadForm.platform || null,
       score: addLeadForm.score !== '' ? parseFloat(addLeadForm.score) : null,
@@ -1186,9 +1236,10 @@ export default function Admin() {
   }
 
   function exportLeadsCSV() {
-    const rows = [['Brand Name', 'Niche', 'Platform', 'Score', 'Status', 'Contact Info', 'Notes', 'Date']];
+    const rows = [['Brand Name', 'Business Name', 'Niche', 'Platform', 'Score', 'Status', 'Contact Info', 'Notes', 'Date']];
     leads.forEach(l => rows.push([
       l.brand_name,
+      l.business_name ?? '',
       l.niche ?? '',
       l.platform?.replace('_', ' ') ?? '',
       l.score !== null ? String(l.score) : '',
@@ -2253,18 +2304,20 @@ export default function Admin() {
                       <table className="w-full">
                         <thead>
                           <tr>
-                            {['Brand', 'Niche', 'Platform', 'Score', 'Status', 'Notes', 'Contacts', 'Date', ''].map(h => (
+                            {['Brand / Business', 'Niche', 'Platform', 'Score', 'Status', 'Notes', 'Contacts', 'Date', ''].map(h => (
                               <th key={h} className="text-left text-[10px] font-bold text-[#6B7280] uppercase tracking-widest px-4 py-3">{h}</th>
                             ))}
                           </tr>
                         </thead>
                         <tbody>
                           {leads.map(lead => {
-                            const sc = leadStatusColors[lead.status] ?? leadStatusColors.prospect;
                             const scoreColor = lead.score !== null ? (lead.score >= 8 ? '#10B981' : lead.score >= 5 ? '#F59E0B' : '#F87171') : '#6B7280';
                             return (
                               <tr key={lead.id}>
-                                <td className="px-4 py-3 text-sm text-white font-medium border-t border-white/[0.04]">{lead.brand_name}</td>
+                                <td className="px-4 py-3 border-t border-white/[0.04]">
+                                  <p className="text-sm text-white font-medium">{lead.brand_name}</p>
+                                  {lead.business_name && <p className="text-[10px] text-[#6B7280] mt-0.5">{lead.business_name}</p>}
+                                </td>
                                 <td className="px-4 py-3 text-sm text-[#9CA3AF] border-t border-white/[0.04]">{lead.niche || '—'}</td>
                                 <td className="px-4 py-3 text-sm text-[#9CA3AF] border-t border-white/[0.04] capitalize">{lead.platform?.replace('_', ' ') || '—'}</td>
                                 <td className="px-4 py-3 border-t border-white/[0.04]">
@@ -2273,24 +2326,7 @@ export default function Admin() {
                                     : <span className="text-[#6B7280] text-sm">—</span>}
                                 </td>
                                 <td className="px-4 py-3 border-t border-white/[0.04]">
-                                  <div className="relative group">
-                                    <button className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold"
-                                      style={{ background: sc.bg, border: `1px solid ${sc.border}`, color: sc.text }}>
-                                      {sc.label} <ChevronDown size={9} />
-                                    </button>
-                                    <div className="absolute top-full left-0 mt-1 z-10 rounded-xl p-1 min-w-[120px] hidden group-hover:block shadow-xl"
-                                      style={{ background: 'rgba(12,12,12,0.98)', border: '1px solid rgba(255,255,255,0.1)' }}>
-                                      {Object.entries(leadStatusColors).map(([status, colors]) => (
-                                        <button key={status} onClick={() => updateLeadStatus(lead.id, status)}
-                                          className="w-full text-left px-3 py-2 text-xs rounded-lg transition-colors"
-                                          style={{ color: colors.text }}
-                                          onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
-                                          onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-                                          {colors.label}
-                                        </button>
-                                      ))}
-                                    </div>
-                                  </div>
+                                  <LeadStatusDropdown lead={lead} onUpdate={updateLeadStatus} />
                                 </td>
                                 <td className="px-4 py-3 border-t border-white/[0.04] min-w-[180px]">
                                   <input
@@ -2333,11 +2369,19 @@ export default function Admin() {
                     style={{ border: '1px solid rgba(255,255,255,0.08)' }}><X size={14} /></button>
                   <h3 className="font-heading font-bold text-white text-xl mb-6">Save Lead</h3>
                   <div className="space-y-4">
-                    <div>
-                      <label className="block text-[10px] font-bold text-[#9CA3AF] uppercase tracking-widest mb-1.5">Brand Name <span className="text-red-400">*</span></label>
-                      <input value={addLeadForm.brand_name} onChange={e => setAddLeadForm(f => ({ ...f, brand_name: e.target.value }))}
-                        placeholder="Brand name"
-                        className="w-full rounded-xl px-4 py-3 text-sm text-white placeholder-[#6B7280] bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(16,185,129,0.5)] focus:outline-none" />
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[10px] font-bold text-[#9CA3AF] uppercase tracking-widest mb-1.5">Brand Name <span className="text-red-400">*</span></label>
+                        <input value={addLeadForm.brand_name} onChange={e => setAddLeadForm(f => ({ ...f, brand_name: e.target.value }))}
+                          placeholder="e.g. Minimalist"
+                          className="w-full rounded-xl px-3 py-2.5 text-sm text-white placeholder-[#6B7280] bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(16,185,129,0.5)] focus:outline-none" />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-[#9CA3AF] uppercase tracking-widest mb-1.5">Business Name</label>
+                        <input value={addLeadForm.business_name} onChange={e => setAddLeadForm(f => ({ ...f, business_name: e.target.value }))}
+                          placeholder="Registered entity name"
+                          className="w-full rounded-xl px-3 py-2.5 text-sm text-white placeholder-[#6B7280] bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(16,185,129,0.5)] focus:outline-none" />
+                      </div>
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
