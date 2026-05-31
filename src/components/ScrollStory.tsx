@@ -4,7 +4,7 @@ import { Sparkles, CheckCircle, ShoppingCart, TrendingUp } from 'lucide-react';
 // ─── Scene components ─────────────────────────────────────────────────────────
 
 function BriefScene({ localProg }: { localProg: number }) {
-  const lines = ['mCaffeine Coffee Body Scrub — 100% vegan, dermatologist-tested', 'enriched with Arabica Coffee, Coconut Oil and Vitamin E.', 'Target: skin-conscious 18–32F. Goal: reduce tan, boost glow.'];
+  const lines = ['Brewora Coffee Body Scrub — 100% vegan, dermatologist-tested', 'enriched with Arabica Coffee, Coconut Oil and Vitamin E.', 'Target: skin-conscious 18–32F. Goal: reduce tan, boost glow.'];
   const charTotal = lines.join('').length;
   const charsVisible = Math.floor(localProg * charTotal * 1.4);
   let shown = 0;
@@ -19,7 +19,7 @@ function BriefScene({ localProg }: { localProg: number }) {
       </div>
       <div className="p-5 space-y-3.5">
         {[
-          { label: 'Brand Name', val: 'mCaffeine' },
+          { label: 'Brand Name', val: 'Brewora' },
           { label: 'Industry / Niche', val: 'Coffee Body Scrub · 100g' },
           { label: 'Ad Format', val: 'Static' },
         ].map(f => (
@@ -154,7 +154,7 @@ function AdScene({ localProg }: { localProg: number }) {
           {/* Instagram chrome */}
           <div className="px-3 py-2 flex items-center gap-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
             <div className="w-5 h-5 rounded-full" style={{ background: 'linear-gradient(135deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888)' }} />
-            <span className="text-[9px] font-bold text-white/70">mcaffeine</span>
+            <span className="text-[9px] font-bold text-white/70">brewora</span>
             <span className="ml-auto text-[8px] text-white/30 font-mono">Sponsored</span>
           </div>
           {/* Product image */}
@@ -181,7 +181,7 @@ function AdScene({ localProg }: { localProg: number }) {
           {/* Caption area */}
           <div className="px-3 py-2.5" style={vis(0.6)}>
             <p className="text-[9px] text-white/55 leading-relaxed mb-2">
-              <span className="text-white/80 font-semibold">mcaffeine</span> Your tan doesn't have to be permanent. Our coffee scrub buffs it out in 4 washes — tested, proven, loved by 1M+ Indians.
+              <span className="text-white/80 font-semibold">brewora</span> Your tan doesn't have to be permanent. Our coffee scrub buffs it out in 4 washes — tested, proven, loved by 1M+ Indians.
             </p>
             <span className="text-[9px] font-bold" style={{ color: '#A855F7' }}>Shop Now →</span>
           </div>
@@ -216,7 +216,7 @@ function AdScene({ localProg }: { localProg: number }) {
 }
 
 function CartScene({ localProg }: { localProg: number }) {
-  const items = ['mCaffeine Coffee Body Scrub', 'mCaffeine Face Wash', 'mCaffeine Night Cream'];
+  const items = ['Brewora Coffee Body Scrub', 'Brewora Face Wash', 'Brewora Night Cream'];
   const visibleItems = Math.floor(localProg * 4);
   const roas = Math.round(localProg * 284);
   const revenue = Math.round(localProg * 428000);

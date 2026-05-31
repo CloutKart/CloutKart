@@ -27,7 +27,7 @@ function VisionPreview() {
         style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.10)', backdropFilter: 'blur(12px)' }}
       >
         <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: '#A855F7' }} />
-        <span className="text-[11px] font-medium text-white/60 font-mono">Brief received · mCaffeine Coffee Scrub</span>
+        <span className="text-[11px] font-medium text-white/60 font-mono">Brief received · Brewora Coffee Scrub</span>
       </div>
 
       {/* Main vision card */}

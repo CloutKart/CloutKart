@@ -17,7 +17,7 @@ function DemoMock() {
         <div className="p-4 border-r border-white/[0.06]">
           <div className="text-[10px] font-bold text-white/50 uppercase tracking-widest mb-3 font-mono">New Creative Brief</div>
           {[
-            { label: 'Brand Name', value: 'mCaffeine' },
+            { label: 'Brand Name', value: 'Brewora' },
             { label: 'Industry / Niche', value: 'Coffee Body Scrub · 100g' },
             { label: 'Ad Format', value: 'Static' },
           ].map(f => (
@@ -33,7 +33,7 @@ function DemoMock() {
             <div className="text-[9px] text-white/35 uppercase tracking-wider mb-1 font-mono">Brief Description</div>
             <div className="rounded-lg px-2.5 py-2 text-[10px] text-white/50 leading-relaxed"
               style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
-              100% vegan, dermatologist-tested coffee body scrub with Arabica Coffee, Coconut Oil & Vitamin E. Exfoliates dead skin, reduces tan, leaves skin visibly glowing…
+              100% vegan, dermatologist-tested coffee body scrub. Exfoliates dead skin, reduces tan, leaves skin visibly glowing…
             </div>
           </div>
           <button className="w-full flex items-center justify-center gap-1.5 rounded-xl py-2 text-[11px] font-semibold text-white"
