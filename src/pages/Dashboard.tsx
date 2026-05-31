@@ -483,17 +483,9 @@ function VisionPanel({ vision, onChange, onApprove, submitting, submitError }: {
         </div>
       </div>
 
-      {/* Footer: CTA mock + Approve button — matches screenshot */}
-      <div className="border-t px-5 py-4 flex items-center justify-between gap-3"
+      {/* Footer: Approve button */}
+      <div className="border-t px-5 py-4 flex items-center justify-end gap-3"
         style={{ borderColor: 'rgba(255,255,255,0.07)', background: 'rgba(255,255,255,0.02)' }}>
-        {/* Shop Now CTA preview */}
-        <div className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium"
-          style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#9CA3AF', cursor: 'default' }}>
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ opacity: 0.6 }}>
-            <path d="M1 6h10M7 2l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-          Shop Now
-        </div>
 
         {submitError && (
           <span className="text-red-300 text-xs flex-1 text-right">{submitError}</span>
