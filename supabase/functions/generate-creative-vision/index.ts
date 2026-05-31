@@ -69,6 +69,9 @@ STRICT RULES:
 - Do NOT start with "Introducing" or "Meet" or "This is"
 - Do NOT use questions ending in "?" — statements hit harder than questions
 - Gut check: would a 22-year-old in Mumbai stop scrolling for this? If no, rewrite.
+- Never reference competitors directly unless the brief explicitly asks for a comparison
+- Never use product specifications, technical claims, or ingredient percentages in the hook
+- The hook must be rooted in one of these four: customer identity, transformation, aspiration, or emotion — not product attributes
 
 EXAMPLES OF GOOD HOOKS BY CATEGORY:
 - Fitness / Wearables: "Your next PR starts with last night's sleep"

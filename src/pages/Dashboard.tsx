@@ -309,12 +309,42 @@ function nameColor(hex: string): string {
 }
 
 // ─── Vision Panel ────────────────────────────────────────────────────────────
-function VisionPanel({ vision, onChange, onApprove, submitting, submitError }: {
+function Typewriter({ text, speed = 20, onDone }: { text: string; speed?: number; onDone?: () => void }) {
+  const [n, setN] = useState(0);
+  const firedRef = useRef(false);
+  useEffect(() => {
+    if (!text) { onDone?.(); return; }
+    setN(0);
+    firedRef.current = false;
+    let i = 0;
+    const id = setInterval(() => {
+      i++;
+      setN(i);
+      if (i >= text.length && !firedRef.current) {
+        firedRef.current = true;
+        clearInterval(id);
+        onDone?.();
+      }
+    }, speed);
+    return () => clearInterval(id);
+  }, [text]);
+  return (
+    <>
+      {text.slice(0, n)}
+      {n < text.length && (
+        <span className="inline-block w-px h-[0.85em] bg-white/50 animate-pulse ml-0.5 align-text-bottom" />
+      )}
+    </>
+  );
+}
+
+function VisionPanel({ vision, onChange, onApprove, submitting, submitError, animKey }: {
   vision: VisionData;
   onChange: (v: VisionData) => void;
   onApprove: () => void;
   submitting: boolean;
   submitError: string;
+  animKey: number;
 }) {
   const prodColorRef0 = useRef<HTMLInputElement>(null);
   const prodColorRef1 = useRef<HTMLInputElement>(null);
@@ -324,6 +354,37 @@ function VisionPanel({ vision, onChange, onApprove, submitting, submitError }: {
   const vibeColorRef2 = useRef<HTMLInputElement>(null);
   const prodColorRefs: React.RefObject<HTMLInputElement>[] = [prodColorRef0, prodColorRef1, prodColorRef2];
   const vibeColorRefs: React.RefObject<HTMLInputElement>[] = [vibeColorRef0, vibeColorRef1, vibeColorRef2];
+
+  // ── Animation state ──────────────────────────────────────────────────────────
+  // phase 0-6: animating sections in sequence; phase 7+: all visible + editable
+  const [phase, setPhase] = useState(0);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const advance = useCallback(() => setPhase(p => Math.min(p + 1, 7)), []);
+
+  useEffect(() => {
+    if (!animKey) return;
+    setPhase(0);
+    setTimeout(() => scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' }), 30);
+  }, [animKey]);
+
+  // Advance color phases via timeout (CSS animation handles the visual, timeout triggers next phase)
+  useEffect(() => {
+    if (phase === 2 || phase === 3) {
+      const t = setTimeout(advance, 3 * 130 + 450);
+      return () => clearTimeout(t);
+    }
+    if (phase === 6) {
+      const count = vision.whatWeWillCreate?.length || 4;
+      const t = setTimeout(advance, count * 220 + 350);
+      return () => clearTimeout(t);
+    }
+  }, [phase]);
+
+  // Helper: is this section visible yet?
+  const show = (n: number) => phase >= n;
+  // Helper: is this section currently animating (typewriter active)?
+  const typing = (n: number) => phase === n;
+  // ─────────────────────────────────────────────────────────────────────────────
 
   function updateColor(array: 'productColors' | 'vibeColors', idx: number, field: 'name' | 'hex', value: string) {
     const next = (vision[array] ?? []).map((c, i) => {
@@ -368,50 +429,43 @@ function VisionPanel({ vision, onChange, onApprove, submitting, submitError }: {
         </span>
       </div>
 
-      <div className="flex-1 overflow-y-auto">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto">
         {/* CREATIVE VIBE */}
-        <div className="px-5 py-4">
+        {show(0) && <div className="px-5 py-4 animate-vision-section">
           <span className={sectionLabel}>Creative Vibe</span>
           <div className="flex items-start gap-3">
-            {/* Editable pill tag */}
             <div className="flex-shrink-0 rounded-full px-3 py-1"
               style={{ background: 'rgba(168,85,247,0.12)', border: '1px solid rgba(168,85,247,0.25)' }}>
-              <input
-                value={vision.creativeVibe.label}
-                onChange={e => onChange({ ...vision, creativeVibe: { ...vision.creativeVibe, label: e.target.value } })}
-                className="bg-transparent focus:outline-none text-xs font-semibold text-[#C084FC]"
-                style={{ minWidth: 50, maxWidth: 130 }}
-              />
+              {typing(0)
+                ? <span className="text-xs font-semibold text-[#C084FC]"><Typewriter text={vision.creativeVibe.label} speed={40} /></span>
+                : <input value={vision.creativeVibe.label} onChange={e => onChange({ ...vision, creativeVibe: { ...vision.creativeVibe, label: e.target.value } })} className="bg-transparent focus:outline-none text-xs font-semibold text-[#C084FC]" style={{ minWidth: 50, maxWidth: 130 }} />
+              }
             </div>
-            <textarea
-              value={vision.creativeVibe.description}
-              onChange={e => onChange({ ...vision, creativeVibe: { ...vision.creativeVibe, description: e.target.value } })}
-              rows={2}
-              className={editableText}
-            />
+            {typing(0)
+              ? <p className={editableText}><Typewriter text={vision.creativeVibe.description} speed={12} onDone={advance} /></p>
+              : <textarea value={vision.creativeVibe.description} onChange={e => onChange({ ...vision, creativeVibe: { ...vision.creativeVibe, description: e.target.value } })} rows={2} className={editableText} />
+            }
           </div>
-        </div>
-        {divider}
+        </div>}
+        {show(0) && divider}
 
         {/* VISUAL DIRECTION */}
-        <div className="px-5 py-4">
+        {show(1) && <div className="px-5 py-4 animate-vision-section">
           <span className={sectionLabel}>Visual Direction</span>
-          <textarea
-            value={vision.visualDirection}
-            onChange={e => onChange({ ...vision, visualDirection: e.target.value })}
-            rows={3}
-            className={editableText}
-          />
-        </div>
-        {divider}
+          {typing(1)
+            ? <p className={editableText}><Typewriter text={vision.visualDirection} speed={7} onDone={advance} /></p>
+            : <textarea value={vision.visualDirection} onChange={e => onChange({ ...vision, visualDirection: e.target.value })} rows={3} className={editableText} />
+          }
+        </div>}
+        {show(1) && divider}
 
         {/* PRODUCT COLORS */}
-        <div className="px-5 py-4">
+        {show(2) && <div className="px-5 py-4 animate-vision-section">
           <span className={sectionLabel}>Product Colors</span>
           <div className="grid grid-cols-3 gap-2">
             {(vision.productColors ?? vision.colorStory ?? []).slice(0, 3).map((color, idx) => (
-              <div key={idx} className="rounded-xl px-3 py-3 flex flex-col gap-1.5"
-                style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
+              <div key={idx} className="rounded-xl px-3 py-3 flex flex-col gap-1.5 animate-swatch-pop"
+                style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', animationDelay: `${idx * 130}ms` }}>
                 <div className="flex items-center gap-2">
                   <div className="relative w-5 h-5 flex-shrink-0">
                     <div className="w-5 h-5 rounded-full border border-white/20 hover:scale-110 transition-transform"
@@ -438,11 +492,11 @@ function VisionPanel({ vision, onChange, onApprove, submitting, submitError }: {
               </div>
             ))}
           </div>
-        </div>
-        {divider}
+        </div>}
+        {show(2) && divider}
 
         {/* VIBE COLORS */}
-        <div className="px-5 py-4">
+        {show(3) && <div className="px-5 py-4 animate-vision-section">
           <div className="flex items-center justify-between mb-3">
             <span className={sectionLabel} style={{ marginBottom: 0 }}>Vibe Colors</span>
             <span className="text-[9px] font-semibold px-2 py-0.5 rounded-full"
@@ -452,8 +506,8 @@ function VisionPanel({ vision, onChange, onApprove, submitting, submitError }: {
           </div>
           <div className="grid grid-cols-3 gap-2 mb-3">
             {(vision.vibeColors ?? []).slice(0, 3).map((color, idx) => (
-              <div key={idx} className="rounded-xl px-3 py-3 flex flex-col gap-1.5"
-                style={{ background: 'rgba(168,85,247,0.04)', border: '1px solid rgba(168,85,247,0.12)' }}>
+              <div key={idx} className="rounded-xl px-3 py-3 flex flex-col gap-1.5 animate-swatch-pop"
+                style={{ background: 'rgba(168,85,247,0.04)', border: '1px solid rgba(168,85,247,0.12)', animationDelay: `${idx * 130}ms` }}>
                 <div className="flex items-center gap-2">
                   <div className="relative w-5 h-5 flex-shrink-0">
                     <div className="w-5 h-5 rounded-full border border-white/20 hover:scale-110 transition-transform"
@@ -486,41 +540,42 @@ function VisionPanel({ vision, onChange, onApprove, submitting, submitError }: {
               {vision.vibeColorRationale}
             </p>
           )}
-        </div>
-        {divider}
+        </div>}
+        {show(3) && divider}
 
         {/* HOOK */}
-        <div className="px-5 py-4">
+        {show(4) && <div className="px-5 py-4 animate-vision-section">
           <span className={sectionLabel}>Hook</span>
           <div className="rounded-xl px-4 py-3"
             style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
-            <input
-              value={vision.hook}
-              onChange={e => onChange({ ...vision, hook: e.target.value })}
-              className="w-full bg-transparent focus:outline-none font-heading font-bold text-white text-base leading-snug"
-            />
+            {typing(4)
+              ? <p className="font-heading font-bold text-white text-base leading-snug min-h-[1.5rem]">
+                  <Typewriter text={vision.hook} speed={55} onDone={advance} />
+                </p>
+              : <input value={vision.hook} onChange={e => onChange({ ...vision, hook: e.target.value })}
+                  className="w-full bg-transparent focus:outline-none font-heading font-bold text-white text-base leading-snug" />
+            }
           </div>
-        </div>
-        {divider}
+        </div>}
+        {show(4) && divider}
 
         {/* AD CAPTION */}
-        <div className="px-5 py-4">
+        {show(5) && <div className="px-5 py-4 animate-vision-section">
           <span className={sectionLabel}>Ad Caption</span>
-          <textarea
-            value={vision.adCaption}
-            onChange={e => onChange({ ...vision, adCaption: e.target.value })}
-            rows={3}
-            className={editableText}
-          />
-        </div>
-        {divider}
+          {typing(5)
+            ? <p className={editableText}><Typewriter text={vision.adCaption} speed={9} onDone={advance} /></p>
+            : <textarea value={vision.adCaption} onChange={e => onChange({ ...vision, adCaption: e.target.value })} rows={3} className={editableText} />
+          }
+        </div>}
+        {show(5) && divider}
 
         {/* WHAT WE WILL CREATE */}
-        <div className="px-5 py-4">
+        {show(6) && <div className="px-5 py-4 animate-vision-section">
           <span className={sectionLabel}>What We Will Create</span>
           <div className="space-y-2.5">
             {vision.whatWeWillCreate.map((item, idx) => (
-              <div key={idx} className="flex items-center gap-2.5">
+              <div key={idx} className="flex items-center gap-2.5 animate-deliverable-slide"
+                style={{ animationDelay: `${idx * 220}ms` }}>
                 <CheckCircle size={15} className="text-[#10B981] flex-shrink-0" />
                 <input
                   value={item}
@@ -530,7 +585,7 @@ function VisionPanel({ vision, onChange, onApprove, submitting, submitError }: {
               </div>
             ))}
           </div>
-        </div>
+        </div>}
       </div>
 
       {/* Footer: Approve button */}
@@ -567,6 +622,7 @@ export default function Dashboard() {
   const [submitError, setSubmitError] = useState('');
   const [form, setForm] = useState({ brandName: '', niche: '', adFormat: '', description: '', referenceUrl: '' });
   const [vision, setVision] = useState<VisionData | null>(null);
+  const [visionKey, setVisionKey] = useState(0);
   const [generatingVision, setGeneratingVision] = useState(false);
   const [visionError, setVisionError] = useState('');
   const [refImages, setRefImages] = useState<RefImage[]>([]);
@@ -778,6 +834,7 @@ export default function Dashboard() {
         });
       }
       setVision(data as VisionData);
+      setVisionKey(k => k + 1);
     } catch (err: unknown) {
       setVisionError(err instanceof Error ? err.message : 'Failed to generate vision. Please try again.');
     } finally {
@@ -1265,6 +1322,7 @@ export default function Dashboard() {
                     onApprove={handleApproveVision}
                     submitting={submitting}
                     submitError={submitError}
+                    animKey={visionKey}
                   />
                 )}
               </div>
