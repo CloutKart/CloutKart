@@ -86,10 +86,10 @@ Exact structure required:
   "hook": "Single scroll-stopping line under 8 words — no commas, no ellipsis, no exclamation marks",
   "adCaption": "3 sentences: product truth → desire gap → inevitable CTA",
   "whatWeWillCreate": [
-    "Specific deliverable — platform, format, dimensions, creative descriptor",
-    "Specific deliverable — platform, format, dimensions, creative descriptor",
-    "Specific deliverable — platform, format, dimensions, creative descriptor",
-    "Specific deliverable — platform, format, dimensions, creative descriptor"
+    "plain string — e.g. Static image ad — Instagram feed 1080×1080px — tight macro of product texture",
+    "plain string — e.g. Static image ad — Facebook feed 1080×1080px — low-angle hero with hard rim light",
+    "plain string — e.g. Static image ad — Instagram Story 1080×1920px — full-bleed product on brand colour",
+    "plain string — e.g. Static image ad — Amazon listing 1000×1000px — clean white background product shot"
   ]
 }`;
 

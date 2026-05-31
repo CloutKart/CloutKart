@@ -723,6 +723,18 @@ export default function Dashboard() {
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
+      // Normalize whatWeWillCreate — model occasionally returns objects instead of strings
+      if (Array.isArray(data?.whatWeWillCreate)) {
+        data.whatWeWillCreate = data.whatWeWillCreate.map((item: unknown) => {
+          if (typeof item === 'string') return item;
+          if (item && typeof item === 'object') {
+            const o = item as Record<string, unknown>;
+            return [o.title, o.description, o.format, o.platform, o.dimensions]
+              .filter(Boolean).join(' — ');
+          }
+          return String(item);
+        });
+      }
       setVision(data as VisionData);
     } catch (err: unknown) {
       setVisionError(err instanceof Error ? err.message : 'Failed to generate vision. Please try again.');
