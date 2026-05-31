@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Image, CreditCard, Settings, LogOut, ArrowRight,
   Download, Clock, CheckCircle, Loader, ChevronRight, AlertCircle,
   Sparkles, Images, IndianRupee, MessageCircle, ExternalLink, Send,
-  Star, Zap, MessageSquare, Lock, RefreshCw
+  Star, Zap, MessageSquare, Lock, RefreshCw, Upload, X
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -226,6 +226,31 @@ function MessageBubble({ msg, creativeRequests }: { msg: Message; creativeReques
   );
 }
 
+// ─── Image helpers ───────────────────────────────────────────────────────────
+interface RefImage { preview: string; base64: string; mimeType: string; }
+
+function resizeImageToBase64(file: File, maxPx = 1000): Promise<RefImage> {
+  return new Promise((resolve, reject) => {
+    const img = new window.Image();
+    const objectUrl = URL.createObjectURL(file);
+    img.onload = () => {
+      let { width, height } = img;
+      if (width > maxPx || height > maxPx) {
+        if (width > height) { height = Math.round(height * maxPx / width); width = maxPx; }
+        else { width = Math.round(width * maxPx / height); height = maxPx; }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width; canvas.height = height;
+      canvas.getContext('2d')!.drawImage(img, 0, 0, width, height);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+      URL.revokeObjectURL(objectUrl);
+      resolve({ preview: dataUrl, base64: dataUrl.split(',')[1], mimeType: 'image/jpeg' });
+    };
+    img.onerror = reject;
+    img.src = objectUrl;
+  });
+}
+
 // ─── Vision Panel ────────────────────────────────────────────────────────────
 function VisionPanel({ vision, onChange, onApprove, submitting, submitError }: {
   vision: VisionData;
@@ -437,6 +462,8 @@ export default function Dashboard() {
   const [vision, setVision] = useState<VisionData | null>(null);
   const [generatingVision, setGeneratingVision] = useState(false);
   const [visionError, setVisionError] = useState('');
+  const [refImages, setRefImages] = useState<RefImage[]>([]);
+  const refImageRef = useRef<HTMLInputElement>(null);
   const [profile, setProfile] = useState<UserProfile>({ full_name: null, company_name: null, phone: null, plan: 'free', clout_club_price: null, subscription_expires_at: null });
   const [settingsForm, setSettingsForm] = useState({ fullName: '', company: '', phone: '' });
   const [settingsSaving, setSettingsSaving] = useState(false);
@@ -623,7 +650,11 @@ export default function Dashboard() {
     setVisionError('');
     try {
       const { data, error } = await supabase.functions.invoke('generate-creative-vision', {
-        body: { brandName: form.brandName, niche: form.niche, adFormat: form.adFormat, description: form.description, referenceUrl: form.referenceUrl },
+        body: {
+          brandName: form.brandName, niche: form.niche, adFormat: form.adFormat,
+          description: form.description, referenceUrl: form.referenceUrl,
+          referenceImages: refImages.map(({ base64, mimeType }) => ({ base64, mimeType })),
+        },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
@@ -634,6 +665,22 @@ export default function Dashboard() {
       setGeneratingVision(false);
     }
   };
+
+  async function handleRefImages(files: FileList) {
+    const toAdd = Math.min(files.length, 3 - refImages.length);
+    if (toAdd <= 0) return;
+    const resized: RefImage[] = [];
+    for (let i = 0; i < toAdd; i++) {
+      const file = files[i];
+      if (!file.type.startsWith('image/')) continue;
+      try { resized.push(await resizeImageToBase64(file)); } catch { /* skip */ }
+    }
+    setRefImages(prev => [...prev, ...resized].slice(0, 3));
+  }
+
+  function removeRefImage(idx: number) {
+    setRefImages(prev => prev.filter((_, i) => i !== idx));
+  }
 
   const handleApproveVision = async () => {
     if (!user || !vision) return;
@@ -668,6 +715,7 @@ export default function Dashboard() {
       setCreativeRequests(prev => [inserted, ...prev]);
       setForm({ brandName: '', niche: '', adFormat: '', description: '', referenceUrl: '' });
       setVision(null);
+      setRefImages([]);
       setShowForm(false);
     } catch (err: unknown) {
       setSubmitError(err instanceof Error ? err.message : 'Failed to submit. Please try again.');
@@ -1045,6 +1093,34 @@ export default function Dashboard() {
                     </div>
                     <div><label className={labelClass}>Brief Description</label><textarea name="description" value={form.description} onChange={handleFormChange} rows={4} placeholder="Describe your product, target audience, and what you want to convey..." className={`${inputClass} resize-none`} required /></div>
                     <div><label className={labelClass}>Reference URL (optional)</label><input type="url" name="referenceUrl" value={form.referenceUrl} onChange={handleFormChange} placeholder="https://..." className={inputClass} /></div>
+                    {/* Reference images */}
+                    <div>
+                      <label className={labelClass}>Reference Images (optional, up to 3)</label>
+                      {refImages.length > 0 && (
+                        <div className="flex gap-2 flex-wrap mb-2">
+                          {refImages.map((img, idx) => (
+                            <div key={idx} className="relative">
+                              <img src={img.preview} alt="" className="w-16 h-16 rounded-xl object-cover border border-white/10" />
+                              <button type="button" onClick={() => removeRefImage(idx)}
+                                className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full flex items-center justify-center"
+                                style={{ background: 'rgba(0,0,0,0.8)', border: '1px solid rgba(255,255,255,0.2)' }}>
+                                <X size={10} className="text-white" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {refImages.length < 3 && (
+                        <button type="button" onClick={() => refImageRef.current?.click()}
+                          className="w-full flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm text-[#6B7280] border border-dashed transition-colors hover:border-white/20 hover:text-[#9CA3AF]"
+                          style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
+                          <Upload size={14} />
+                          {refImages.length === 0 ? 'Add reference images' : `Add more (${3 - refImages.length} left)`}
+                        </button>
+                      )}
+                      <input ref={refImageRef} type="file" accept="image/*" multiple className="hidden"
+                        onChange={e => { if (e.target.files) handleRefImages(e.target.files); e.target.value = ''; }} />
+                    </div>
                     {(visionError || submitError) && (
                       <div className="flex items-center gap-2 bg-red-500/[0.06] border border-red-500/20 rounded-xl p-3">
                         <AlertCircle size={14} className="text-red-400 flex-shrink-0" />
@@ -1057,7 +1133,7 @@ export default function Dashboard() {
                           ? <><Loader size={14} className="animate-spin" />Generating vision…</>
                           : <><Sparkles size={14} />{vision ? 'Regenerate Vision' : 'See Our Vision'}</>}
                       </button>
-                      <button type="button" onClick={() => { setShowForm(false); setVision(null); setVisionError(''); }} className="btn-secondary text-sm">Cancel</button>
+                      <button type="button" onClick={() => { setShowForm(false); setVision(null); setVisionError(''); setRefImages([]); }} className="btn-secondary text-sm">Cancel</button>
                     </div>
                   </form>
                 </div>

@@ -57,13 +57,38 @@ Exact structure required:
   ]
 }`;
 
+const TEXT_MODEL = "llama-3.3-70b-versatile";
+const VISION_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct";
+
+async function scrapeUrl(url: string): Promise<string> {
+  try {
+    const res = await fetch(url, {
+      headers: { "User-Agent": "Mozilla/5.0 (compatible; CloutKart/1.0; +https://clout-kart.com)" },
+      signal: AbortSignal.timeout(6000),
+    });
+    if (!res.ok) return "";
+    const html = await res.text();
+    // Strip scripts, styles, tags; collapse whitespace
+    const text = html
+      .replace(/<script[\s\S]*?<\/script>/gi, " ")
+      .replace(/<style[\s\S]*?<\/style>/gi, " ")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 2500);
+    return text;
+  } catch {
+    return "";
+  }
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 200, headers: corsHeaders });
   }
 
   try {
-    const { brandName, niche, adFormat, description, referenceUrl } = await req.json();
+    const { brandName, niche, adFormat, description, referenceUrl, referenceImages } = await req.json();
 
     if (!brandName || !niche || !adFormat || !description) {
       return new Response(
@@ -82,20 +107,51 @@ Deno.serve(async (req: Request) => {
 
     const groq = new Groq({ apiKey: GROQ_API_KEY });
 
-    const userPrompt = `Generate a creative vision for the following brief:
+    // Scrape the reference URL if provided
+    let urlContent = "";
+    if (referenceUrl) {
+      urlContent = await scrapeUrl(referenceUrl);
+    }
+
+    // Build the user prompt text
+    let userPrompt = `Generate a creative vision for the following brief:
 
 Brand Name: ${brandName}
 Industry / Niche: ${niche}
 Ad Format: ${adFormat}
-Description: ${description}${referenceUrl ? `\nReference: ${referenceUrl}` : ""}
+Description: ${description}`;
 
-Return only the JSON object.`;
+    if (urlContent) {
+      userPrompt += `\n\nContent scraped from the client's reference URL (${referenceUrl}). Use anything relevant — product details, brand language, aesthetic cues:\n---\n${urlContent}\n---`;
+    } else if (referenceUrl) {
+      userPrompt += `\nReference URL (could not fetch): ${referenceUrl}`;
+    }
+
+    userPrompt += "\n\nReturn only the JSON object.";
+
+    // Determine model and message content based on whether images are attached
+    const hasImages = Array.isArray(referenceImages) && referenceImages.length > 0;
+    const model = hasImages ? VISION_MODEL : TEXT_MODEL;
+
+    type MessageContent =
+      | string
+      | Array<{ type: "text"; text: string } | { type: "image_url"; image_url: { url: string } }>;
+
+    const userContent: MessageContent = hasImages
+      ? [
+          { type: "text", text: userPrompt },
+          ...referenceImages.slice(0, 3).map((img: { base64: string; mimeType: string }) => ({
+            type: "image_url" as const,
+            image_url: { url: `data:${img.mimeType};base64,${img.base64}` },
+          })),
+        ]
+      : userPrompt;
 
     const res = await groq.chat.completions.create({
-      model: "llama-3.3-70b-versatile",
+      model,
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: userPrompt },
+        { role: "user", content: userContent as Parameters<typeof groq.chat.completions.create>[0]["messages"][0]["content"] },
       ],
       max_tokens: 1200,
       temperature: 0.75,
