@@ -262,7 +262,7 @@ function VisionPanel({ vision, onChange, onApprove, submitting, submitError }: {
   const colorRef0 = useRef<HTMLInputElement>(null);
   const colorRef1 = useRef<HTMLInputElement>(null);
   const colorRef2 = useRef<HTMLInputElement>(null);
-  const colorRefs = [colorRef0, colorRef1, colorRef2];
+  const colorRefs: React.RefObject<HTMLInputElement>[] = [colorRef0, colorRef1, colorRef2];
 
   function updateColor(idx: number, field: 'name' | 'hex', value: string) {
     const next = vision.colorStory.map((c, i) => i === idx ? { ...c, [field]: value } : c);
@@ -341,22 +341,22 @@ function VisionPanel({ vision, onChange, onApprove, submitting, submitError }: {
             {vision.colorStory.slice(0, 3).map((color, idx) => (
               <div key={idx} className="rounded-xl px-3 py-3 flex flex-col gap-1.5"
                 style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
-                {/* Circle (click → picker) + name on same row */}
+                {/* Circle (overlaid color input) + name on same row */}
                 <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => colorRefs[idx].current?.click()}
-                    title="Click to change color"
-                    className="w-5 h-5 rounded-full flex-shrink-0 border border-white/20 hover:scale-110 transition-transform"
-                    style={{ background: color.hex }}
-                  />
-                  <input
-                    ref={colorRefs[idx]}
-                    type="color"
-                    value={color.hex.length === 7 ? color.hex : '#000000'}
-                    onChange={e => updateColor(idx, 'hex', e.target.value)}
-                    className="sr-only"
-                  />
+                  <div className="relative w-5 h-5 flex-shrink-0">
+                    <div
+                      className="w-5 h-5 rounded-full border border-white/20 hover:scale-110 transition-transform"
+                      style={{ background: color.hex }}
+                    />
+                    <input
+                      ref={colorRefs[idx]}
+                      type="color"
+                      value={color.hex.length === 7 ? color.hex : '#000000'}
+                      onChange={e => updateColor(idx, 'hex', e.target.value)}
+                      title="Click to change color"
+                      style={{ position: 'absolute', inset: 0, opacity: 0, width: '100%', height: '100%', cursor: 'pointer', padding: 0, border: 'none' }}
+                    />
+                  </div>
                   <input
                     value={color.name}
                     onChange={e => updateColor(idx, 'name', e.target.value)}
