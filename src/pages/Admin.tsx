@@ -124,7 +124,7 @@ interface LeadResult {
 
 interface DiscoverResponse {
   leads: LeadResult[];
-  source?: 'outscraper' | 'ai_archetypes';
+  source?: 'google_places' | 'ai_archetypes';
 }
 
 interface Lead {
@@ -863,7 +863,7 @@ export default function Admin() {
   const [discoverForm, setDiscoverForm] = useState({ ...DISCOVER_DEFAULTS.local });
   const [discovering, setDiscovering] = useState(false);
   const [discoverResults, setDiscoverResults] = useState<LeadResult[]>([]);
-  const [discoverSource, setDiscoverSource] = useState<'outscraper' | 'ai_archetypes' | null>(null);
+  const [discoverSource, setDiscoverSource] = useState<'google_places' | 'ai_archetypes' | null>(null);
   const [discoverError, setDiscoverError] = useState('');
 
   const [scoreForm, setScoreForm] = useState({ ...DEFAULT_SCORE_FORM });
@@ -2054,14 +2054,14 @@ export default function Admin() {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <p className="text-[10px] font-bold text-[#6B7280] uppercase tracking-widest">{discoverResults.length} Leads Found</p>
-                        {discoverSource === 'outscraper' && (
+                        {discoverSource === 'google_places' && (
                           <span className="text-[9px] font-bold px-2 py-0.5 rounded-full" style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)', color: '#10B981' }}>
                             Real businesses · Google Maps
                           </span>
                         )}
                         {discoverSource === 'ai_archetypes' && (
                           <span className="text-[9px] font-bold px-2 py-0.5 rounded-full" style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)', color: '#818CF8' }}>
-                            AI archetypes · add a city + OUTSCRAPER_API_KEY for real contacts
+                            AI archetypes · add GOOGLE_PLACES_API_KEY for real contacts
                           </span>
                         )}
                       </div>

@@ -464,7 +464,7 @@ Return only the JSON object.`;
             googleMapsUrl: biz.google_maps_url ?? null,
           };
         });
-        result.source = "outscraper";
+        result.source = "google_places";
       } else {
         result.source = "ai_archetypes";
       }
