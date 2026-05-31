@@ -290,9 +290,10 @@ function VisionPanel({ vision, onChange, onApprove, submitting, submitError }: {
           <Sparkles size={14} className="text-[#C084FC]" />
           <h3 className="font-heading font-semibold text-white text-sm">Our vision</h3>
         </div>
-        <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full"
-          style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#9CA3AF' }}>
-          AI generated
+        <span className="flex items-center gap-1.5 text-[10px] font-semibold px-2.5 py-1 rounded-full"
+          style={{ background: 'rgba(168,85,247,0.1)', border: '1px solid rgba(168,85,247,0.2)', color: '#C084FC' }}>
+          <Sparkles size={10} />
+          Pixie · AI Creative Intelligence
         </span>
       </div>
 

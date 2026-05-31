@@ -151,8 +151,15 @@ function VisionModal({ vision, brandName, onClose }: { vision: ApprovedVision; b
               <p className="text-[#9CA3AF] text-xs">{brandName}</p>
             </div>
           </div>
-          <button onClick={onClose} className="w-8 h-8 rounded-lg flex items-center justify-center text-[#6B7280] hover:text-white"
-            style={{ border: '1px solid rgba(255,255,255,0.08)' }}><X size={14} /></button>
+          <div className="flex items-center gap-2">
+            <span className="flex items-center gap-1.5 text-[10px] font-semibold px-2.5 py-1 rounded-full"
+              style={{ background: 'rgba(168,85,247,0.1)', border: '1px solid rgba(168,85,247,0.2)', color: '#C084FC' }}>
+              <Sparkles size={9} />
+              Pixie · AI Creative Intelligence
+            </span>
+            <button onClick={onClose} className="w-8 h-8 rounded-lg flex items-center justify-center text-[#6B7280] hover:text-white"
+              style={{ border: '1px solid rgba(255,255,255,0.08)' }}><X size={14} /></button>
+          </div>
         </div>
 
         <div className="p-6 space-y-5">
