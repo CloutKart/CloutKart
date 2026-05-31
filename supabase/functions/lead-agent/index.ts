@@ -88,6 +88,112 @@ async function hunterDomainSearch(domain: string, apiKey: string): Promise<Hunte
   }
 }
 
+// ── Google Places helpers ─────────────────────────────────────────────────────
+
+interface OutscraperBusiness {
+  name?: string;
+  full_address?: string;
+  city?: string;
+  phone?: string;
+  site?: string;
+  category?: string;
+  description?: string;
+  rating?: number;
+  reviews?: number;
+  instagram?: string;
+  google_maps_url?: string;
+}
+
+async function googlePlacesSearch(
+  queries: string[],
+  apiKey: string,
+  limitPerQuery = 5
+): Promise<OutscraperBusiness[]> {
+  const results: OutscraperBusiness[] = [];
+  for (const query of queries) {
+    try {
+      const params = new URLSearchParams({
+        query,
+        key: apiKey,
+        language: "en",
+        region: "IN",
+        type: "establishment",
+      });
+      const res = await fetch(
+        `https://maps.googleapis.com/maps/api/place/textsearch/json?${params}`,
+        { signal: AbortSignal.timeout(10000) }
+      );
+      if (!res.ok) { console.warn(`[GooglePlaces] HTTP ${res.status}`); continue; }
+      const data = await res.json();
+      if (data.status !== "OK" && data.status !== "ZERO_RESULTS") {
+        console.warn(`[GooglePlaces] Status: ${data.status}`);
+        continue;
+      }
+      const places = (data.results ?? []).slice(0, limitPerQuery);
+      for (const p of places) {
+        // Fetch details for phone + website (separate Details call)
+        let phone = "";
+        let site = "";
+        let google_maps_url = "";
+        if (p.place_id) {
+          try {
+            const det = await fetch(
+              `https://maps.googleapis.com/maps/api/place/details/json?place_id=${p.place_id}&fields=formatted_phone_number,website,url&key=${apiKey}`,
+              { signal: AbortSignal.timeout(8000) }
+            );
+            if (det.ok) {
+              const dj = await det.json();
+              phone = dj.result?.formatted_phone_number ?? "";
+              site  = dj.result?.website ?? "";
+              google_maps_url = dj.result?.url ?? "";
+            }
+          } catch { /* skip details on timeout */ }
+        }
+        results.push({
+          name: p.name,
+          full_address: p.formatted_address,
+          city: p.formatted_address?.split(",").slice(-3, -1).join(",").trim() ?? "",
+          phone: phone || undefined,
+          site: site || undefined,
+          category: p.types?.[0]?.replace(/_/g, " ") ?? "",
+          rating: p.rating,
+          reviews: p.user_ratings_total,
+          google_maps_url: google_maps_url || undefined,
+        });
+      }
+    } catch (e) {
+      console.warn(`[GooglePlaces] Query "${query}" failed:`, (e as Error).message);
+    }
+  }
+  return results;
+}
+
+function formatBusinessForPrompt(b: OutscraperBusiness, idx: number): string {
+  const ig = b.instagram ? `\nInstagram: ${b.instagram}` : "";
+  const phone = b.phone ? `\nPhone: ${b.phone}` : "";
+  const site = b.site ? `\nWebsite: ${b.site}` : "";
+  const rating = b.rating ? `\nRating: ${b.rating} (${b.reviews ?? 0} reviews)` : "";
+  const desc = b.description ? `\nDescription: ${b.description.slice(0, 120)}` : "";
+  return `[Business ${idx + 1}]
+Name: ${b.name ?? "Unknown"}
+Location: ${b.city ?? b.full_address ?? "India"}
+Category: ${b.category ?? "Unknown"}${phone}${site}${ig}${rating}${desc}`.trim();
+}
+
+function buildSearchQueries(niche: string, targetMode: string, city: string): string[] {
+  const loc = city?.trim() || "India";
+  if (targetMode === "growth") {
+    return [
+      `${niche} D2C brand ${loc}`,
+      `online ${niche} brand ${loc}`,
+    ];
+  }
+  return [
+    `homemade ${niche} ${loc}`,
+    `local ${niche} seller ${loc}`,
+  ];
+}
+
 // ── Shared helpers ────────────────────────────────────────────────────────────
 
 function extractDomain(url: string): string | null {
@@ -279,30 +385,46 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const PDL_API_KEY    = Deno.env.get("PDL_API_KEY")    ?? "";
-    const HUNTER_API_KEY = Deno.env.get("HUNTER_API_KEY") ?? "";
+    const PDL_API_KEY       = Deno.env.get("PDL_API_KEY")       ?? "";
+    const HUNTER_API_KEY    = Deno.env.get("HUNTER_API_KEY")    ?? "";
+    const GOOGLE_PLACES_API_KEY = Deno.env.get("GOOGLE_PLACES_API_KEY") ?? "";
     const groq = new Groq({ apiKey: GROQ_API_KEY });
 
     // ── DISCOVER MODE ─────────────────────────────────────────────────────────
     if (mode === "discover") {
-      const { niche, stage, geography, platform, budget, followers, funding, runningAds, creativeSetup, painPoint, employeeRange, targetMode } = body;
+      const { niche, stage, geography, platform, budget, followers, funding, runningAds, creativeSetup, painPoint, employeeRange, targetMode, city } = body;
       const discoverSystem = targetMode === "growth" ? DISCOVER_GROWTH_SYSTEM : DISCOVER_LOCAL_SYSTEM;
 
-      const userPrompt = `Generate scored lead profiles for CloutKart based on these discovery criteria:
+      // Try Google Places first for real businesses — fall back to archetypes if unavailable
+      let realBusinessContext = "";
+      let realBusinesses: OutscraperBusiness[] = [];
+      if (GOOGLE_PLACES_API_KEY && niche) {
+        const queries = buildSearchQueries(niche, targetMode ?? "local", city ?? "");
+        realBusinesses = await googlePlacesSearch(queries, GOOGLE_PLACES_API_KEY, 5);
+        if (realBusinesses.length > 0) {
+          realBusinessContext = `\n\n## REAL BUSINESSES FROM GOOGLE MAPS (score these actual businesses)\n\n${
+            realBusinesses.map((b, i) => formatBusinessForPrompt(b, i)).join("\n\n")
+          }`;
+        }
+      }
 
+      const userPrompt = `${realBusinesses.length > 0
+        ? `Score these real Indian businesses as CloutKart prospects. Use only the data provided — do NOT invent contact details. Return the phone, website, and instagram exactly as given.`
+        : `Generate 4–6 ideal archetype leads for CloutKart matching these criteria. Give each a descriptive archetype name.`}
+
+Discovery criteria:
 Target Niche: ${niche || "Any"}
-Business Stage: ${stage || "Growing (1–3 yr)"}
-Instagram Followers: ${followers || "5K–25K"}
+Business Stage: ${stage || "Early (0–1 yr)"}
+Instagram Followers: ${followers || "0–5K"}
 Funding Status: ${funding || "Bootstrapped"}
-Running Paid Ads: ${runningAds || "Running but inconsistent"}
+Running Paid Ads: ${runningAds || "No (organic only)"}
 Current Creative Setup: ${creativeSetup || "Founder DIY / Canva"}
 Pain Point to Target: ${painPoint || "Can't afford a full agency"}
 Outreach Platform: ${platform || "Instagram DM"}
-Geography: ${geography || "India"}
+Geography: ${city ? `${city}, India` : geography || "India"}
 Employee Count: ${employeeRange || "1–10"}
-Monthly Ad Budget: ${budget || "₹50K–2L"}
-
-Generate 4–6 ideal archetype leads matching these criteria. Give each a descriptive archetype name.
+Monthly Ad Budget: ${budget || "< ₹50K"}
+${realBusinessContext}
 
 Return only the JSON object.`;
 
@@ -312,8 +434,8 @@ Return only the JSON object.`;
           { role: "system", content: discoverSystem },
           { role: "user", content: userPrompt },
         ],
-        max_tokens: 2000,
-        temperature: 0.6,
+        max_tokens: 2400,
+        temperature: realBusinesses.length > 0 ? 0.3 : 0.6,
       });
 
       const raw = res.choices?.[0]?.message?.content?.trim() ?? "";
@@ -325,6 +447,26 @@ Return only the JSON object.`;
       } catch {
         console.error("[lead-agent discover] JSON parse failed:", raw);
         throw new Error("Model returned malformed JSON. Try again.");
+      }
+
+      // Attach real contact info from Outscraper back onto each lead result
+      // (Groq may paraphrase names — match by index order when real businesses were used)
+      if (realBusinesses.length > 0 && Array.isArray(result.leads)) {
+        result.leads = result.leads.map((lead: Record<string, unknown>, i: number) => {
+          const biz = realBusinesses[i];
+          if (!biz) return lead;
+          return {
+            ...lead,
+            phone: biz.phone ?? null,
+            website: biz.site ?? null,
+            instagramHandle: biz.instagram ?? null,
+            address: biz.city ?? biz.full_address ?? null,
+            googleMapsUrl: biz.google_maps_url ?? null,
+          };
+        });
+        result.source = "outscraper";
+      } else {
+        result.source = "ai_archetypes";
       }
 
       return new Response(

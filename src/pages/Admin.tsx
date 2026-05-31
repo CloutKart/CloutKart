@@ -114,6 +114,17 @@ interface LeadResult {
   greenFlags?: string[];
   redFlags?: string[];
   outreachMessage?: string;
+  // Real contact data from Outscraper
+  phone?: string | null;
+  website?: string | null;
+  instagramHandle?: string | null;
+  address?: string | null;
+  googleMapsUrl?: string | null;
+}
+
+interface DiscoverResponse {
+  leads: LeadResult[];
+  source?: 'outscraper' | 'ai_archetypes';
 }
 
 interface Lead {
@@ -788,8 +799,8 @@ function ExpiryEditor({ userId, currentExpiry, onSave }: {
 
 // ─── Constants (outside component to avoid recreation on every render) ────────
 const DISCOVER_DEFAULTS = {
-  local:  { niche: '', stage: 'early_0_1yr',   geography: 'india', platform: 'instagram_dm', budget: 'lt_50k',  followers: '0_5k',   funding: 'bootstrapped', runningAds: 'no_ads',      creativeSetup: 'founder_diy', painPoint: 'cant_afford_agency', employeeRange: '1-10' },
-  growth: { niche: '', stage: 'growing_1_3yr', geography: 'india', platform: 'instagram_dm', budget: '50k_2l', followers: '5k_25k', funding: 'bootstrapped', runningAds: 'inconsistent', creativeSetup: 'founder_diy', painPoint: 'ads_not_converting',  employeeRange: '1-10' },
+  local:  { niche: '', city: '', stage: 'early_0_1yr',   geography: 'india', platform: 'instagram_dm', budget: 'lt_50k',  followers: '0_5k',   funding: 'bootstrapped', runningAds: 'no_ads',      creativeSetup: 'founder_diy', painPoint: 'cant_afford_agency', employeeRange: '1-10' },
+  growth: { niche: '', city: '', stage: 'growing_1_3yr', geography: 'india', platform: 'instagram_dm', budget: '50k_2l', followers: '5k_25k', funding: 'bootstrapped', runningAds: 'inconsistent', creativeSetup: 'founder_diy', painPoint: 'ads_not_converting',  employeeRange: '1-10' },
 } as const;
 const DEFAULT_SCORE_FORM    = { brandName: '', brandUrl: '', niche: '', platform: 'instagram_dm' };
 const DEFAULT_ADD_LEAD_FORM = { brand_name: '', business_name: '', niche: '', platform: 'instagram_dm', score: '', contact_info: '', status: 'prospect', notes: '', outreach_used: '' };
@@ -852,6 +863,7 @@ export default function Admin() {
   const [discoverForm, setDiscoverForm] = useState({ ...DISCOVER_DEFAULTS.local });
   const [discovering, setDiscovering] = useState(false);
   const [discoverResults, setDiscoverResults] = useState<LeadResult[]>([]);
+  const [discoverSource, setDiscoverSource] = useState<'outscraper' | 'ai_archetypes' | null>(null);
   const [discoverError, setDiscoverError] = useState('');
 
   const [scoreForm, setScoreForm] = useState({ ...DEFAULT_SCORE_FORM });
@@ -1206,12 +1218,15 @@ export default function Admin() {
       creativeSetup: labelMap[f.creativeSetup] ?? f.creativeSetup,
       painPoint: labelMap[f.painPoint] ?? f.painPoint,
       employeeRange: f.employeeRange,
+      city: f.city?.trim() || undefined,
     };
     try {
       const { data, error } = await supabase.functions.invoke('lead-agent', { body: payload });
       if (error) throw new Error(error.message);
-      const results = data?.leads ?? [];
+      const response = data as DiscoverResponse;
+      const results = response?.leads ?? [];
       setDiscoverResults(results);
+      setDiscoverSource(response?.source ?? 'ai_archetypes');
       if (results.length === 0) setDiscoverError('No leads generated. Try different criteria.');
     } catch (e) {
       setDiscoverError((e as Error).message || 'Discovery failed. Try again.');
@@ -1336,6 +1351,7 @@ export default function Admin() {
       brand_name: result.name,
       score: result.compositeScore.toString(),
       outreach_used: result.outreachMessage ?? result.outreachAngle ?? '',
+      contact_info: result.phone ?? result.website ?? result.instagramHandle ?? '',
     });
     setShowAddLead(true);
     // Normalize platform hint from result if available
@@ -1953,11 +1969,20 @@ export default function Admin() {
 
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                   {/* Niche */}
-                  <div className="col-span-2 sm:col-span-1">
+                  <div>
                     <label className="block text-[10px] font-bold text-[#6B7280] uppercase tracking-widest mb-1.5">Target Niche</label>
                     <input value={discoverForm.niche} onChange={e => setDiscoverForm(f => ({ ...f, niche: e.target.value }))}
                       placeholder="e.g. Skincare, Food, Fashion"
                       className="w-full rounded-xl px-3 py-2.5 text-sm text-white placeholder-[#6B7280] bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(99,102,241,0.5)] focus:outline-none" />
+                  </div>
+                  {/* City */}
+                  <div>
+                    <label className="block text-[10px] font-bold text-[#6B7280] uppercase tracking-widest mb-1.5">
+                      City <span className="text-[#10B981] font-normal normal-case tracking-normal">→ real businesses via Google Maps</span>
+                    </label>
+                    <input value={discoverForm.city} onChange={e => setDiscoverForm(f => ({ ...f, city: e.target.value }))}
+                      placeholder="e.g. Mumbai, Delhi, Bangalore"
+                      className="w-full rounded-xl px-3 py-2.5 text-sm text-white placeholder-[#6B7280] bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(16,185,129,0.5)] focus:outline-none" />
                   </div>
                   {/* Business Stage */}
                   <div>
@@ -2027,7 +2052,19 @@ export default function Admin() {
                 {discoverResults.length > 0 && (
                   <div className="space-y-4 pt-2">
                     <div className="flex items-center justify-between">
-                      <p className="text-[10px] font-bold text-[#6B7280] uppercase tracking-widest">{discoverResults.length} Leads Found</p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-[10px] font-bold text-[#6B7280] uppercase tracking-widest">{discoverResults.length} Leads Found</p>
+                        {discoverSource === 'outscraper' && (
+                          <span className="text-[9px] font-bold px-2 py-0.5 rounded-full" style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)', color: '#10B981' }}>
+                            Real businesses · Google Maps
+                          </span>
+                        )}
+                        {discoverSource === 'ai_archetypes' && (
+                          <span className="text-[9px] font-bold px-2 py-0.5 rounded-full" style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)', color: '#818CF8' }}>
+                            AI archetypes · add a city + OUTSCRAPER_API_KEY for real contacts
+                          </span>
+                        )}
+                      </div>
                       <button onClick={exportDiscoverCSV}
                         className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all"
                         style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', color: '#9CA3AF' }}>
@@ -2102,6 +2139,68 @@ export default function Admin() {
                                 <div>
                                   <p className="text-[10px] font-bold text-[#818CF8] uppercase tracking-widest mb-0.5">Outreach Angle</p>
                                   <p className="text-[#C4C4E0] text-xs leading-relaxed">{lead.outreachAngle}</p>
+                                </div>
+                              </div>
+                            )}
+                            {/* Real contact info from Outscraper */}
+                            {(lead.phone || lead.website || lead.instagramHandle || lead.address) && (
+                              <div className="rounded-xl p-4 space-y-2" style={{ background: 'rgba(16,185,129,0.05)', border: '1px solid rgba(16,185,129,0.2)' }}>
+                                <p className="text-[10px] font-bold text-[#10B981] uppercase tracking-widest">Contact Info</p>
+                                <div className="space-y-1.5">
+                                  {lead.phone && (
+                                    <div className="flex items-center justify-between gap-3 group">
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-[10px] font-bold text-[#6B7280] uppercase w-16 flex-shrink-0">Phone</span>
+                                        <span className="text-[#D1D5DB] text-xs">{lead.phone}</span>
+                                      </div>
+                                      <button onClick={() => copyText(lead.phone!, `ph-disc-${i}`)}
+                                        className="opacity-0 group-hover:opacity-100 transition-opacity"
+                                        style={{ color: copiedId === `ph-disc-${i}` ? '#10B981' : '#6B7280' }}>
+                                        <Copy size={11} />
+                                      </button>
+                                    </div>
+                                  )}
+                                  {lead.website && (
+                                    <div className="flex items-center justify-between gap-3 group">
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-[10px] font-bold text-[#6B7280] uppercase w-16 flex-shrink-0">Website</span>
+                                        <a href={lead.website.startsWith('http') ? lead.website : `https://${lead.website}`} target="_blank" rel="noopener noreferrer"
+                                          className="text-[#818CF8] text-xs hover:underline truncate max-w-[180px]">{lead.website.replace(/^https?:\/\/(www\.)?/, '')}</a>
+                                      </div>
+                                      <button onClick={() => copyText(lead.website!, `web-disc-${i}`)}
+                                        className="opacity-0 group-hover:opacity-100 transition-opacity"
+                                        style={{ color: copiedId === `web-disc-${i}` ? '#10B981' : '#6B7280' }}>
+                                        <Copy size={11} />
+                                      </button>
+                                    </div>
+                                  )}
+                                  {lead.instagramHandle && (
+                                    <div className="flex items-center justify-between gap-3 group">
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-[10px] font-bold text-[#6B7280] uppercase w-16 flex-shrink-0">Instagram</span>
+                                        <a href={lead.instagramHandle} target="_blank" rel="noopener noreferrer"
+                                          className="text-[#818CF8] text-xs hover:underline truncate max-w-[180px]">{lead.instagramHandle.replace('https://www.instagram.com/', '@').replace(/\/$/, '')}</a>
+                                      </div>
+                                      <button onClick={() => copyText(lead.instagramHandle!, `ig-disc-${i}`)}
+                                        className="opacity-0 group-hover:opacity-100 transition-opacity"
+                                        style={{ color: copiedId === `ig-disc-${i}` ? '#10B981' : '#6B7280' }}>
+                                        <Copy size={11} />
+                                      </button>
+                                    </div>
+                                  )}
+                                  {lead.address && (
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-[10px] font-bold text-[#6B7280] uppercase w-16 flex-shrink-0">Location</span>
+                                      <span className="text-[#9CA3AF] text-xs">{lead.address}</span>
+                                    </div>
+                                  )}
+                                  {lead.googleMapsUrl && (
+                                    <a href={lead.googleMapsUrl} target="_blank" rel="noopener noreferrer"
+                                      className="inline-flex items-center gap-1 text-[10px] font-semibold mt-1"
+                                      style={{ color: '#10B981' }}>
+                                      View on Google Maps →
+                                    </a>
+                                  )}
                                 </div>
                               </div>
                             )}
