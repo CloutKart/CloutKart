@@ -6,14 +6,14 @@ import {
   Plus, ArrowRight, Search, Upload, Loader,
   Eye, EyeOff, Trash2, RefreshCw, ChevronLeft, X, CheckCircle, Clock,
   AlertCircle, IndianRupee, Sparkles, Edit2, Check, MessageSquare,
-  Send, Star, TrendingUp
+  Send, Star, TrendingUp, Target, Copy, ChevronDown
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { NotificationBell } from '../components/NotificationBell';
 import { usePushNotifications } from '../hooks/usePushNotifications';
 
-type Tab = 'overview' | 'requests' | 'payments' | 'users' | 'portfolio' | 'cloutclub' | 'messages' | 'settings';
+type Tab = 'overview' | 'requests' | 'payments' | 'users' | 'portfolio' | 'cloutclub' | 'messages' | 'settings' | 'leads';
 type RequestFilter = 'all' | 'pending' | 'in_progress' | 'completed';
 
 interface Profile {
@@ -97,6 +97,59 @@ interface Message {
   created_at: string;
 }
 
+interface LeadResult {
+  name: string;
+  compositeScore: number;
+  scoreBreakdown: {
+    creativeVolumeNeed: number;
+    capacityGap: number;
+    budgetReadiness: number;
+    growthStageFit: number;
+  };
+  whyTheyNeedUs: string;
+  scoreRationale: string;
+  targetProfile: string;
+  whereToFindThem?: string;
+  outreachAngle?: string;
+  greenFlags?: string[];
+  redFlags?: string[];
+  outreachMessage?: string;
+}
+
+interface Lead {
+  id: string;
+  brand_name: string;
+  niche: string | null;
+  platform: string | null;
+  score: number | null;
+  contact_info: string | null;
+  status: string;
+  notes: string | null;
+  outreach_used: string | null;
+  created_at: string;
+}
+
+interface LeadContact {
+  id: string;
+  lead_id: string;
+  name: string;
+  role: string | null;
+  email: string | null;
+  phone: string | null;
+  linkedin_url: string | null;
+  instagram_handle: string | null;
+  notes: string | null;
+  created_at: string;
+}
+
+const leadStatusColors: Record<string, { bg: string; border: string; text: string; label: string }> = {
+  prospect:  { bg: 'rgba(99,102,241,0.1)',  border: 'rgba(99,102,241,0.25)', text: '#818CF8',  label: 'Prospect'  },
+  contacted: { bg: 'rgba(245,158,11,0.1)',  border: 'rgba(245,158,11,0.25)', text: '#F59E0B',  label: 'Contacted' },
+  responded: { bg: 'rgba(59,130,246,0.1)',  border: 'rgba(59,130,246,0.25)', text: '#3B82F6',  label: 'Responded' },
+  converted: { bg: 'rgba(16,185,129,0.1)',  border: 'rgba(16,185,129,0.25)', text: '#10B981', label: 'Converted' },
+  lost:      { bg: 'rgba(239,68,68,0.07)',  border: 'rgba(239,68,68,0.2)',   text: '#F87171',  label: 'Lost'      },
+};
+
 const statusColors: Record<string, { bg: string; border: string; text: string; label: string }> = {
   pending:     { bg: 'rgba(245,158,11,0.1)',  border: 'rgba(245,158,11,0.25)',  text: '#F59E0B', label: 'Pending'     },
   in_progress: { bg: 'rgba(59,130,246,0.1)',  border: 'rgba(59,130,246,0.25)',  text: '#3B82F6', label: 'In Progress' },
@@ -112,6 +165,19 @@ const PlanBadge = ({ plan }: { plan: string }) => {
     </span>
   );
 };
+
+function ScoreBar({ value, max = 10 }: { value: number; max?: number }) {
+  const pct = Math.min((value / max) * 100, 100);
+  const color = pct >= 80 ? '#10B981' : pct >= 50 ? '#F59E0B' : '#F87171';
+  return (
+    <div className="flex items-center gap-2">
+      <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.08)' }}>
+        <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, background: color }} />
+      </div>
+      <span className="text-xs font-mono w-6 text-right flex-shrink-0" style={{ color }}>{value}</span>
+    </div>
+  );
+}
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -376,13 +442,18 @@ function StatusDropdown({ request, onUpdate }: {
     if (stagedFiles.length === 0) { setUploadError('Please add at least one file.'); return; }
     setConfirming(true);
     const urls = stagedFiles.map(f => f.url);
-    await supabase.from('free_creative_requests').update({
+    const { error } = await supabase.from('free_creative_requests').update({
       status: 'completed',
       creative_url: urls[0],
       creative_urls: urls,
       creative_caption: creativeCaption.trim(),
       client_message: clientMessage.trim(),
     }).eq('id', request.id);
+    if (error) {
+      setUploadError(`DB update failed: ${error.message}`);
+      setConfirming(false);
+      return;
+    }
     onUpdate(request.id, 'completed', urls[0], creativeCaption.trim(), clientMessage.trim(), urls);
     setConfirming(false);
     setShowUpload(false);
@@ -669,6 +740,43 @@ export default function Admin() {
   // Ref so the realtime handler always sees the latest selected user without re-subscribing
   const selectedMsgUserRef = useRef<Profile | null>(null);
 
+  // Lead Agent state
+  const discoverDefaults = {
+    local:  { niche: '', stage: 'early_0_1yr',    geography: 'india', platform: 'instagram_dm', budget: 'lt_50k',  followers: '0_5k',    funding: 'bootstrapped', runningAds: 'no_ads',      creativeSetup: 'founder_diy', painPoint: 'cant_afford_agency', employeeRange: '1-10' },
+    growth: { niche: '', stage: 'growing_1_3yr',  geography: 'india', platform: 'instagram_dm', budget: '50k_2l', followers: '5k_25k',  funding: 'bootstrapped', runningAds: 'inconsistent', creativeSetup: 'founder_diy', painPoint: 'ads_not_converting',  employeeRange: '1-10' },
+  };
+  const [discoverMode, setDiscoverMode] = useState<'local' | 'growth'>('local');
+  const [discoverForm, setDiscoverForm] = useState({ ...discoverDefaults.local });
+  const [discovering, setDiscovering] = useState(false);
+  const [discoverResults, setDiscoverResults] = useState<LeadResult[]>([]);
+  const [discoverError, setDiscoverError] = useState('');
+
+  const defaultScoreForm = { brandName: '', brandUrl: '', niche: '', platform: 'instagram_dm' };
+  const [scoreForm, setScoreForm] = useState({ ...defaultScoreForm });
+  const [scoring, setScoring] = useState(false);
+  const [scoreResult, setScoreResult] = useState<LeadResult | null>(null);
+  const [scoreError, setScoreError] = useState('');
+
+  const defaultAddLeadForm = { brand_name: '', niche: '', platform: 'instagram_dm', score: '', contact_info: '', status: 'prospect', notes: '', outreach_used: '' };
+  const [leads, setLeads] = useState<Lead[]>([]);
+  const [loadingLeads, setLoadingLeads] = useState(false);
+  const [showAddLead, setShowAddLead] = useState(false);
+  const [addLeadForm, setAddLeadForm] = useState({ ...defaultAddLeadForm });
+  const [savingLead, setSavingLead] = useState(false);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  // Lead contacts state
+  const [contactsLead, setContactsLead] = useState<Lead | null>(null);
+  const [leadContacts, setLeadContacts] = useState<LeadContact[]>([]);
+  const [loadingContacts, setLoadingContacts] = useState(false);
+  const [fetchingContacts, setFetchingContacts] = useState(false);
+  const [hunterDomain, setHunterDomain] = useState('');
+  const defaultContactForm = { name: '', role: '', email: '', phone: '', linkedin_url: '', instagram_handle: '', notes: '' };
+  const [contactForm, setContactForm] = useState({ ...defaultContactForm });
+  const [showAddContact, setShowAddContact] = useState(false);
+  const [savingContact, setSavingContact] = useState(false);
+  const [deletingContactId, setDeletingContactId] = useState<string | null>(null);
+
   const handleSignOut = async () => { await signOut(); navigate('/'); };
 
   useEffect(() => { loadOverview(); loadAdminProfile(); }, []);
@@ -687,6 +795,7 @@ export default function Admin() {
     else if (tab === 'portfolio') { setManagingSection(null); loadPortfolio(); }
     else if (tab === 'cloutclub') loadCloutClubUsers();
     else if (tab === 'messages') loadMessageUsers();
+    else if (tab === 'leads') loadLeads();
     else if (tab === 'overview') loadOverview();
   }, [tab]);
 
@@ -967,6 +1076,247 @@ export default function Admin() {
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'users.csv'; a.click();
   }
 
+  // ── Lead Agent functions ────────────────────────────────────────────────────
+  async function discoverLeads() {
+    setDiscovering(true);
+    setDiscoverError('');
+    setDiscoverResults([]);
+    const labelMap: Record<string, string> = {
+      growing_1_3yr: 'Growing (1–3 yr)', early_0_1yr: 'Early (0–1 yr)', scaling_3_5yr: 'Scaling (3–5 yr)',
+      instagram_dm: 'Instagram DM', whatsapp: 'WhatsApp', email: 'Email', linkedin: 'LinkedIn',
+      '50k_2l': '₹50K–2L', 'lt_50k': '<₹50K', '2l_10l': '₹2L–10L', 'gt_10l': '₹10L+',
+      '5k_25k': '5K–25K', '0_5k': '0–5K', '25k_100k': '25K–100K', 'gt_100k': '100K+',
+      bootstrapped: 'Bootstrapped', angel: 'Angel-funded', seed: 'Seed', series_a: 'Series A+',
+      inconsistent: 'Running but inconsistent', no_ads: 'No (organic only)', just_started: 'Just started', scaling: 'Actively scaling ads',
+      founder_diy: 'Founder does it themselves', canva: 'Canva/DIY', freelancers: 'Freelancers', small_team: 'Small in-house team',
+      cant_afford_agency: "Can't afford a full agency", too_busy: 'Too busy to create content', inconsistent_look: 'Inconsistent brand look', ads_not_converting: 'Ads not converting',
+    };
+    const f = discoverForm;
+    const payload = {
+      mode: 'discover',
+      targetMode: discoverMode,
+      niche: f.niche,
+      stage: labelMap[f.stage] ?? f.stage,
+      geography: f.geography,
+      platform: labelMap[f.platform] ?? f.platform,
+      budget: labelMap[f.budget] ?? f.budget,
+      followers: labelMap[f.followers] ?? f.followers,
+      funding: labelMap[f.funding] ?? f.funding,
+      runningAds: labelMap[f.runningAds] ?? f.runningAds,
+      creativeSetup: labelMap[f.creativeSetup] ?? f.creativeSetup,
+      painPoint: labelMap[f.painPoint] ?? f.painPoint,
+      employeeRange: f.employeeRange,
+    };
+    try {
+      const { data, error } = await supabase.functions.invoke('lead-agent', { body: payload });
+      if (error) throw new Error(error.message);
+      const results = data?.leads ?? [];
+      setDiscoverResults(results);
+      if (results.length === 0) setDiscoverError('No leads generated. Try different criteria.');
+    } catch (e) {
+      setDiscoverError((e as Error).message || 'Discovery failed. Try again.');
+    }
+    setDiscovering(false);
+  }
+
+  async function scoreBrand() {
+    if (!scoreForm.brandName.trim()) return;
+    setScoring(true);
+    setScoreError('');
+    setScoreResult(null);
+    const platformLabel: Record<string, string> = { instagram_dm: 'Instagram DM', whatsapp: 'WhatsApp', email: 'Email', linkedin: 'LinkedIn' };
+    try {
+      const { data, error } = await supabase.functions.invoke('lead-agent', {
+        body: {
+          mode: 'score',
+          brandName: scoreForm.brandName.trim(),
+          brandUrl: scoreForm.brandUrl.trim() || undefined,
+          niche: scoreForm.niche.trim() || undefined,
+          platform: platformLabel[scoreForm.platform] ?? scoreForm.platform,
+        },
+      });
+      if (error) throw new Error(error.message);
+      if (data?.error) throw new Error(data.error);
+      setScoreResult(data);
+    } catch (e) {
+      setScoreError((e as Error).message || 'Scoring failed. Try again.');
+    }
+    setScoring(false);
+  }
+
+  async function loadLeads() {
+    setLoadingLeads(true);
+    const { data } = await supabase.from('leads').select('*').order('created_at', { ascending: false });
+    setLeads((data as Lead[]) ?? []);
+    setLoadingLeads(false);
+  }
+
+  async function saveLead() {
+    if (!addLeadForm.brand_name.trim()) return;
+    setSavingLead(true);
+    const payload = {
+      brand_name: addLeadForm.brand_name.trim(),
+      niche: addLeadForm.niche.trim() || null,
+      platform: addLeadForm.platform || null,
+      score: addLeadForm.score !== '' ? parseFloat(addLeadForm.score) : null,
+      contact_info: addLeadForm.contact_info.trim() || null,
+      status: addLeadForm.status,
+      notes: addLeadForm.notes.trim() || null,
+      outreach_used: addLeadForm.outreach_used.trim() || null,
+    };
+    const { data } = await supabase.from('leads').insert(payload).select().single();
+    if (data) setLeads(prev => [data as Lead, ...prev]);
+    setAddLeadForm({ ...defaultAddLeadForm });
+    setShowAddLead(false);
+    setSavingLead(false);
+  }
+
+  async function updateLeadStatus(id: string, status: string) {
+    setLeads(prev => prev.map(l => l.id === id ? { ...l, status } : l));
+    await supabase.from('leads').update({ status }).eq('id', id);
+  }
+
+  async function updateLeadNotes(id: string, notes: string) {
+    await supabase.from('leads').update({ notes: notes.trim() || null }).eq('id', id);
+  }
+
+  async function deleteLead(id: string) {
+    setLeads(prev => prev.filter(l => l.id !== id));
+    await supabase.from('leads').delete().eq('id', id);
+  }
+
+  function exportLeadsCSV() {
+    const rows = [['Brand Name', 'Niche', 'Platform', 'Score', 'Status', 'Contact Info', 'Notes', 'Date']];
+    leads.forEach(l => rows.push([
+      l.brand_name,
+      l.niche ?? '',
+      l.platform?.replace('_', ' ') ?? '',
+      l.score !== null ? String(l.score) : '',
+      l.status,
+      l.contact_info ?? '',
+      l.notes ?? '',
+      formatDate(l.created_at),
+    ]));
+    const csv = rows.map(r => r.map(c => `"${c.replace(/"/g, '""')}"`).join(',')).join('\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+    a.download = `leads-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+  }
+
+  function exportDiscoverCSV() {
+    if (discoverResults.length === 0) return;
+    const rows = [['Name', 'Composite Score', 'Creative Volume Need', 'Capacity Gap', 'Budget Readiness', 'Growth Stage Fit', 'Why They Need Us', 'Score Rationale', 'Target Profile', 'Where to Find Them', 'Outreach Angle']];
+    discoverResults.forEach(r => rows.push([
+      r.name,
+      String(r.compositeScore),
+      String(r.scoreBreakdown.creativeVolumeNeed),
+      String(r.scoreBreakdown.capacityGap),
+      String(r.scoreBreakdown.budgetReadiness),
+      String(r.scoreBreakdown.growthStageFit),
+      r.whyTheyNeedUs,
+      r.scoreRationale,
+      r.targetProfile,
+      r.whereToFindThem ?? '',
+      r.outreachAngle ?? '',
+    ]));
+    const csv = rows.map(r => r.map(c => `"${c.replace(/"/g, '""')}"`).join(',')).join('\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+    a.download = `discover-results-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+  }
+
+  function openAddLeadFromResult(result: LeadResult) {
+    const platformMap: Record<string, string> = { 'Instagram DM': 'instagram_dm', 'WhatsApp': 'whatsapp', 'Email': 'email', 'LinkedIn': 'linkedin' };
+    setAddLeadForm({
+      ...defaultAddLeadForm,
+      brand_name: result.name,
+      score: result.compositeScore.toString(),
+      outreach_used: result.outreachMessage ?? result.outreachAngle ?? '',
+    });
+    setShowAddLead(true);
+    // Normalize platform hint from result if available
+    if (result.outreachAngle) {
+      for (const [label, val] of Object.entries(platformMap)) {
+        if (result.outreachAngle.toLowerCase().includes(label.toLowerCase())) {
+          setAddLeadForm(prev => ({ ...prev, platform: val }));
+          break;
+        }
+      }
+    }
+  }
+
+  async function copyText(text: string, id: string) {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedId(id);
+      setTimeout(() => setCopiedId(prev => (prev === id ? null : prev)), 1800);
+    } catch { /* silent */ }
+  }
+
+  // ── Lead contacts functions ─────────────────────────────────────────────────
+  async function openContactsModal(lead: Lead) {
+    setContactsLead(lead);
+    setShowAddContact(false);
+    setContactForm({ ...defaultContactForm });
+    setHunterDomain('');
+    setLoadingContacts(true);
+    const { data } = await supabase
+      .from('lead_contacts')
+      .select('*')
+      .eq('lead_id', lead.id)
+      .order('created_at', { ascending: true });
+    setLeadContacts((data as LeadContact[]) ?? []);
+    setLoadingContacts(false);
+  }
+
+  async function fetchContactsFromHunter() {
+    if (!contactsLead || !hunterDomain.trim()) return;
+    setFetchingContacts(true);
+    try {
+      const domain = hunterDomain.trim().replace(/^https?:\/\/(www\.)?/, '').split('/')[0];
+      const { data, error } = await supabase.functions.invoke('lead-agent', {
+        body: { mode: 'fetch_contacts', domain },
+      });
+      if (error) throw new Error(error.message);
+      const fetched: Array<{ name: string; role: string | null; email: string | null; phone: string | null; linkedin_url: string | null; instagram_handle: string | null }> = data?.contacts ?? [];
+      if (fetched.length === 0) { setFetchingContacts(false); return; }
+      const toInsert = fetched.map(c => ({ lead_id: contactsLead.id, ...c, notes: null }));
+      const { data: inserted } = await supabase.from('lead_contacts').insert(toInsert).select();
+      if (inserted) setLeadContacts(prev => [...prev, ...(inserted as LeadContact[])]);
+      setHunterDomain('');
+    } catch { /* silent */ }
+    setFetchingContacts(false);
+  }
+
+  async function saveContact() {
+    if (!contactsLead || !contactForm.name.trim()) return;
+    setSavingContact(true);
+    const payload = {
+      lead_id: contactsLead.id,
+      name: contactForm.name.trim(),
+      role: contactForm.role.trim() || null,
+      email: contactForm.email.trim() || null,
+      phone: contactForm.phone.trim() || null,
+      linkedin_url: contactForm.linkedin_url.trim() || null,
+      instagram_handle: contactForm.instagram_handle.trim() || null,
+      notes: contactForm.notes.trim() || null,
+    };
+    const { data } = await supabase.from('lead_contacts').insert(payload).select().single();
+    if (data) setLeadContacts(prev => [...prev, data as LeadContact]);
+    setContactForm({ ...defaultContactForm });
+    setShowAddContact(false);
+    setSavingContact(false);
+  }
+
+  async function deleteContact(id: string) {
+    setDeletingContactId(id);
+    await supabase.from('lead_contacts').delete().eq('id', id);
+    setLeadContacts(prev => prev.filter(c => c.id !== id));
+    setDeletingContactId(null);
+  }
+
   const conversionRate = overviewStats.conversionUsers > 0 ? ((overviewStats.paidUsers / overviewStats.conversionUsers) * 100).toFixed(1) : '0.0';
   const filteredRequests = requestFilter === 'all' ? requests : requests.filter(r => r.status === requestFilter);
   const filteredUsers = users.filter(u => !userSearch || (u.full_name ?? '').toLowerCase().includes(userSearch.toLowerCase()) || (u.company_name ?? '').toLowerCase().includes(userSearch.toLowerCase()));
@@ -997,6 +1347,7 @@ export default function Admin() {
     { id: 'users',      icon: Users,           label: 'Users'             },
     { id: 'cloutclub',  icon: Sparkles,        label: 'Clout Club'        },
     { id: 'messages',   icon: MessageSquare,   label: 'Messages'          },
+    { id: 'leads',      icon: Target,          label: 'Lead Agent'        },
     { id: 'portfolio',  icon: Image,           label: 'Portfolio'         },
     { id: 'settings',   icon: Settings,        label: 'Settings'          },
   ];
@@ -1455,6 +1806,793 @@ export default function Admin() {
                     </div>
                   ))}</div>}
               </>
+            )}
+          </div>
+        )}
+
+        {/* ── LEAD AGENT ────────────────────────────────────────────────────── */}
+        {tab === 'leads' && (
+          <div className="space-y-8">
+            <div>
+              <h2 className="font-heading font-bold text-white text-2xl">Lead Agent</h2>
+              <p className="text-[#9CA3AF] text-sm mt-1">Find and score prospects for CloutKart — biased toward small brands and startups.</p>
+            </div>
+
+            {/* ── Discover Leads ─────────────────────────────────────── */}
+            <div className="glass-card rounded-2xl overflow-hidden" style={{ border: '1px solid rgba(99,102,241,0.15)' }}>
+              <div className="px-6 py-4 border-b flex items-center gap-2" style={{ borderColor: 'rgba(99,102,241,0.1)' }}>
+                <Target size={15} className="text-[#818CF8]" />
+                <h3 className="font-heading font-semibold text-white text-base">Discover Leads</h3>
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full ml-auto" style={{ background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.2)', color: '#818CF8' }}>Groq AI</span>
+              </div>
+              <div className="p-6 space-y-5">
+                {/* Mode toggle */}
+                <div className="flex items-center gap-1 p-1 rounded-xl self-start" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                  {(['local', 'growth'] as const).map(m => {
+                    const active = discoverMode === m;
+                    return (
+                      <button key={m} onClick={() => { setDiscoverMode(m); setDiscoverForm({ ...discoverDefaults[m] }); setDiscoverResults([]); setDiscoverError(''); }}
+                        className="px-4 py-2 rounded-lg text-xs font-semibold transition-all"
+                        style={active ? {
+                          background: m === 'local' ? 'linear-gradient(135deg,rgba(16,185,129,0.25),rgba(5,150,105,0.2))' : 'linear-gradient(135deg,rgba(99,102,241,0.25),rgba(59,130,246,0.2))',
+                          border: `1px solid ${m === 'local' ? 'rgba(16,185,129,0.4)' : 'rgba(99,102,241,0.4)'}`,
+                          color: m === 'local' ? '#10B981' : '#818CF8',
+                        } : { background: 'transparent', border: '1px solid transparent', color: '#6B7280' }}>
+                        {m === 'local' ? '📍 Local Brands' : '📈 Growth Brands'}
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="text-xs text-[#6B7280] -mt-2">
+                  {discoverMode === 'local'
+                    ? 'Hyper-local: home sellers, WhatsApp businesses, 0–5K followers, no ads yet'
+                    : 'Scaling brands: 5K–100K followers, running Meta ads, bootstrapped to seed stage'}
+                </p>
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                  {/* Niche */}
+                  <div className="col-span-2 sm:col-span-1">
+                    <label className="block text-[10px] font-bold text-[#6B7280] uppercase tracking-widest mb-1.5">Target Niche</label>
+                    <input value={discoverForm.niche} onChange={e => setDiscoverForm(f => ({ ...f, niche: e.target.value }))}
+                      placeholder="e.g. Skincare, Food, Fashion"
+                      className="w-full rounded-xl px-3 py-2.5 text-sm text-white placeholder-[#6B7280] bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(99,102,241,0.5)] focus:outline-none" />
+                  </div>
+                  {/* Business Stage */}
+                  <div>
+                    <label className="block text-[10px] font-bold text-[#6B7280] uppercase tracking-widest mb-1.5">Business Stage</label>
+                    <select value={discoverForm.stage} onChange={e => setDiscoverForm(f => ({ ...f, stage: e.target.value }))}
+                      className="w-full rounded-xl px-3 py-2.5 text-sm text-white bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(99,102,241,0.5)] focus:outline-none" style={{ colorScheme: 'dark' }}>
+                      <option value="early_0_1yr">Early (0–1 yr)</option>
+                      <option value="growing_1_3yr">Growing (1–3 yr)</option>
+                      <option value="scaling_3_5yr">Scaling (3–5 yr)</option>
+                    </select>
+                  </div>
+                  {/* IG Followers */}
+                  <div>
+                    <label className="block text-[10px] font-bold text-[#6B7280] uppercase tracking-widest mb-1.5">Instagram Followers</label>
+                    <select value={discoverForm.followers} onChange={e => setDiscoverForm(f => ({ ...f, followers: e.target.value }))}
+                      className="w-full rounded-xl px-3 py-2.5 text-sm text-white bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(99,102,241,0.5)] focus:outline-none" style={{ colorScheme: 'dark' }}>
+                      <option value="0_5k">0–5K</option>
+                      <option value="5k_25k">5K–25K</option>
+                      <option value="25k_100k">25K–100K</option>
+                      <option value="gt_100k">100K+</option>
+                    </select>
+                  </div>
+                  {/* Funding */}
+                  <div>
+                    <label className="block text-[10px] font-bold text-[#6B7280] uppercase tracking-widest mb-1.5">Funding Status</label>
+                    <select value={discoverForm.funding} onChange={e => setDiscoverForm(f => ({ ...f, funding: e.target.value }))}
+                      className="w-full rounded-xl px-3 py-2.5 text-sm text-white bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(99,102,241,0.5)] focus:outline-none" style={{ colorScheme: 'dark' }}>
+                      <option value="bootstrapped">Bootstrapped</option>
+                      <option value="angel">Angel-funded</option>
+                      <option value="seed">Seed</option>
+                      <option value="series_a">Series A+</option>
+                    </select>
+                  </div>
+                  {/* Running Ads */}
+                  <div>
+                    <label className="block text-[10px] font-bold text-[#6B7280] uppercase tracking-widest mb-1.5">Running Paid Ads?</label>
+                    <select value={discoverForm.runningAds} onChange={e => setDiscoverForm(f => ({ ...f, runningAds: e.target.value }))}
+                      className="w-full rounded-xl px-3 py-2.5 text-sm text-white bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(99,102,241,0.5)] focus:outline-none" style={{ colorScheme: 'dark' }}>
+                      <option value="no_ads">No (organic only)</option>
+                      <option value="just_started">Just started</option>
+                      <option value="inconsistent">Inconsistent</option>
+                      <option value="scaling">Actively scaling</option>
+                    </select>
+                  </div>
+                  {/* Creative Setup */}
+                  <div>
+                    <label className="block text-[10px] font-bold text-[#6B7280] uppercase tracking-widest mb-1.5">Current Creative Setup</label>
+                    <select value={discoverForm.creativeSetup} onChange={e => setDiscoverForm(f => ({ ...f, creativeSetup: e.target.value }))}
+                      className="w-full rounded-xl px-3 py-2.5 text-sm text-white bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(99,102,241,0.5)] focus:outline-none" style={{ colorScheme: 'dark' }}>
+                      <option value="founder_diy">Founder does it themselves</option>
+                      <option value="canva">Canva / DIY</option>
+                      <option value="freelancers">Freelancers</option>
+                      <option value="small_team">Small in-house team</option>
+                    </select>
+                  </div>
+                  {/* Pain Point */}
+                  <div>
+                    <label className="block text-[10px] font-bold text-[#6B7280] uppercase tracking-widest mb-1.5">Pain Point to Target</label>
+                    <select value={discoverForm.painPoint} onChange={e => setDiscoverForm(f => ({ ...f, painPoint: e.target.value }))}
+                      className="w-full rounded-xl px-3 py-2.5 text-sm text-white bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(99,102,241,0.5)] focus:outline-none" style={{ colorScheme: 'dark' }}>
+                      <option value="cant_afford_agency">Can't afford a full agency</option>
+                      <option value="too_busy">Too busy to create content</option>
+                      <option value="inconsistent_look">Inconsistent brand look</option>
+                      <option value="ads_not_converting">Ads not converting</option>
+                    </select>
+                  </div>
+                  {/* Outreach Platform */}
+                  <div>
+                    <label className="block text-[10px] font-bold text-[#6B7280] uppercase tracking-widest mb-1.5">Outreach Platform</label>
+                    <select value={discoverForm.platform} onChange={e => setDiscoverForm(f => ({ ...f, platform: e.target.value }))}
+                      className="w-full rounded-xl px-3 py-2.5 text-sm text-white bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(99,102,241,0.5)] focus:outline-none" style={{ colorScheme: 'dark' }}>
+                      <option value="instagram_dm">Instagram DM</option>
+                      <option value="whatsapp">WhatsApp</option>
+                      <option value="email">Email</option>
+                      <option value="linkedin">LinkedIn</option>
+                    </select>
+                  </div>
+                  {/* Geography */}
+                  <div>
+                    <label className="block text-[10px] font-bold text-[#6B7280] uppercase tracking-widest mb-1.5">Geography</label>
+                    <select value={discoverForm.geography} onChange={e => setDiscoverForm(f => ({ ...f, geography: e.target.value }))}
+                      className="w-full rounded-xl px-3 py-2.5 text-sm text-white bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(99,102,241,0.5)] focus:outline-none" style={{ colorScheme: 'dark' }}>
+                      <option value="india">India</option>
+                      <option value="international">International</option>
+                      <option value="both">Both</option>
+                    </select>
+                  </div>
+                  {/* Employees */}
+                  <div>
+                    <label className="block text-[10px] font-bold text-[#6B7280] uppercase tracking-widest mb-1.5">Employee Count</label>
+                    <select value={discoverForm.employeeRange} onChange={e => setDiscoverForm(f => ({ ...f, employeeRange: e.target.value }))}
+                      className="w-full rounded-xl px-3 py-2.5 text-sm text-white bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(99,102,241,0.5)] focus:outline-none" style={{ colorScheme: 'dark' }}>
+                      <option value="1-10">1–10</option>
+                      <option value="10-50">10–50</option>
+                      <option value="50-200">50–200</option>
+                    </select>
+                  </div>
+                  {/* Monthly Ad Budget */}
+                  <div>
+                    <label className="block text-[10px] font-bold text-[#6B7280] uppercase tracking-widest mb-1.5">Monthly Ad Budget</label>
+                    <select value={discoverForm.budget} onChange={e => setDiscoverForm(f => ({ ...f, budget: e.target.value }))}
+                      className="w-full rounded-xl px-3 py-2.5 text-sm text-white bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(99,102,241,0.5)] focus:outline-none" style={{ colorScheme: 'dark' }}>
+                      <option value="lt_50k">{"< ₹50K"}</option>
+                      <option value="50k_2l">₹50K–2L</option>
+                      <option value="2l_10l">₹2L–10L</option>
+                      <option value="gt_10l">₹10L+</option>
+                    </select>
+                  </div>
+                </div>
+
+                <button onClick={discoverLeads} disabled={discovering}
+                  className="flex items-center gap-2 px-6 py-3 rounded-2xl text-sm font-semibold transition-all disabled:opacity-50"
+                  style={{ background: 'linear-gradient(135deg,rgba(99,102,241,0.9),rgba(59,130,246,0.9))', color: '#fff' }}>
+                  {discovering ? <><Loader size={14} className="animate-spin" /> Finding Leads…</> : <><Target size={14} /> Find Leads</>}
+                </button>
+
+                {discoverError && (
+                  <div className="flex items-center gap-2 rounded-xl px-4 py-3" style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)' }}>
+                    <AlertCircle size={14} className="text-red-400 flex-shrink-0" />
+                    <span className="text-red-300 text-xs">{discoverError}</span>
+                  </div>
+                )}
+
+                {discoverResults.length > 0 && (
+                  <div className="space-y-4 pt-2">
+                    <div className="flex items-center justify-between">
+                      <p className="text-[10px] font-bold text-[#6B7280] uppercase tracking-widest">{discoverResults.length} Leads Found</p>
+                      <button onClick={exportDiscoverCSV}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all"
+                        style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', color: '#9CA3AF' }}>
+                        <ArrowRight size={11} style={{ transform: 'rotate(90deg)' }} /> Export CSV
+                      </button>
+                    </div>
+                    {discoverResults.map((lead, i) => {
+                      const scoreColor = lead.compositeScore >= 8 ? '#10B981' : lead.compositeScore >= 5 ? '#F59E0B' : '#F87171';
+                      return (
+                        <div key={i} className="rounded-2xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                          <div className="px-5 py-4 flex items-start justify-between gap-4 border-b" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
+                            <div>
+                              <p className="text-white font-heading font-bold text-base">{lead.name}</p>
+                              <p className="text-[#9CA3AF] text-xs mt-0.5">Fit analysis for CloutKart</p>
+                            </div>
+                            <div className="flex items-center gap-3 flex-shrink-0">
+                              <div className="text-right">
+                                <p className="font-mono font-bold text-2xl leading-none" style={{ color: scoreColor }}>{lead.compositeScore}</p>
+                                <p className="text-[10px] text-[#6B7280] mt-0.5">/ 10</p>
+                              </div>
+                              <button onClick={() => openAddLeadFromResult(lead)}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all"
+                                style={{ background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.25)', color: '#818CF8' }}>
+                                <Plus size={11} /> Save
+                              </button>
+                            </div>
+                          </div>
+                          <div className="px-5 py-4 space-y-4">
+                            {/* Score breakdown */}
+                            <div>
+                              <p className="text-[10px] font-bold text-[#6B7280] uppercase tracking-widest mb-2">Score Breakdown</p>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                {([
+                                  ['Creative Volume Need', lead.scoreBreakdown.creativeVolumeNeed],
+                                  ['Capacity Gap', lead.scoreBreakdown.capacityGap],
+                                  ['Budget Readiness', lead.scoreBreakdown.budgetReadiness],
+                                  ['Growth Stage Fit', lead.scoreBreakdown.growthStageFit],
+                                ] as [string, number][]).map(([label, val]) => (
+                                  <div key={label}>
+                                    <p className="text-[10px] text-[#9CA3AF] mb-1">{label}</p>
+                                    <ScoreBar value={val} />
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                            <div className="h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />
+                            {/* Why they need us */}
+                            <div>
+                              <p className="text-[10px] font-bold text-[#6B7280] uppercase tracking-widest mb-1">Why They Need CloutKart</p>
+                              <p className="text-[#D1D5DB] text-sm leading-relaxed">{lead.whyTheyNeedUs}</p>
+                            </div>
+                            <div>
+                              <p className="text-[10px] font-bold text-[#6B7280] uppercase tracking-widest mb-1">Score Rationale</p>
+                              <p className="text-[#9CA3AF] text-xs leading-relaxed italic">{lead.scoreRationale}</p>
+                            </div>
+                            <div className="h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />
+                            <div className="grid sm:grid-cols-2 gap-4">
+                              <div>
+                                <p className="text-[10px] font-bold text-[#6B7280] uppercase tracking-widest mb-1">Target Profile</p>
+                                <p className="text-[#D1D5DB] text-xs leading-relaxed">{lead.targetProfile}</p>
+                              </div>
+                              {lead.whereToFindThem && (
+                                <div>
+                                  <p className="text-[10px] font-bold text-[#6B7280] uppercase tracking-widest mb-1">Where to Find Them</p>
+                                  <p className="text-[#D1D5DB] text-xs leading-relaxed">{lead.whereToFindThem}</p>
+                                </div>
+                              )}
+                            </div>
+                            {lead.outreachAngle && (
+                              <div className="rounded-xl px-4 py-3 flex items-start gap-2" style={{ background: 'rgba(99,102,241,0.06)', border: '1px solid rgba(99,102,241,0.12)' }}>
+                                <Send size={12} className="text-[#818CF8] mt-0.5 flex-shrink-0" />
+                                <div>
+                                  <p className="text-[10px] font-bold text-[#818CF8] uppercase tracking-widest mb-0.5">Outreach Angle</p>
+                                  <p className="text-[#C4C4E0] text-xs leading-relaxed">{lead.outreachAngle}</p>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* ── Score a Brand ──────────────────────────────────────── */}
+            <div className="glass-card rounded-2xl overflow-hidden" style={{ border: '1px solid rgba(168,85,247,0.15)' }}>
+              <div className="px-6 py-4 border-b flex items-center gap-2" style={{ borderColor: 'rgba(168,85,247,0.1)' }}>
+                <Sparkles size={15} className="text-[#C084FC]" />
+                <h3 className="font-heading font-semibold text-white text-base">Score a Brand</h3>
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full ml-auto" style={{ background: 'rgba(168,85,247,0.1)', border: '1px solid rgba(168,85,247,0.2)', color: '#C084FC' }}>Groq AI · PDL if URL provided</span>
+              </div>
+              <div className="p-6 space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-bold text-[#6B7280] uppercase tracking-widest mb-1.5">Brand Name <span className="text-red-400">*</span></label>
+                    <input value={scoreForm.brandName} onChange={e => setScoreForm(f => ({ ...f, brandName: e.target.value }))}
+                      placeholder="e.g. Minimalist, Mamaearth"
+                      className="w-full rounded-xl px-3 py-2.5 text-sm text-white placeholder-[#6B7280] bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(168,85,247,0.5)] focus:outline-none" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-[#6B7280] uppercase tracking-widest mb-1.5">Website / Instagram URL</label>
+                    <input value={scoreForm.brandUrl} onChange={e => setScoreForm(f => ({ ...f, brandUrl: e.target.value }))}
+                      placeholder="https://brand.com"
+                      className="w-full rounded-xl px-3 py-2.5 text-sm text-white placeholder-[#6B7280] bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(168,85,247,0.5)] focus:outline-none" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-[#6B7280] uppercase tracking-widest mb-1.5">Niche</label>
+                    <input value={scoreForm.niche} onChange={e => setScoreForm(f => ({ ...f, niche: e.target.value }))}
+                      placeholder="e.g. Skincare"
+                      className="w-full rounded-xl px-3 py-2.5 text-sm text-white placeholder-[#6B7280] bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(168,85,247,0.5)] focus:outline-none" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-[#6B7280] uppercase tracking-widest mb-1.5">Outreach Platform</label>
+                    <select value={scoreForm.platform} onChange={e => setScoreForm(f => ({ ...f, platform: e.target.value }))}
+                      className="w-full rounded-xl px-3 py-2.5 text-sm text-white bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(168,85,247,0.5)] focus:outline-none" style={{ colorScheme: 'dark' }}>
+                      <option value="instagram_dm">Instagram DM</option>
+                      <option value="whatsapp">WhatsApp</option>
+                      <option value="email">Email</option>
+                      <option value="linkedin">LinkedIn</option>
+                    </select>
+                  </div>
+                </div>
+
+                <button onClick={scoreBrand} disabled={scoring || !scoreForm.brandName.trim()}
+                  className="flex items-center gap-2 px-6 py-3 rounded-2xl text-sm font-semibold transition-all disabled:opacity-50"
+                  style={{ background: 'linear-gradient(135deg,rgba(168,85,247,0.8),rgba(99,102,241,0.8))', color: '#fff' }}>
+                  {scoring ? <><Loader size={14} className="animate-spin" /> Scoring…</> : <><Sparkles size={14} /> Score This Brand</>}
+                </button>
+
+                {scoreError && (
+                  <div className="flex items-center gap-2 rounded-xl px-4 py-3" style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)' }}>
+                    <AlertCircle size={14} className="text-red-400 flex-shrink-0" />
+                    <span className="text-red-300 text-xs">{scoreError}</span>
+                  </div>
+                )}
+
+                {scoreResult && (() => {
+                  const sr = scoreResult;
+                  const scoreColor = sr.compositeScore >= 8 ? '#10B981' : sr.compositeScore >= 5 ? '#F59E0B' : '#F87171';
+                  const outreachId = `outreach-${sr.name}`;
+                  return (
+                    <div className="rounded-2xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(168,85,247,0.15)' }}>
+                      <div className="px-5 py-4 flex items-start justify-between gap-4 border-b" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
+                        <div>
+                          <p className="text-white font-heading font-bold text-base">{sr.name}</p>
+                          <p className="text-[#9CA3AF] text-xs mt-0.5">Brand fit analysis</p>
+                        </div>
+                        <div className="flex items-center gap-3 flex-shrink-0">
+                          <div className="text-right">
+                            <p className="font-mono font-bold text-2xl leading-none" style={{ color: scoreColor }}>{sr.compositeScore}</p>
+                            <p className="text-[10px] text-[#6B7280] mt-0.5">/ 10</p>
+                          </div>
+                          <button onClick={() => openAddLeadFromResult(sr)}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold"
+                            style={{ background: 'rgba(168,85,247,0.1)', border: '1px solid rgba(168,85,247,0.25)', color: '#C084FC' }}>
+                            <Plus size={11} /> Save
+                          </button>
+                        </div>
+                      </div>
+                      <div className="px-5 py-4 space-y-4">
+                        <div>
+                          <p className="text-[10px] font-bold text-[#6B7280] uppercase tracking-widest mb-2">Score Breakdown</p>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            {([
+                              ['Creative Volume Need', sr.scoreBreakdown.creativeVolumeNeed],
+                              ['Capacity Gap', sr.scoreBreakdown.capacityGap],
+                              ['Budget Readiness', sr.scoreBreakdown.budgetReadiness],
+                              ['Growth Stage Fit', sr.scoreBreakdown.growthStageFit],
+                            ] as [string, number][]).map(([label, val]) => (
+                              <div key={label}>
+                                <p className="text-[10px] text-[#9CA3AF] mb-1">{label}</p>
+                                <ScoreBar value={val} />
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />
+                        <div>
+                          <p className="text-[10px] font-bold text-[#6B7280] uppercase tracking-widest mb-1">Why They Need CloutKart</p>
+                          <p className="text-[#D1D5DB] text-sm leading-relaxed">{sr.whyTheyNeedUs}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-bold text-[#6B7280] uppercase tracking-widest mb-1">Score Rationale</p>
+                          <p className="text-[#9CA3AF] text-xs leading-relaxed italic">{sr.scoreRationale}</p>
+                        </div>
+                        <div className="h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />
+                        <div className="grid sm:grid-cols-2 gap-4">
+                          {sr.greenFlags && sr.greenFlags.length > 0 && (
+                            <div>
+                              <p className="text-[10px] font-bold text-[#10B981] uppercase tracking-widest mb-2">Green Flags</p>
+                              <div className="space-y-1">
+                                {sr.greenFlags.map((f, i) => (
+                                  <div key={i} className="flex items-start gap-1.5">
+                                    <CheckCircle size={11} className="text-[#10B981] mt-0.5 flex-shrink-0" />
+                                    <p className="text-[#D1D5DB] text-xs">{f}</p>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {sr.redFlags && sr.redFlags.length > 0 && (
+                            <div>
+                              <p className="text-[10px] font-bold text-[#F87171] uppercase tracking-widest mb-2">Red Flags</p>
+                              <div className="space-y-1">
+                                {sr.redFlags.map((f, i) => (
+                                  <div key={i} className="flex items-start gap-1.5">
+                                    <AlertCircle size={11} className="text-[#F87171] mt-0.5 flex-shrink-0" />
+                                    <p className="text-[#D1D5DB] text-xs">{f}</p>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                        {sr.outreachMessage && (
+                          <div className="rounded-xl p-4 space-y-2" style={{ background: 'rgba(168,85,247,0.06)', border: '1px solid rgba(168,85,247,0.15)' }}>
+                            <div className="flex items-center justify-between">
+                              <p className="text-[10px] font-bold text-[#C084FC] uppercase tracking-widest">Suggested Outreach Message</p>
+                              <button onClick={() => copyText(sr.outreachMessage!, outreachId)}
+                                className="flex items-center gap-1 text-[10px] font-semibold px-2 py-1 rounded-lg transition-all"
+                                style={{ background: copiedId === outreachId ? 'rgba(16,185,129,0.1)' : 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: copiedId === outreachId ? '#10B981' : '#9CA3AF' }}>
+                                <Copy size={10} />
+                                {copiedId === outreachId ? 'Copied!' : 'Copy'}
+                              </button>
+                            </div>
+                            <p className="text-[#D1D5DB] text-sm leading-relaxed">{sr.outreachMessage}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            </div>
+
+            {/* ── Lead Tracker ───────────────────────────────────────── */}
+            <div className="glass-card rounded-2xl overflow-hidden" style={{ border: '1px solid rgba(16,185,129,0.12)' }}>
+              <div className="px-6 py-4 border-b flex items-center gap-2" style={{ borderColor: 'rgba(16,185,129,0.1)' }}>
+                <TrendingUp size={15} className="text-[#10B981]" />
+                <h3 className="font-heading font-semibold text-white text-base">Lead Tracker</h3>
+                <div className="ml-auto flex items-center gap-2">
+                  <button onClick={loadLeads} className="flex items-center gap-1.5 text-xs text-[#9CA3AF] hover:text-white transition-colors"><RefreshCw size={12} /></button>
+                  {leads.length > 0 && (
+                    <button onClick={exportLeadsCSV}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all"
+                      style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', color: '#9CA3AF' }}>
+                      <ArrowRight size={11} style={{ transform: 'rotate(90deg)' }} /> Export CSV
+                    </button>
+                  )}
+                  <button onClick={() => { setAddLeadForm({ ...defaultAddLeadForm }); setShowAddLead(true); }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold"
+                    style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)', color: '#10B981' }}>
+                    <Plus size={11} /> Add Lead
+                  </button>
+                </div>
+              </div>
+              {loadingLeads
+                ? <div className="flex items-center justify-center p-10"><Loader size={18} className="animate-spin text-[#10B981]" /></div>
+                : leads.length === 0
+                  ? <div className="p-10 text-center">
+                      <Target size={22} className="text-[#6B7280] mx-auto mb-2" />
+                      <p className="text-[#6B7280] text-sm">No leads saved yet.</p>
+                      <p className="text-[#4B5563] text-xs mt-1">Use Discover or Score above to find your first prospects.</p>
+                    </div>
+                  : <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead>
+                          <tr>
+                            {['Brand', 'Niche', 'Platform', 'Score', 'Status', 'Notes', 'Contacts', 'Date', ''].map(h => (
+                              <th key={h} className="text-left text-[10px] font-bold text-[#6B7280] uppercase tracking-widest px-4 py-3">{h}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {leads.map(lead => {
+                            const sc = leadStatusColors[lead.status] ?? leadStatusColors.prospect;
+                            const scoreColor = lead.score !== null ? (lead.score >= 8 ? '#10B981' : lead.score >= 5 ? '#F59E0B' : '#F87171') : '#6B7280';
+                            return (
+                              <tr key={lead.id}>
+                                <td className="px-4 py-3 text-sm text-white font-medium border-t border-white/[0.04]">{lead.brand_name}</td>
+                                <td className="px-4 py-3 text-sm text-[#9CA3AF] border-t border-white/[0.04]">{lead.niche || '—'}</td>
+                                <td className="px-4 py-3 text-sm text-[#9CA3AF] border-t border-white/[0.04] capitalize">{lead.platform?.replace('_', ' ') || '—'}</td>
+                                <td className="px-4 py-3 border-t border-white/[0.04]">
+                                  {lead.score !== null
+                                    ? <span className="font-mono text-sm font-bold" style={{ color: scoreColor }}>{lead.score}</span>
+                                    : <span className="text-[#6B7280] text-sm">—</span>}
+                                </td>
+                                <td className="px-4 py-3 border-t border-white/[0.04]">
+                                  <div className="relative group">
+                                    <button className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold"
+                                      style={{ background: sc.bg, border: `1px solid ${sc.border}`, color: sc.text }}>
+                                      {sc.label} <ChevronDown size={9} />
+                                    </button>
+                                    <div className="absolute top-full left-0 mt-1 z-10 rounded-xl p-1 min-w-[120px] hidden group-hover:block shadow-xl"
+                                      style={{ background: 'rgba(12,12,12,0.98)', border: '1px solid rgba(255,255,255,0.1)' }}>
+                                      {Object.entries(leadStatusColors).map(([status, colors]) => (
+                                        <button key={status} onClick={() => updateLeadStatus(lead.id, status)}
+                                          className="w-full text-left px-3 py-2 text-xs rounded-lg transition-colors"
+                                          style={{ color: colors.text }}
+                                          onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
+                                          onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                                          {colors.label}
+                                        </button>
+                                      ))}
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="px-4 py-3 border-t border-white/[0.04] min-w-[180px]">
+                                  <input
+                                    defaultValue={lead.notes ?? ''}
+                                    onBlur={e => updateLeadNotes(lead.id, e.target.value)}
+                                    placeholder="Add notes…"
+                                    className="w-full bg-transparent text-sm text-[#D1D5DB] placeholder-[#4B5563] focus:outline-none" />
+                                </td>
+                                <td className="px-4 py-3 border-t border-white/[0.04]">
+                                  <button onClick={() => openContactsModal(lead)}
+                                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all"
+                                    style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)', color: '#818CF8' }}>
+                                    <Users size={11} /> View
+                                  </button>
+                                </td>
+                                <td className="px-4 py-3 text-xs text-[#6B7280] border-t border-white/[0.04]">{formatDate(lead.created_at)}</td>
+                                <td className="px-4 py-3 border-t border-white/[0.04]">
+                                  <button onClick={() => deleteLead(lead.id)} className="w-7 h-7 rounded-lg flex items-center justify-center opacity-40 hover:opacity-100 transition-opacity"
+                                    style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.15)' }}>
+                                    <Trash2 size={12} className="text-red-400" />
+                                  </button>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+              }
+            </div>
+
+            {/* ── Add Lead Modal ─────────────────────────────────────── */}
+            {showAddLead && createPortal(
+              <div className="fixed inset-0 z-[200] flex items-center justify-center px-4" onClick={() => setShowAddLead(false)}>
+                <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+                <div className="relative w-full max-w-md rounded-3xl p-8 max-h-[92vh] overflow-y-auto"
+                  style={{ background: 'rgba(12,12,12,0.98)', border: '1px solid rgba(16,185,129,0.2)' }}
+                  onClick={e => e.stopPropagation()}>
+                  <button onClick={() => setShowAddLead(false)} className="absolute top-5 right-5 w-8 h-8 rounded-lg flex items-center justify-center text-[#6B7280] hover:text-white"
+                    style={{ border: '1px solid rgba(255,255,255,0.08)' }}><X size={14} /></button>
+                  <h3 className="font-heading font-bold text-white text-xl mb-6">Save Lead</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-[10px] font-bold text-[#9CA3AF] uppercase tracking-widest mb-1.5">Brand Name <span className="text-red-400">*</span></label>
+                      <input value={addLeadForm.brand_name} onChange={e => setAddLeadForm(f => ({ ...f, brand_name: e.target.value }))}
+                        placeholder="Brand name"
+                        className="w-full rounded-xl px-4 py-3 text-sm text-white placeholder-[#6B7280] bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(16,185,129,0.5)] focus:outline-none" />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[10px] font-bold text-[#9CA3AF] uppercase tracking-widest mb-1.5">Niche</label>
+                        <input value={addLeadForm.niche} onChange={e => setAddLeadForm(f => ({ ...f, niche: e.target.value }))}
+                          placeholder="e.g. Skincare"
+                          className="w-full rounded-xl px-3 py-2.5 text-sm text-white placeholder-[#6B7280] bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(16,185,129,0.5)] focus:outline-none" />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-[#9CA3AF] uppercase tracking-widest mb-1.5">Score</label>
+                        <input type="number" min="0" max="10" step="0.1" value={addLeadForm.score} onChange={e => setAddLeadForm(f => ({ ...f, score: e.target.value }))}
+                          placeholder="0–10"
+                          className="w-full rounded-xl px-3 py-2.5 text-sm text-white placeholder-[#6B7280] bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(16,185,129,0.5)] focus:outline-none" />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-[#9CA3AF] uppercase tracking-widest mb-1.5">Platform</label>
+                        <select value={addLeadForm.platform} onChange={e => setAddLeadForm(f => ({ ...f, platform: e.target.value }))}
+                          className="w-full rounded-xl px-3 py-2.5 text-sm text-white bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(16,185,129,0.5)] focus:outline-none" style={{ colorScheme: 'dark' }}>
+                          <option value="instagram_dm">Instagram DM</option>
+                          <option value="whatsapp">WhatsApp</option>
+                          <option value="email">Email</option>
+                          <option value="linkedin">LinkedIn</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-[#9CA3AF] uppercase tracking-widest mb-1.5">Status</label>
+                        <select value={addLeadForm.status} onChange={e => setAddLeadForm(f => ({ ...f, status: e.target.value }))}
+                          className="w-full rounded-xl px-3 py-2.5 text-sm text-white bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(16,185,129,0.5)] focus:outline-none" style={{ colorScheme: 'dark' }}>
+                          {Object.entries(leadStatusColors).map(([s, c]) => <option key={s} value={s}>{c.label}</option>)}
+                        </select>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-[#9CA3AF] uppercase tracking-widest mb-1.5">Contact Info</label>
+                      <input value={addLeadForm.contact_info} onChange={e => setAddLeadForm(f => ({ ...f, contact_info: e.target.value }))}
+                        placeholder="@handle, email, or phone"
+                        className="w-full rounded-xl px-4 py-3 text-sm text-white placeholder-[#6B7280] bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(16,185,129,0.5)] focus:outline-none" />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-[#9CA3AF] uppercase tracking-widest mb-1.5">Outreach Used</label>
+                      <textarea value={addLeadForm.outreach_used} onChange={e => setAddLeadForm(f => ({ ...f, outreach_used: e.target.value }))}
+                        rows={3} placeholder="Paste the message you sent (or plan to send)…"
+                        className="w-full resize-none rounded-xl px-4 py-3 text-sm text-white placeholder-[#6B7280] bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(16,185,129,0.5)] focus:outline-none" />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-[#9CA3AF] uppercase tracking-widest mb-1.5">Notes</label>
+                      <textarea value={addLeadForm.notes} onChange={e => setAddLeadForm(f => ({ ...f, notes: e.target.value }))}
+                        rows={2} placeholder="Any extra context…"
+                        className="w-full resize-none rounded-xl px-4 py-3 text-sm text-white placeholder-[#6B7280] bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(16,185,129,0.5)] focus:outline-none" />
+                    </div>
+                    <div className="flex gap-3 pt-2">
+                      <button onClick={saveLead} disabled={savingLead || !addLeadForm.brand_name.trim()}
+                        className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-semibold disabled:opacity-50 transition-all"
+                        style={{ background: 'linear-gradient(135deg,rgba(16,185,129,0.8),rgba(5,150,105,0.8))', color: '#fff' }}>
+                        {savingLead ? <Loader size={14} className="animate-spin" /> : <CheckCircle size={14} />}
+                        Save Lead
+                      </button>
+                      <button onClick={() => setShowAddLead(false)}
+                        className="px-5 py-3 rounded-2xl text-sm font-medium text-[#9CA3AF] hover:text-white transition-colors"
+                        style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>,
+              document.body
+            )}
+
+            {/* ── Contacts Modal ────────────────────────────────────────── */}
+            {contactsLead && createPortal(
+              <div className="fixed inset-0 z-[200] flex items-center justify-center px-4" onClick={() => setContactsLead(null)}>
+                <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+                <div className="relative w-full max-w-lg rounded-3xl overflow-hidden max-h-[90vh] flex flex-col"
+                  style={{ background: 'rgba(12,8,24,0.98)', border: '1px solid rgba(99,102,241,0.25)' }}
+                  onClick={e => e.stopPropagation()}>
+
+                  {/* Header */}
+                  <div className="sticky top-0 px-6 py-4 flex items-center justify-between border-b z-10"
+                    style={{ borderColor: 'rgba(99,102,241,0.15)', background: 'rgba(12,8,24,0.98)' }}>
+                    <div>
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <Users size={14} className="text-[#818CF8]" />
+                        <h3 className="font-heading font-bold text-white text-base">Decision Makers</h3>
+                      </div>
+                      <p className="text-[#9CA3AF] text-xs">{contactsLead.brand_name}</p>
+                    </div>
+                    <div className="flex items-center gap-2 flex-wrap justify-end">
+                      <div className="flex items-center gap-1.5 rounded-xl overflow-hidden" style={{ border: '1px solid rgba(99,102,241,0.25)', background: 'rgba(99,102,241,0.06)' }}>
+                        <input
+                          value={hunterDomain}
+                          onChange={e => setHunterDomain(e.target.value)}
+                          onKeyDown={e => { if (e.key === 'Enter') fetchContactsFromHunter(); }}
+                          placeholder="brand.com"
+                          className="bg-transparent text-xs text-white placeholder-[#6B7280] focus:outline-none px-3 py-1.5 w-28"
+                        />
+                        <button onClick={fetchContactsFromHunter} disabled={fetchingContacts || !hunterDomain.trim()}
+                          className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold disabled:opacity-40 transition-all border-l"
+                          style={{ borderColor: 'rgba(99,102,241,0.25)', color: '#818CF8' }}>
+                          {fetchingContacts ? <Loader size={11} className="animate-spin" /> : <RefreshCw size={11} />}
+                          Hunter
+                        </button>
+                      </div>
+                      <button onClick={() => { setShowAddContact(s => !s); setContactForm({ ...defaultContactForm }); }}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold"
+                        style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)', color: '#10B981' }}>
+                        <Plus size={11} /> Add
+                      </button>
+                      <button onClick={() => setContactsLead(null)}
+                        className="w-8 h-8 rounded-lg flex items-center justify-center text-[#6B7280] hover:text-white"
+                        style={{ border: '1px solid rgba(255,255,255,0.08)' }}>
+                        <X size={14} />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                    {/* Add contact inline form */}
+                    {showAddContact && (
+                      <div className="rounded-2xl p-5 space-y-3" style={{ background: 'rgba(16,185,129,0.04)', border: '1px solid rgba(16,185,129,0.2)' }}>
+                        <p className="text-[10px] font-bold text-[#10B981] uppercase tracking-widest">New Contact</p>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="col-span-2">
+                            <input value={contactForm.name} onChange={e => setContactForm(f => ({ ...f, name: e.target.value }))}
+                              placeholder="Full name *"
+                              className="w-full rounded-xl px-3 py-2.5 text-sm text-white placeholder-[#6B7280] bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(16,185,129,0.5)] focus:outline-none" />
+                          </div>
+                          <input value={contactForm.role} onChange={e => setContactForm(f => ({ ...f, role: e.target.value }))}
+                            placeholder="Role (e.g. Founder, CMO)"
+                            className="w-full rounded-xl px-3 py-2.5 text-sm text-white placeholder-[#6B7280] bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(16,185,129,0.5)] focus:outline-none" />
+                          <input value={contactForm.email} onChange={e => setContactForm(f => ({ ...f, email: e.target.value }))}
+                            placeholder="Email"
+                            className="w-full rounded-xl px-3 py-2.5 text-sm text-white placeholder-[#6B7280] bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(16,185,129,0.5)] focus:outline-none" />
+                          <input value={contactForm.phone} onChange={e => setContactForm(f => ({ ...f, phone: e.target.value }))}
+                            placeholder="Phone / WhatsApp"
+                            className="w-full rounded-xl px-3 py-2.5 text-sm text-white placeholder-[#6B7280] bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(16,185,129,0.5)] focus:outline-none" />
+                          <input value={contactForm.linkedin_url} onChange={e => setContactForm(f => ({ ...f, linkedin_url: e.target.value }))}
+                            placeholder="LinkedIn URL"
+                            className="w-full rounded-xl px-3 py-2.5 text-sm text-white placeholder-[#6B7280] bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(16,185,129,0.5)] focus:outline-none" />
+                          <input value={contactForm.instagram_handle} onChange={e => setContactForm(f => ({ ...f, instagram_handle: e.target.value }))}
+                            placeholder="@instagram"
+                            className="w-full rounded-xl px-3 py-2.5 text-sm text-white placeholder-[#6B7280] bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(16,185,129,0.5)] focus:outline-none" />
+                          <div className="col-span-2">
+                            <input value={contactForm.notes} onChange={e => setContactForm(f => ({ ...f, notes: e.target.value }))}
+                              placeholder="Notes (optional)"
+                              className="w-full rounded-xl px-3 py-2.5 text-sm text-white placeholder-[#6B7280] bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(16,185,129,0.5)] focus:outline-none" />
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <button onClick={saveContact} disabled={savingContact || !contactForm.name.trim()}
+                            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold disabled:opacity-50"
+                            style={{ background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.3)', color: '#10B981' }}>
+                            {savingContact ? <Loader size={11} className="animate-spin" /> : <CheckCircle size={11} />}
+                            Save Contact
+                          </button>
+                          <button onClick={() => setShowAddContact(false)}
+                            className="px-4 py-2 rounded-xl text-xs font-medium text-[#6B7280] hover:text-white transition-colors"
+                            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Contact list */}
+                    {loadingContacts
+                      ? <div className="flex items-center justify-center py-10"><Loader size={18} className="animate-spin text-[#818CF8]" /></div>
+                      : leadContacts.length === 0
+                        ? <div className="py-10 text-center">
+                            <Users size={22} className="text-[#4B5563] mx-auto mb-2" />
+                            <p className="text-[#6B7280] text-sm">No contacts yet.</p>
+                            <p className="text-[#4B5563] text-xs mt-1">Enter a domain and click Hunter to auto-fetch, or use "+ Add" to add manually.</p>
+                          </div>
+                        : leadContacts.map(contact => (
+                            <div key={contact.id} className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 text-sm font-bold"
+                                    style={{ background: 'linear-gradient(135deg,rgba(99,102,241,0.25),rgba(168,85,247,0.25))', color: '#C4B5FD' }}>
+                                    {contact.name[0].toUpperCase()}
+                                  </div>
+                                  <div>
+                                    <p className="text-white font-semibold text-sm">{contact.name}</p>
+                                    {contact.role && <p className="text-[#818CF8] text-xs">{contact.role}</p>}
+                                  </div>
+                                </div>
+                                <button onClick={() => deleteContact(contact.id)} disabled={deletingContactId === contact.id}
+                                  className="w-7 h-7 rounded-lg flex items-center justify-center opacity-30 hover:opacity-100 transition-opacity flex-shrink-0"
+                                  style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.15)' }}>
+                                  {deletingContactId === contact.id ? <Loader size={10} className="animate-spin text-red-400" /> : <Trash2 size={10} className="text-red-400" />}
+                                </button>
+                              </div>
+                              <div className="mt-3 space-y-1.5 pl-12">
+                                {contact.email && (
+                                  <div className="flex items-center gap-2 group">
+                                    <span className="text-[10px] font-bold text-[#6B7280] uppercase tracking-widest w-16 flex-shrink-0">Email</span>
+                                    <span className="text-[#D1D5DB] text-xs flex-1 truncate">{contact.email}</span>
+                                    <button onClick={() => copyText(contact.email!, `email-${contact.id}`)}
+                                      className="opacity-0 group-hover:opacity-100 transition-opacity"
+                                      style={{ color: copiedId === `email-${contact.id}` ? '#10B981' : '#6B7280' }}>
+                                      <Copy size={10} />
+                                    </button>
+                                  </div>
+                                )}
+                                {contact.phone && (
+                                  <div className="flex items-center gap-2 group">
+                                    <span className="text-[10px] font-bold text-[#6B7280] uppercase tracking-widest w-16 flex-shrink-0">Phone</span>
+                                    <span className="text-[#D1D5DB] text-xs flex-1">{contact.phone}</span>
+                                    <button onClick={() => copyText(contact.phone!, `phone-${contact.id}`)}
+                                      className="opacity-0 group-hover:opacity-100 transition-opacity"
+                                      style={{ color: copiedId === `phone-${contact.id}` ? '#10B981' : '#6B7280' }}>
+                                      <Copy size={10} />
+                                    </button>
+                                  </div>
+                                )}
+                                {contact.linkedin_url && (
+                                  <div className="flex items-center gap-2 group">
+                                    <span className="text-[10px] font-bold text-[#6B7280] uppercase tracking-widest w-16 flex-shrink-0">LinkedIn</span>
+                                    <a href={contact.linkedin_url} target="_blank" rel="noopener noreferrer"
+                                      className="text-[#818CF8] text-xs hover:underline truncate flex-1">{contact.linkedin_url.replace('https://linkedin.com/in/', '')}</a>
+                                    <button onClick={() => copyText(contact.linkedin_url!, `li-${contact.id}`)}
+                                      className="opacity-0 group-hover:opacity-100 transition-opacity"
+                                      style={{ color: copiedId === `li-${contact.id}` ? '#10B981' : '#6B7280' }}>
+                                      <Copy size={10} />
+                                    </button>
+                                  </div>
+                                )}
+                                {contact.instagram_handle && (
+                                  <div className="flex items-center gap-2 group">
+                                    <span className="text-[10px] font-bold text-[#6B7280] uppercase tracking-widest w-16 flex-shrink-0">Instagram</span>
+                                    <span className="text-[#D1D5DB] text-xs flex-1">{contact.instagram_handle}</span>
+                                    <button onClick={() => copyText(contact.instagram_handle!, `ig-${contact.id}`)}
+                                      className="opacity-0 group-hover:opacity-100 transition-opacity"
+                                      style={{ color: copiedId === `ig-${contact.id}` ? '#10B981' : '#6B7280' }}>
+                                      <Copy size={10} />
+                                    </button>
+                                  </div>
+                                )}
+                                {contact.notes && (
+                                  <div className="flex items-start gap-2 mt-1">
+                                    <span className="text-[10px] font-bold text-[#6B7280] uppercase tracking-widest w-16 flex-shrink-0 mt-0.5">Notes</span>
+                                    <p className="text-[#9CA3AF] text-xs leading-relaxed">{contact.notes}</p>
+                                  </div>
+                                )}
+                                {!contact.email && !contact.phone && !contact.linkedin_url && !contact.instagram_handle && (
+                                  <p className="text-[#4B5563] text-xs italic">No contact details added.</p>
+                                )}
+                              </div>
+                            </div>
+                          ))
+                    }
+                  </div>
+                </div>
+              </div>,
+              document.body
             )}
           </div>
         )}
