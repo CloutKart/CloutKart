@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Image, CreditCard, Settings, LogOut, ArrowRight,
   Download, Clock, CheckCircle, Loader, ChevronRight, AlertCircle,
   Sparkles, Images, IndianRupee, MessageCircle, ExternalLink, Send,
-  Star, Zap, MessageSquare, Lock, RefreshCw, Upload, X
+  Star, Zap, MessageSquare, Lock, RefreshCw, Upload, X, ShoppingCart
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -309,6 +309,22 @@ function nameColor(hex: string): string {
 }
 
 // ─── Vision Panel ────────────────────────────────────────────────────────────
+function KartLoader() {
+  return (
+    <span className="flex items-center gap-2.5">
+      <span className="flex items-center gap-1.5">
+        <span className="flex flex-col gap-[3px] items-end">
+          <span className="h-px w-2.5 bg-white/70 rounded animate-streak-1" />
+          <span className="h-px w-3.5 bg-white/70 rounded animate-streak-2" />
+          <span className="h-px w-2 bg-white/70 rounded animate-streak-3" />
+        </span>
+        <ShoppingCart size={15} className="animate-kart-roll" />
+      </span>
+      Generating vision…
+    </span>
+  );
+}
+
 function Typewriter({ text, speed = 20, onDone }: { text: string; speed?: number; onDone?: () => void }) {
   const [n, setN] = useState(0);
   const firedRef = useRef(false);
@@ -1306,7 +1322,7 @@ export default function Dashboard() {
                     <div className="flex flex-col sm:flex-row gap-3">
                       <button type="submit" disabled={generatingVision} className="btn-primary text-sm disabled:opacity-50 disabled:cursor-not-allowed">
                         {generatingVision
-                          ? <><Loader size={14} className="animate-spin" />Generating vision…</>
+                          ? <KartLoader />
                           : <><Sparkles size={14} />{vision ? 'Regenerate Vision' : 'See Our Vision'}</>}
                       </button>
                       <button type="button" onClick={() => { setShowForm(false); setVision(null); setVisionError(''); setRefImages([]); }} className="btn-secondary text-sm">Cancel</button>

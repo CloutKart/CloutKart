@@ -424,3 +424,20 @@ img { max-width: 100%; height: auto; }
   opacity: 0;
   animation: deliverable-slide 0.28s ease forwards;
 }
+
+@keyframes kart-roll {
+  0%   { transform: rotate(-12deg) translateY(0); }
+  50%  { transform: rotate(-12deg) translateY(-3px); }
+  100% { transform: rotate(-12deg) translateY(0); }
+}
+.animate-kart-roll {
+  animation: kart-roll 0.38s ease-in-out infinite;
+}
+
+@keyframes speed-streak {
+  0%, 100% { opacity: 0.5; transform: scaleX(0.7); }
+  50%       { opacity: 1;   transform: scaleX(1.2); }
+}
+.animate-streak-1 { animation: speed-streak 0.38s ease-in-out infinite; transform-origin: right; }
+.animate-streak-2 { animation: speed-streak 0.38s ease-in-out infinite 0.1s; transform-origin: right; }
+.animate-streak-3 { animation: speed-streak 0.38s ease-in-out infinite 0.06s; transform-origin: right; }
