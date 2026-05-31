@@ -1,5 +1,4 @@
 import { useEffect, useRef } from 'react';
-import { MessageSquare, Layers, Repeat } from 'lucide-react';
 
 export default function MessageFirst() {
   const sectionRef = useRef<HTMLElement>(null);
@@ -21,79 +20,89 @@ export default function MessageFirst() {
     return () => observer.disconnect();
   }, []);
 
-  const pillars = [
-    {
-      icon: MessageSquare,
-      title: 'The Message-Led Flow',
-      desc: "You're not trying to find a winning ad. You're trying to find the winning message. The ad is just the vehicle.",
-    },
-    {
-      icon: Layers,
-      title: 'One Message, Infinite Formats',
-      desc: 'Image ad. Video ad. Short-form. Long-form. Landing page. Same message, different container.',
-    },
-    {
-      icon: Repeat,
-      title: 'Foundation That Scales',
-      desc: 'Build once. Deploy everywhere. The message powers your store, your ads, your content — all of it.',
-    },
-  ];
-
   return (
-    <section ref={sectionRef} className="relative py-20 md:py-36 [overflow-x:clip]" id="message" style={{ background: 'transparent' }}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="text-center mb-14 md:mb-24">
-          <div className="reveal eyebrow-pill mb-8">
+    <section ref={sectionRef} className="relative py-24 md:py-40 [overflow-x:clip]" id="message" style={{ background: 'transparent' }}>
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+
+        {/* Big typographic statement */}
+        <div className="reveal mb-16 md:mb-20">
+          <div className="eyebrow-pill mb-10">
             <span className="w-1 h-1 rounded-full bg-brand-purple" />
             The Philosophy
           </div>
-
-          <div className="reveal delay-100 space-y-1 sm:space-y-2">
-            <h2 className="font-heading font-bold tracking-tight leading-[1.03]" style={{ fontSize: 'clamp(2.2rem, 6vw, 6.5rem)' }}>
-              <span className="text-white">It's Not About</span>
-            </h2>
-            <h2 className="font-heading font-bold tracking-tight leading-[1.03]" style={{ fontSize: 'clamp(2.2rem, 6vw, 6.5rem)' }}>
-              <span className="text-white">The Ad.</span>
-            </h2>
-            <h2 className="font-heading font-bold tracking-tight leading-[1.03]" style={{ fontSize: 'clamp(2.2rem, 6vw, 6.5rem)' }}>
-              <span className="text-[#9CA3AF]">It's About</span>
-            </h2>
-            <h2 className="font-heading font-bold tracking-tight leading-[1.03]" style={{ fontSize: 'clamp(2.2rem, 6vw, 6.5rem)' }}>
-              <span className="gradient-text-animated">The Message.</span>
-            </h2>
+          <div className="space-y-0">
+            {[
+              { text: "It's not about the ad.", dim: false },
+              { text: "It's about the message.", dim: false, gradient: true },
+              { text: "The ad is just the vehicle.", dim: true },
+            ].map((line, i) => (
+              <div
+                key={i}
+                className={`reveal font-heading font-bold leading-[1.04] tracking-tight block`}
+                style={{
+                  fontSize: 'clamp(2.4rem, 6.5vw, 6rem)',
+                  transitionDelay: `${i * 100}ms`,
+                  color: line.dim ? 'rgba(255,255,255,0.2)' : '#ffffff',
+                }}
+              >
+                {line.gradient ? (
+                  <span className="gradient-text-animated">{line.text}</span>
+                ) : (
+                  line.text
+                )}
+              </div>
+            ))}
           </div>
         </div>
 
-        {/* Quote card */}
-        <div className="reveal delay-200 mb-8 md:mb-14 gradient-border-wrap">
-          <div className="glass-card rounded-[20px] p-8 sm:p-12 lg:p-16 relative" style={{ borderRadius: '20px', background: 'rgba(8,8,8,0.95)' }}>
-            <div className="relative z-10 text-center">
-<p className="text-xl sm:text-2xl lg:text-[2rem] font-semibold text-[#F3F4F6] leading-[1.45] max-w-4xl mx-auto italic">
+        {/* Quote */}
+        <div className="reveal delay-300 mb-16 md:mb-20 gradient-border-wrap">
+          <div
+            className="glass-card rounded-[20px] p-8 sm:p-12"
+            style={{ borderRadius: '20px', background: 'rgba(8,8,8,0.95)' }}
+          >
+            <div className="relative z-10">
+              <p className="text-xl sm:text-2xl lg:text-[1.85rem] font-semibold text-[#F3F4F6] leading-[1.5] max-w-3xl italic">
                 "A winning message can be translated into{' '}
                 <em className="not-italic gradient-text">anything.</em>"
               </p>
-              <p className="text-sm sm:text-lg text-[#D1D5DB] mt-6 max-w-2xl mx-auto leading-relaxed">
+              <p className="text-sm sm:text-base text-white/35 mt-5 max-w-xl leading-relaxed not-italic">
                 The message is the foundation. The format is just the container. CloutKart builds the message first — everything else scales from there.
               </p>
             </div>
           </div>
         </div>
 
-        {/* Three pillars */}
-        <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-5">
-          {pillars.map((pillar, i) => (
+        {/* Three truths — no icons, pure type */}
+        <div
+          className="reveal delay-400 grid sm:grid-cols-3 gap-0"
+          style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}
+        >
+          {[
+            {
+              label: 'Message-led',
+              body: "You're not looking for a winning ad. You're looking for the winning message. The ad is just proof.",
+            },
+            {
+              label: 'One message, every format',
+              body: 'Static, video, UGC, story. Same message. Different container. Same conversion engine underneath.',
+            },
+            {
+              label: 'Foundation that scales',
+              body: 'Build the message once. Deploy it everywhere — ads, store, email, content. All from the same root.',
+            },
+          ].map((item, i) => (
             <div
-              key={pillar.title}
-              className={`reveal delay-${(i + 3) * 100} glass-card rounded-2xl p-6 sm:p-8 group`}
+              key={i}
+              className="reveal pt-8 pb-2 pr-0 sm:pr-10"
+              style={{
+                transitionDelay: `${(i + 4) * 80}ms`,
+                borderLeft: i > 0 ? '1px solid rgba(255,255,255,0.06)' : 'none',
+                paddingLeft: i > 0 ? '2.5rem' : '0',
+              }}
             >
-              <div className="relative z-10">
-                <div className="w-11 h-11 rounded-xl icon-gradient flex items-center justify-center mb-5">
-                  <pillar.icon size={19} className="text-brand-purple" />
-                </div>
-                <h3 className="text-base sm:text-lg font-semibold font-heading text-white mb-3 leading-snug">{pillar.title}</h3>
-                <p className="text-[#D1D5DB] text-sm leading-relaxed">{pillar.desc}</p>
-              </div>
+              <div className="text-white font-semibold font-heading text-base mb-2 leading-snug">{item.label}</div>
+              <p className="text-white/35 text-sm leading-relaxed">{item.body}</p>
             </div>
           ))}
         </div>

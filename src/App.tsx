@@ -6,10 +6,8 @@ import CursorGlow from './components/CursorGlow';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import MessageFirst from './components/MessageFirst';
-import About from './components/About';
 import Services from './components/Services';
-import Process from './components/Process';
-import ScrollStory from './components/ScrollStory';
+import Marquee from './components/Marquee';
 import PixieSection from './components/PixieSection';
 import Pricing from './components/Pricing';
 import Portfolio from './components/Portfolio';
@@ -63,12 +61,10 @@ function LandingPage({ onSignupOpen }: { onSignupOpen: () => void }) {
         <Navbar onSignupOpen={onSignupOpen} />
         <main>
           <Hero onSignupOpen={onSignupOpen} />
+          <Marquee />
           <MessageFirst />
-          <About />
-          <Services />
-          <ScrollStory />
           <PixieSection onSignupOpen={onSignupOpen} />
-          <Process />
+          <Services />
           <Pricing onSignupOpen={onSignupOpen} />
           <Portfolio />
           <FAQ />

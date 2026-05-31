@@ -1,17 +1,37 @@
 import { useEffect, useRef } from 'react';
-import { Image as ImageIcon, Video, Smartphone, Film, Package, TrendingUp, Users, Palette, MessageSquare, FlaskConical } from 'lucide-react';
+import { ArrowUpRight } from 'lucide-react';
 
 const services = [
-  { icon: ImageIcon,    title: 'Static Ads',           desc: 'Scroll-stopping static visuals engineered for conversion.' },
-  { icon: Video,        title: 'Video Ads',             desc: 'Fast, punchy, conversion-focused video content.' },
-  { icon: Users,        title: 'UGC Style',             desc: 'Authentic-feeling content that converts like organic.' },
-  { icon: Smartphone,   title: 'Story Format',          desc: 'Platform-native stories that drive engagement and sales.' },
-  { icon: Film,         title: 'Concept Packs',         desc: 'Full creative direction with multiple angles and formats.' },
-  { icon: MessageSquare, title: 'Messaging Strategy',   desc: 'The foundational docs that power every format.' },
-  { icon: Package,      title: 'Product Ads',           desc: 'Premium product showcases that make buyers act.' },
-  { icon: TrendingUp,   title: 'Performance Creative',  desc: 'Direct-response assets built for measurable ROI.' },
-  { icon: Palette,      title: 'Campaign Visuals',      desc: 'Cohesive campaign systems that build brand equity.' },
-  { icon: FlaskConical, title: 'Testing Packages',      desc: 'Rapid iteration frameworks to find what converts.' },
+  {
+    title: 'Static Ads',
+    desc: 'Feed-stopping images built around a single converting message. Every crop, every frame, every text placement is intentional.',
+    formats: 'Instagram · Facebook · LinkedIn',
+  },
+  {
+    title: 'Video Ads',
+    desc: 'Hook in 3 seconds or it gets scrolled. Fast cuts, product truth, directional close. No filler.',
+    formats: 'Reels · TikTok · YouTube',
+  },
+  {
+    title: 'UGC Style',
+    desc: 'Authentic-feeling content that converts like organic. Real product, real voice, engineered for performance.',
+    formats: 'TikTok · Instagram · Meta',
+  },
+  {
+    title: 'Story & Vertical',
+    desc: 'Platform-native formats that fill the frame and demand attention. Full-bleed, full-conversion.',
+    formats: 'Stories · Reels · Shorts',
+  },
+  {
+    title: 'Performance Packs',
+    desc: 'Multiple angles, copy variants, and hooks from the same brief. Built for testing. Optimised for scale.',
+    formats: 'All platforms',
+  },
+  {
+    title: 'Hook Writing',
+    desc: 'Six psychological triggers. One scroll-stopper per brief. Powered by Pixie — never interchangeable, always specific.',
+    formats: 'Every format',
+  },
 ];
 
 export default function Services() {
@@ -22,8 +42,8 @@ export default function Services() {
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            entry.target.querySelectorAll('.reveal, .reveal-scale').forEach((el, i) => {
-              setTimeout(() => el.classList.add('visible'), i * 70);
+            entry.target.querySelectorAll('.reveal').forEach((el, i) => {
+              setTimeout(() => el.classList.add('visible'), i * 60);
             });
           }
         });
@@ -37,34 +57,71 @@ export default function Services() {
   return (
     <section ref={sectionRef} className="relative py-20 md:py-36 [overflow-x:clip]" id="services" style={{ background: 'transparent' }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-12 md:mb-16">
-          <div className="reveal eyebrow-pill mb-7">
-            <span className="w-1 h-1 rounded-full bg-brand-purple" />
-            Every Format
+
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-14 md:mb-16">
+          <div>
+            <div className="reveal eyebrow-pill mb-7">
+              <span className="w-1 h-1 rounded-full bg-brand-purple" />
+              Every Format
+            </div>
+            <h2
+              className="reveal delay-100 font-heading font-bold leading-[1.04] tracking-tight"
+              style={{ fontSize: 'clamp(2.2rem, 5vw, 4rem)' }}
+            >
+              <span className="text-white">One message.</span>
+              <br />
+              <span className="gradient-text">Every format that converts.</span>
+            </h2>
           </div>
-          <h2 className="reveal delay-100 font-heading font-bold leading-[1.06] tracking-tight mb-3 sm:mb-4" style={{ fontSize: 'clamp(2rem, 5vw, 4.5rem)' }}>
-            Every Format.
-            <br />
-            <span className="gradient-text">One Winning Message.</span>
-          </h2>
-          <p className="reveal delay-200 text-[#D1D5DB] text-sm sm:text-lg max-w-xl mx-auto leading-relaxed">
-            We translate your core message into every format that converts — across every platform that matters.
+          <p className="reveal delay-200 text-white/35 text-sm leading-relaxed max-w-xs md:text-right">
+            We translate your core message into every format, on every platform, at every stage of the funnel.
           </p>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4">
+        {/* Service list */}
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
           {services.map((service, i) => (
             <div
               key={service.title}
-              className={`reveal-scale glass-card rounded-2xl p-4 sm:p-5 group cursor-default`}
-              style={{ animationDelay: `${Math.min(i * 70, 600)}ms` }}
+              className="reveal group flex flex-col sm:flex-row sm:items-start gap-4 sm:gap-12 py-7 transition-colors duration-300 cursor-default"
+              style={{
+                borderBottom: '1px solid rgba(255,255,255,0.06)',
+                transitionDelay: `${i * 60}ms`,
+              }}
             >
-              <div className="relative z-10">
-                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl icon-gradient flex items-center justify-center mb-3 sm:mb-3.5 transition-transform duration-300 group-hover:scale-110">
-                  <service.icon size={17} className="text-brand-purple" />
-                </div>
-                <h3 className="text-xs sm:text-[13px] font-semibold font-heading text-white mb-1.5 leading-snug">{service.title}</h3>
-                <p className="text-[11px] text-[#D1D5DB] leading-relaxed hidden sm:block">{service.desc}</p>
+              {/* Number */}
+              <div
+                className="font-mono text-[13px] font-bold flex-shrink-0 mt-0.5 transition-colors duration-300"
+                style={{ color: 'rgba(255,255,255,0.12)', minWidth: '2rem' }}
+              >
+                {String(i + 1).padStart(2, '0')}
+              </div>
+
+              {/* Title */}
+              <div className="flex-shrink-0 sm:w-44">
+                <span className="font-heading font-bold text-base sm:text-lg text-white group-hover:gradient-text transition-all duration-300 leading-tight">
+                  {service.title}
+                </span>
+              </div>
+
+              {/* Desc */}
+              <div className="flex-1">
+                <p className="text-white/45 text-sm leading-relaxed group-hover:text-white/60 transition-colors duration-300">
+                  {service.desc}
+                </p>
+              </div>
+
+              {/* Formats + arrow */}
+              <div className="flex items-center gap-3 flex-shrink-0">
+                <span className="text-[11px] font-mono text-white/20 group-hover:text-white/35 transition-colors duration-300 hidden sm:block">
+                  {service.formats}
+                </span>
+                <ArrowUpRight
+                  size={14}
+                  className="opacity-0 group-hover:opacity-40 transition-opacity duration-300 flex-shrink-0"
+                  style={{ color: '#A855F7' }}
+                />
               </div>
             </div>
           ))}
