@@ -8,6 +8,7 @@ import Hero from './components/Hero';
 import MessageFirst from './components/MessageFirst';
 import Services from './components/Services';
 import Marquee from './components/Marquee';
+import ScrollStory from './components/ScrollStory';
 import PixieSection from './components/PixieSection';
 import Pricing from './components/Pricing';
 import Portfolio from './components/Portfolio';
@@ -64,6 +65,7 @@ function LandingPage({ onSignupOpen }: { onSignupOpen: () => void }) {
           <Marquee />
           <MessageFirst />
           <PixieSection onSignupOpen={onSignupOpen} />
+          <ScrollStory />
           <Services />
           <Pricing onSignupOpen={onSignupOpen} />
           <Portfolio />
