@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, memo } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate, Link } from 'react-router-dom';
 import {
@@ -167,6 +167,55 @@ const PlanBadge = ({ plan }: { plan: string }) => {
   );
 };
 
+// ─── CustomSelect — dark-themed replacement for native <select> ──────────────
+interface SelectOption { value: string; label: string }
+const CustomSelect = memo(function CustomSelect({ value, onChange, options, placeholder }: {
+  value: string; onChange: (v: string) => void; options: SelectOption[]; placeholder?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState({ top: 0, left: 0, width: 0 });
+  const selected = options.find(o => o.value === value);
+
+  useEffect(() => {
+    if (!open) return;
+    const rect = btnRef.current?.getBoundingClientRect();
+    if (rect) setPos({ top: rect.bottom + 4, left: rect.left, width: rect.width });
+    const handler = (e: MouseEvent) => {
+      if (!btnRef.current?.contains(e.target as Node) && !menuRef.current?.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  return (
+    <>
+      <button ref={btnRef} type="button" onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center justify-between rounded-xl px-3 py-2.5 text-sm text-white bg-white/[0.05] border border-white/[0.10] focus:outline-none transition-colors"
+        style={{ borderColor: open ? 'rgba(99,102,241,0.5)' : undefined }}>
+        <span className={selected ? 'text-white' : 'text-[#6B7280]'}>{selected?.label ?? placeholder ?? 'Select…'}</span>
+        <ChevronDown size={12} className="text-[#6B7280] flex-shrink-0 transition-transform" style={{ transform: open ? 'rotate(180deg)' : 'none' }} />
+      </button>
+      {open && createPortal(
+        <div ref={menuRef} className="fixed z-[220] rounded-xl p-1 shadow-2xl overflow-y-auto"
+          style={{ top: pos.top, left: pos.left, width: pos.width, maxHeight: 220, background: 'rgba(14,12,28,0.98)', border: '1px solid rgba(99,102,241,0.2)' }}>
+          {options.map(opt => (
+            <button key={opt.value} type="button" onClick={() => { onChange(opt.value); setOpen(false); }}
+              className="w-full text-left px-3 py-2 text-sm rounded-lg transition-colors"
+              style={{ color: opt.value === value ? '#818CF8' : '#D1D5DB', background: opt.value === value ? 'rgba(99,102,241,0.12)' : 'transparent' }}
+              onMouseEnter={e => { if (opt.value !== value) (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.05)'; }}
+              onMouseLeave={e => { if (opt.value !== value) (e.currentTarget as HTMLElement).style.background = 'transparent'; }}>
+              {opt.label}
+            </button>
+          ))}
+        </div>,
+        document.body
+      )}
+    </>
+  );
+});
+
 function ScoreBar({ value, max = 10 }: { value: number; max?: number }) {
   const pct = Math.min((value / max) * 100, 100);
   const color = pct >= 80 ? '#10B981' : pct >= 50 ? '#F59E0B' : '#F87171';
@@ -180,7 +229,7 @@ function ScoreBar({ value, max = 10 }: { value: number; max?: number }) {
   );
 }
 
-function LeadStatusDropdown({ lead, onUpdate }: {
+const LeadStatusDropdown = memo(function LeadStatusDropdown({ lead, onUpdate }: {
   lead: Lead;
   onUpdate: (id: string, status: string) => void;
 }) {
@@ -226,7 +275,7 @@ function LeadStatusDropdown({ lead, onUpdate }: {
       )}
     </>
   );
-}
+});
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -1913,109 +1962,52 @@ export default function Admin() {
                   {/* Business Stage */}
                   <div>
                     <label className="block text-[10px] font-bold text-[#6B7280] uppercase tracking-widest mb-1.5">Business Stage</label>
-                    <select value={discoverForm.stage} onChange={e => setDiscoverForm(f => ({ ...f, stage: e.target.value }))}
-                      className="w-full rounded-xl px-3 py-2.5 text-sm text-white bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(99,102,241,0.5)] focus:outline-none" style={{ colorScheme: 'dark' }}>
-                      <option value="early_0_1yr">Early (0–1 yr)</option>
-                      <option value="growing_1_3yr">Growing (1–3 yr)</option>
-                      <option value="scaling_3_5yr">Scaling (3–5 yr)</option>
-                    </select>
+                    <CustomSelect value={discoverForm.stage} onChange={v => setDiscoverForm(f => ({ ...f, stage: v }))} options={[{ value: 'early_0_1yr', label: 'Early (0–1 yr)' }, { value: 'growing_1_3yr', label: 'Growing (1–3 yr)' }, { value: 'scaling_3_5yr', label: 'Scaling (3–5 yr)' }]} />
                   </div>
                   {/* IG Followers */}
                   <div>
                     <label className="block text-[10px] font-bold text-[#6B7280] uppercase tracking-widest mb-1.5">Instagram Followers</label>
-                    <select value={discoverForm.followers} onChange={e => setDiscoverForm(f => ({ ...f, followers: e.target.value }))}
-                      className="w-full rounded-xl px-3 py-2.5 text-sm text-white bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(99,102,241,0.5)] focus:outline-none" style={{ colorScheme: 'dark' }}>
-                      <option value="0_5k">0–5K</option>
-                      <option value="5k_25k">5K–25K</option>
-                      <option value="25k_100k">25K–100K</option>
-                      <option value="gt_100k">100K+</option>
-                    </select>
+                    <CustomSelect value={discoverForm.followers} onChange={v => setDiscoverForm(f => ({ ...f, followers: v }))} options={[{ value: '0_5k', label: '0–5K' }, { value: '5k_25k', label: '5K–25K' }, { value: '25k_100k', label: '25K–100K' }, { value: 'gt_100k', label: '100K+' }]} />
                   </div>
                   {/* Funding */}
                   <div>
                     <label className="block text-[10px] font-bold text-[#6B7280] uppercase tracking-widest mb-1.5">Funding Status</label>
-                    <select value={discoverForm.funding} onChange={e => setDiscoverForm(f => ({ ...f, funding: e.target.value }))}
-                      className="w-full rounded-xl px-3 py-2.5 text-sm text-white bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(99,102,241,0.5)] focus:outline-none" style={{ colorScheme: 'dark' }}>
-                      <option value="bootstrapped">Bootstrapped</option>
-                      <option value="angel">Angel-funded</option>
-                      <option value="seed">Seed</option>
-                      <option value="series_a">Series A+</option>
-                    </select>
+                    <CustomSelect value={discoverForm.funding} onChange={v => setDiscoverForm(f => ({ ...f, funding: v }))} options={[{ value: 'bootstrapped', label: 'Bootstrapped' }, { value: 'angel', label: 'Angel-funded' }, { value: 'seed', label: 'Seed' }, { value: 'series_a', label: 'Series A+' }]} />
                   </div>
                   {/* Running Ads */}
                   <div>
                     <label className="block text-[10px] font-bold text-[#6B7280] uppercase tracking-widest mb-1.5">Running Paid Ads?</label>
-                    <select value={discoverForm.runningAds} onChange={e => setDiscoverForm(f => ({ ...f, runningAds: e.target.value }))}
-                      className="w-full rounded-xl px-3 py-2.5 text-sm text-white bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(99,102,241,0.5)] focus:outline-none" style={{ colorScheme: 'dark' }}>
-                      <option value="no_ads">No (organic only)</option>
-                      <option value="just_started">Just started</option>
-                      <option value="inconsistent">Inconsistent</option>
-                      <option value="scaling">Actively scaling</option>
-                    </select>
+                    <CustomSelect value={discoverForm.runningAds} onChange={v => setDiscoverForm(f => ({ ...f, runningAds: v }))} options={[{ value: 'no_ads', label: 'No (organic only)' }, { value: 'just_started', label: 'Just started' }, { value: 'inconsistent', label: 'Inconsistent' }, { value: 'scaling', label: 'Actively scaling' }]} />
                   </div>
                   {/* Creative Setup */}
                   <div>
                     <label className="block text-[10px] font-bold text-[#6B7280] uppercase tracking-widest mb-1.5">Current Creative Setup</label>
-                    <select value={discoverForm.creativeSetup} onChange={e => setDiscoverForm(f => ({ ...f, creativeSetup: e.target.value }))}
-                      className="w-full rounded-xl px-3 py-2.5 text-sm text-white bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(99,102,241,0.5)] focus:outline-none" style={{ colorScheme: 'dark' }}>
-                      <option value="founder_diy">Founder does it themselves</option>
-                      <option value="canva">Canva / DIY</option>
-                      <option value="freelancers">Freelancers</option>
-                      <option value="small_team">Small in-house team</option>
-                    </select>
+                    <CustomSelect value={discoverForm.creativeSetup} onChange={v => setDiscoverForm(f => ({ ...f, creativeSetup: v }))} options={[{ value: 'founder_diy', label: 'Founder does it themselves' }, { value: 'canva', label: 'Canva / DIY' }, { value: 'freelancers', label: 'Freelancers' }, { value: 'small_team', label: 'Small in-house team' }]} />
                   </div>
                   {/* Pain Point */}
                   <div>
                     <label className="block text-[10px] font-bold text-[#6B7280] uppercase tracking-widest mb-1.5">Pain Point to Target</label>
-                    <select value={discoverForm.painPoint} onChange={e => setDiscoverForm(f => ({ ...f, painPoint: e.target.value }))}
-                      className="w-full rounded-xl px-3 py-2.5 text-sm text-white bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(99,102,241,0.5)] focus:outline-none" style={{ colorScheme: 'dark' }}>
-                      <option value="cant_afford_agency">Can't afford a full agency</option>
-                      <option value="too_busy">Too busy to create content</option>
-                      <option value="inconsistent_look">Inconsistent brand look</option>
-                      <option value="ads_not_converting">Ads not converting</option>
-                    </select>
+                    <CustomSelect value={discoverForm.painPoint} onChange={v => setDiscoverForm(f => ({ ...f, painPoint: v }))} options={[{ value: 'cant_afford_agency', label: "Can't afford a full agency" }, { value: 'too_busy', label: 'Too busy to create content' }, { value: 'inconsistent_look', label: 'Inconsistent brand look' }, { value: 'ads_not_converting', label: 'Ads not converting' }]} />
                   </div>
                   {/* Outreach Platform */}
                   <div>
                     <label className="block text-[10px] font-bold text-[#6B7280] uppercase tracking-widest mb-1.5">Outreach Platform</label>
-                    <select value={discoverForm.platform} onChange={e => setDiscoverForm(f => ({ ...f, platform: e.target.value }))}
-                      className="w-full rounded-xl px-3 py-2.5 text-sm text-white bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(99,102,241,0.5)] focus:outline-none" style={{ colorScheme: 'dark' }}>
-                      <option value="instagram_dm">Instagram DM</option>
-                      <option value="whatsapp">WhatsApp</option>
-                      <option value="email">Email</option>
-                      <option value="linkedin">LinkedIn</option>
-                    </select>
+                    <CustomSelect value={discoverForm.platform} onChange={v => setDiscoverForm(f => ({ ...f, platform: v }))} options={[{ value: 'instagram_dm', label: 'Instagram DM' }, { value: 'whatsapp', label: 'WhatsApp' }, { value: 'email', label: 'Email' }, { value: 'linkedin', label: 'LinkedIn' }]} />
                   </div>
                   {/* Geography */}
                   <div>
                     <label className="block text-[10px] font-bold text-[#6B7280] uppercase tracking-widest mb-1.5">Geography</label>
-                    <select value={discoverForm.geography} onChange={e => setDiscoverForm(f => ({ ...f, geography: e.target.value }))}
-                      className="w-full rounded-xl px-3 py-2.5 text-sm text-white bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(99,102,241,0.5)] focus:outline-none" style={{ colorScheme: 'dark' }}>
-                      <option value="india">India</option>
-                      <option value="international">International</option>
-                      <option value="both">Both</option>
-                    </select>
+                    <CustomSelect value={discoverForm.geography} onChange={v => setDiscoverForm(f => ({ ...f, geography: v }))} options={[{ value: 'india', label: 'India' }, { value: 'international', label: 'International' }, { value: 'both', label: 'Both' }]} />
                   </div>
                   {/* Employees */}
                   <div>
                     <label className="block text-[10px] font-bold text-[#6B7280] uppercase tracking-widest mb-1.5">Employee Count</label>
-                    <select value={discoverForm.employeeRange} onChange={e => setDiscoverForm(f => ({ ...f, employeeRange: e.target.value }))}
-                      className="w-full rounded-xl px-3 py-2.5 text-sm text-white bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(99,102,241,0.5)] focus:outline-none" style={{ colorScheme: 'dark' }}>
-                      <option value="1-10">1–10</option>
-                      <option value="10-50">10–50</option>
-                      <option value="50-200">50–200</option>
-                    </select>
+                    <CustomSelect value={discoverForm.employeeRange} onChange={v => setDiscoverForm(f => ({ ...f, employeeRange: v }))} options={[{ value: '1-10', label: '1–10' }, { value: '10-50', label: '10–50' }, { value: '50-200', label: '50–200' }]} />
                   </div>
                   {/* Monthly Ad Budget */}
                   <div>
                     <label className="block text-[10px] font-bold text-[#6B7280] uppercase tracking-widest mb-1.5">Monthly Ad Budget</label>
-                    <select value={discoverForm.budget} onChange={e => setDiscoverForm(f => ({ ...f, budget: e.target.value }))}
-                      className="w-full rounded-xl px-3 py-2.5 text-sm text-white bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(99,102,241,0.5)] focus:outline-none" style={{ colorScheme: 'dark' }}>
-                      <option value="lt_50k">{"< ₹50K"}</option>
-                      <option value="50k_2l">₹50K–2L</option>
-                      <option value="2l_10l">₹2L–10L</option>
-                      <option value="gt_10l">₹10L+</option>
-                    </select>
+                    <CustomSelect value={discoverForm.budget} onChange={v => setDiscoverForm(f => ({ ...f, budget: v }))} options={[{ value: 'lt_50k', label: '< ₹50K' }, { value: '50k_2l', label: '₹50K–2L' }, { value: '2l_10l', label: '₹2L–10L' }, { value: 'gt_10l', label: '₹10L+' }]} />
                   </div>
                 </div>
 
@@ -2151,13 +2143,7 @@ export default function Admin() {
                   </div>
                   <div>
                     <label className="block text-[10px] font-bold text-[#6B7280] uppercase tracking-widest mb-1.5">Outreach Platform</label>
-                    <select value={scoreForm.platform} onChange={e => setScoreForm(f => ({ ...f, platform: e.target.value }))}
-                      className="w-full rounded-xl px-3 py-2.5 text-sm text-white bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(168,85,247,0.5)] focus:outline-none" style={{ colorScheme: 'dark' }}>
-                      <option value="instagram_dm">Instagram DM</option>
-                      <option value="whatsapp">WhatsApp</option>
-                      <option value="email">Email</option>
-                      <option value="linkedin">LinkedIn</option>
-                    </select>
+                    <CustomSelect value={scoreForm.platform} onChange={v => setScoreForm(f => ({ ...f, platform: v }))} options={[{ value: 'instagram_dm', label: 'Instagram DM' }, { value: 'whatsapp', label: 'WhatsApp' }, { value: 'email', label: 'Email' }, { value: 'linkedin', label: 'LinkedIn' }]} />
                   </div>
                 </div>
 
@@ -2400,20 +2386,11 @@ export default function Admin() {
                       </div>
                       <div>
                         <label className="block text-[10px] font-bold text-[#9CA3AF] uppercase tracking-widest mb-1.5">Platform</label>
-                        <select value={addLeadForm.platform} onChange={e => setAddLeadForm(f => ({ ...f, platform: e.target.value }))}
-                          className="w-full rounded-xl px-3 py-2.5 text-sm text-white bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(16,185,129,0.5)] focus:outline-none" style={{ colorScheme: 'dark' }}>
-                          <option value="instagram_dm">Instagram DM</option>
-                          <option value="whatsapp">WhatsApp</option>
-                          <option value="email">Email</option>
-                          <option value="linkedin">LinkedIn</option>
-                        </select>
+                        <CustomSelect value={addLeadForm.platform} onChange={v => setAddLeadForm(f => ({ ...f, platform: v }))} options={[{ value: 'instagram_dm', label: 'Instagram DM' }, { value: 'whatsapp', label: 'WhatsApp' }, { value: 'email', label: 'Email' }, { value: 'linkedin', label: 'LinkedIn' }]} />
                       </div>
                       <div>
                         <label className="block text-[10px] font-bold text-[#9CA3AF] uppercase tracking-widest mb-1.5">Status</label>
-                        <select value={addLeadForm.status} onChange={e => setAddLeadForm(f => ({ ...f, status: e.target.value }))}
-                          className="w-full rounded-xl px-3 py-2.5 text-sm text-white bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(16,185,129,0.5)] focus:outline-none" style={{ colorScheme: 'dark' }}>
-                          {Object.entries(leadStatusColors).map(([s, c]) => <option key={s} value={s}>{c.label}</option>)}
-                        </select>
+                        <CustomSelect value={addLeadForm.status} onChange={v => setAddLeadForm(f => ({ ...f, status: v }))} options={Object.entries(leadStatusColors).map(([s, c]) => ({ value: s, label: c.label }))} />
                       </div>
                     </div>
                     <div>
