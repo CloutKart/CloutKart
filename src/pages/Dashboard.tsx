@@ -29,6 +29,15 @@ interface CreativeRequest {
   created_at: string;
 }
 
+interface VisionData {
+  creativeVibe: { label: string; description: string };
+  visualDirection: string;
+  colorStory: Array<{ name: string; hex: string }>;
+  hook: string;
+  adCaption: string;
+  whatWeWillCreate: string[];
+}
+
 interface UserProfile {
   full_name: string | null;
   company_name: string | null;
@@ -217,6 +226,189 @@ function MessageBubble({ msg, creativeRequests }: { msg: Message; creativeReques
   );
 }
 
+// ─── Vision Panel ────────────────────────────────────────────────────────────
+function VisionPanel({ vision, onChange, onApprove, submitting, submitError }: {
+  vision: VisionData;
+  onChange: (v: VisionData) => void;
+  onApprove: () => void;
+  submitting: boolean;
+  submitError: string;
+}) {
+  const colorRef0 = useRef<HTMLInputElement>(null);
+  const colorRef1 = useRef<HTMLInputElement>(null);
+  const colorRef2 = useRef<HTMLInputElement>(null);
+  const colorRefs = [colorRef0, colorRef1, colorRef2];
+
+  function updateColor(idx: number, field: 'name' | 'hex', value: string) {
+    const next = vision.colorStory.map((c, i) => i === idx ? { ...c, [field]: value } : c);
+    onChange({ ...vision, colorStory: next });
+  }
+
+  function updateDeliverable(idx: number, value: string) {
+    const next = vision.whatWeWillCreate.map((d, i) => i === idx ? value : d);
+    onChange({ ...vision, whatWeWillCreate: next });
+  }
+
+  const sectionLabel = "block text-[10px] font-bold text-[#6B7280] uppercase tracking-[0.12em] mb-2";
+  const editableText = "w-full bg-transparent text-white resize-none focus:outline-none leading-relaxed text-sm";
+  const editableInput = "w-full bg-transparent text-white focus:outline-none text-sm";
+
+  return (
+    <div className="rounded-2xl overflow-hidden" style={{ background: 'rgba(12,8,24,0.95)', border: '1px solid rgba(168,85,247,0.2)' }}>
+      {/* Header */}
+      <div className="px-6 py-4 flex items-center justify-between border-b" style={{ borderColor: 'rgba(168,85,247,0.12)', background: 'rgba(168,85,247,0.05)' }}>
+        <div className="flex items-center gap-2">
+          <Sparkles size={15} className="text-[#C084FC]" />
+          <h3 className="font-heading font-bold text-white text-base">Our vision</h3>
+        </div>
+        <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full uppercase tracking-wider"
+          style={{ background: 'rgba(168,85,247,0.12)', border: '1px solid rgba(168,85,247,0.25)', color: '#C084FC' }}>
+          AI generated
+        </span>
+      </div>
+
+      <div className="p-6 space-y-5">
+        {/* Creative Vibe */}
+        <div>
+          <span className={sectionLabel}>Creative Vibe</span>
+          <div className="flex items-start gap-3">
+            <div className="flex-shrink-0 px-3 py-1 rounded-full border text-xs font-semibold"
+              style={{ background: 'rgba(168,85,247,0.1)', borderColor: 'rgba(168,85,247,0.3)', color: '#C084FC', whiteSpace: 'nowrap' }}>
+              <input
+                value={vision.creativeVibe.label}
+                onChange={e => onChange({ ...vision, creativeVibe: { ...vision.creativeVibe, label: e.target.value } })}
+                className="bg-transparent text-[#C084FC] focus:outline-none text-xs font-semibold w-auto"
+                style={{ minWidth: 60, maxWidth: 140 }}
+              />
+            </div>
+            <textarea
+              value={vision.creativeVibe.description}
+              onChange={e => onChange({ ...vision, creativeVibe: { ...vision.creativeVibe, description: e.target.value } })}
+              rows={2}
+              className={`${editableText} text-[#D1D5DB]`}
+            />
+          </div>
+        </div>
+
+        <div className="h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />
+
+        {/* Visual Direction */}
+        <div>
+          <span className={sectionLabel}>Visual Direction</span>
+          <textarea
+            value={vision.visualDirection}
+            onChange={e => onChange({ ...vision, visualDirection: e.target.value })}
+            rows={3}
+            className={`${editableText} text-[#D1D5DB]`}
+          />
+        </div>
+
+        <div className="h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />
+
+        {/* Color Story */}
+        <div>
+          <span className={sectionLabel}>Color Story</span>
+          <div className="grid grid-cols-3 gap-3">
+            {vision.colorStory.slice(0, 3).map((color, idx) => (
+              <div key={idx} className="rounded-xl p-3 flex flex-col gap-2"
+                style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                {/* Color circle — click to open picker */}
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => colorRefs[idx].current?.click()}
+                    className="w-7 h-7 rounded-full flex-shrink-0 border border-white/20 transition-transform hover:scale-110"
+                    style={{ background: color.hex }}
+                  />
+                  <input
+                    ref={colorRefs[idx]}
+                    type="color"
+                    value={color.hex}
+                    onChange={e => updateColor(idx, 'hex', e.target.value)}
+                    className="sr-only"
+                  />
+                </div>
+                <input
+                  value={color.name}
+                  onChange={e => updateColor(idx, 'name', e.target.value)}
+                  className={`${editableInput} font-medium text-[#E5E7EB] text-xs`}
+                />
+                <input
+                  value={color.hex}
+                  onChange={e => updateColor(idx, 'hex', e.target.value)}
+                  className={`${editableInput} font-mono text-[#9CA3AF] text-[11px]`}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />
+
+        {/* Hook */}
+        <div>
+          <span className={sectionLabel}>Hook</span>
+          <div className="rounded-xl px-4 py-3" style={{ background: 'rgba(168,85,247,0.06)', border: '1px solid rgba(168,85,247,0.12)' }}>
+            <input
+              value={vision.hook}
+              onChange={e => onChange({ ...vision, hook: e.target.value })}
+              className="w-full bg-transparent text-white focus:outline-none font-heading font-bold text-base leading-snug"
+            />
+          </div>
+        </div>
+
+        <div className="h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />
+
+        {/* Ad Caption */}
+        <div>
+          <span className={sectionLabel}>Ad Caption</span>
+          <textarea
+            value={vision.adCaption}
+            onChange={e => onChange({ ...vision, adCaption: e.target.value })}
+            rows={3}
+            className={`${editableText} text-[#D1D5DB]`}
+          />
+        </div>
+
+        <div className="h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />
+
+        {/* What We Will Create */}
+        <div>
+          <span className={sectionLabel}>What We Will Create</span>
+          <div className="space-y-2">
+            {vision.whatWeWillCreate.map((item, idx) => (
+              <div key={idx} className="flex items-start gap-2.5">
+                <CheckCircle size={15} className="text-[#10B981] flex-shrink-0 mt-0.5" />
+                <input
+                  value={item}
+                  onChange={e => updateDeliverable(idx, e.target.value)}
+                  className={`${editableInput} text-[#D1D5DB]`}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {submitError && (
+          <div className="flex items-center gap-2 bg-red-500/[0.06] border border-red-500/20 rounded-xl p-3">
+            <AlertCircle size={14} className="text-red-400 flex-shrink-0" />
+            <span className="text-red-300 text-xs">{submitError}</span>
+          </div>
+        )}
+
+        {/* Approve button */}
+        <button
+          onClick={onApprove}
+          disabled={submitting}
+          className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl text-sm font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          style={{ background: 'linear-gradient(135deg,#A855F7,#6366F1,#3B82F6)', color: '#fff' }}>
+          {submitting ? <><Loader size={14} className="animate-spin" />Sending brief…</> : <><CheckCircle size={14} />Approve Vision</>}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function Dashboard() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
@@ -228,6 +420,9 @@ export default function Dashboard() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
   const [form, setForm] = useState({ brandName: '', niche: '', adFormat: '', description: '', referenceUrl: '' });
+  const [vision, setVision] = useState<VisionData | null>(null);
+  const [generatingVision, setGeneratingVision] = useState(false);
+  const [visionError, setVisionError] = useState('');
   const [profile, setProfile] = useState<UserProfile>({ full_name: null, company_name: null, phone: null, plan: 'free', clout_club_price: null, subscription_expires_at: null });
   const [settingsForm, setSettingsForm] = useState({ fullName: '', company: '', phone: '' });
   const [settingsSaving, setSettingsSaving] = useState(false);
@@ -404,10 +599,30 @@ export default function Dashboard() {
     setSubmitError('');
   };
 
-  const handleSubmitCreative = async (e: React.FormEvent) => {
+  const generateVision = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return;
-    // Clout Club members have no limit; free users limited to FREE_CREATIVE_LIMIT
+    if (!form.brandName.trim() || !form.niche.trim() || !form.adFormat || !form.description.trim()) {
+      setVisionError('Please fill in Brand Name, Niche, Ad Format, and Description first.');
+      return;
+    }
+    setGeneratingVision(true);
+    setVisionError('');
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-creative-vision', {
+        body: { brandName: form.brandName, niche: form.niche, adFormat: form.adFormat, description: form.description, referenceUrl: form.referenceUrl },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      setVision(data as VisionData);
+    } catch (err: unknown) {
+      setVisionError(err instanceof Error ? err.message : 'Failed to generate vision. Please try again.');
+    } finally {
+      setGeneratingVision(false);
+    }
+  };
+
+  const handleApproveVision = async () => {
+    if (!user || !vision) return;
     if (!isCloutClub && creativeRequests.length >= FREE_CREATIVE_LIMIT) {
       setSubmitError('You have already claimed your 3 free creatives.');
       return;
@@ -418,6 +633,7 @@ export default function Dashboard() {
       const { data: inserted, error: insertError } = await supabase.from('free_creative_requests').insert({
         user_id: user.id, brand_name: form.brandName, niche: form.niche, ad_format: form.adFormat,
         description: form.description, reference_url: form.referenceUrl, status: 'pending',
+        approved_vision: vision,
       }).select().single();
       if (insertError) throw insertError;
       try {
@@ -426,11 +642,18 @@ export default function Dashboard() {
         await fetch(`${supabaseUrl}/functions/v1/send-creative-email`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
-          body: JSON.stringify({ fullName: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User', email: user.email, brandName: form.brandName, niche: form.niche, adFormat: form.adFormat, description: form.description, referenceUrl: form.referenceUrl }),
+          body: JSON.stringify({
+            fullName: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
+            email: user.email,
+            brandName: form.brandName, niche: form.niche, adFormat: form.adFormat,
+            description: form.description, referenceUrl: form.referenceUrl,
+            approvedVision: vision,
+          }),
         });
       } catch (emailErr) { console.warn('Email notification failed:', emailErr); }
       setCreativeRequests(prev => [inserted, ...prev]);
       setForm({ brandName: '', niche: '', adFormat: '', description: '', referenceUrl: '' });
+      setVision(null);
       setShowForm(false);
     } catch (err: unknown) {
       setSubmitError(err instanceof Error ? err.message : 'Failed to submit. Please try again.');
@@ -782,39 +1005,59 @@ export default function Dashboard() {
               </div>
             )}
 
-            {/* Form */}
+            {/* Form + Vision panel */}
             {!loadingRequest && (isCloutClub || (!freeCreativesClaimed)) && showForm && (
-              <div className="glass-card rounded-2xl p-6 sm:p-8">
-                <h3 className="font-heading font-semibold text-white text-lg mb-1">
-                  {isCloutClub ? 'New Creative Brief' : 'Free Creative Request'}
-                </h3>
-                <p className="text-[#9CA3AF] text-sm mb-6">
-                  {isCloutClub ? 'Submit your brief — the team will get started right away.' : `Claiming creative ${freeCreativeCount + 1} of ${FREE_CREATIVE_LIMIT}.`}
-                </p>
-                <form onSubmit={handleSubmitCreative} className="space-y-4">
-                  <div><label className={labelClass}>Brand Name</label><input type="text" name="brandName" value={form.brandName} onChange={handleFormChange} placeholder="Your brand name" className={inputClass} required /></div>
-                  <div><label className={labelClass}>Industry / Niche</label><input type="text" name="niche" value={form.niche} onChange={handleFormChange} placeholder="e.g. Fashion, SaaS, Food" className={inputClass} required /></div>
-                  <div>
-                    <label className={labelClass}>Ad Format</label>
-                    <select name="adFormat" value={form.adFormat} onChange={handleFormChange} className={inputClass} style={{ appearance: 'none' }} required>
-                      <option value="" style={{ background: '#111' }}>Select format</option>
-                      <option style={{ background: '#111' }}>Static</option>
-                      <option style={{ background: '#111' }}>Video</option>
-                      <option style={{ background: '#111' }}>UGC</option>
-                      <option style={{ background: '#111' }}>Story</option>
-                    </select>
-                  </div>
-                  <div><label className={labelClass}>Brief Description</label><textarea name="description" value={form.description} onChange={handleFormChange} rows={4} placeholder="Describe your product, target audience, and what you want to convey..." className={`${inputClass} resize-none`} required /></div>
-                  <div><label className={labelClass}>Reference URL (optional)</label><input type="url" name="referenceUrl" value={form.referenceUrl} onChange={handleFormChange} placeholder="https://..." className={inputClass} /></div>
-                  {submitError && <div className="flex items-center gap-2 bg-red-500/[0.06] border border-red-500/20 rounded-xl p-3"><AlertCircle size={14} className="text-red-400 flex-shrink-0" /><span className="text-red-300 text-xs">{submitError}</span></div>}
-                  <div className="flex flex-col sm:flex-row gap-3">
-                    <button type="submit" disabled={submitting} className="btn-primary text-sm disabled:opacity-50 disabled:cursor-not-allowed">
-                      {submitting ? <Loader size={14} className="animate-spin" /> : <ArrowRight size={14} />}
-                      {submitting ? 'Submitting...' : isCloutClub ? 'Submit Brief' : `Submit Creative ${freeCreativeCount + 1}`}
-                    </button>
-                    <button type="button" onClick={() => setShowForm(false)} className="btn-secondary text-sm">Cancel</button>
-                  </div>
-                </form>
+              <div className={vision ? 'grid lg:grid-cols-2 gap-6 items-start' : ''}>
+                {/* Brief form */}
+                <div className="glass-card rounded-2xl p-6 sm:p-8">
+                  <h3 className="font-heading font-semibold text-white text-lg mb-1">
+                    {isCloutClub ? 'New Creative Brief' : 'Free Creative Request'}
+                  </h3>
+                  <p className="text-[#9CA3AF] text-sm mb-6">
+                    {isCloutClub ? 'Fill in your brief — then let us show you the vision.' : `Claiming creative ${freeCreativeCount + 1} of ${FREE_CREATIVE_LIMIT}.`}
+                  </p>
+                  <form onSubmit={generateVision} className="space-y-4">
+                    <div><label className={labelClass}>Brand Name</label><input type="text" name="brandName" value={form.brandName} onChange={handleFormChange} placeholder="Your brand name" className={inputClass} required /></div>
+                    <div><label className={labelClass}>Industry / Niche</label><input type="text" name="niche" value={form.niche} onChange={handleFormChange} placeholder="e.g. Fashion, SaaS, Food" className={inputClass} required /></div>
+                    <div>
+                      <label className={labelClass}>Ad Format</label>
+                      <select name="adFormat" value={form.adFormat} onChange={handleFormChange} className={inputClass} style={{ appearance: 'none' }} required>
+                        <option value="" style={{ background: '#111' }}>Select format</option>
+                        <option style={{ background: '#111' }}>Static</option>
+                        <option style={{ background: '#111' }}>Video</option>
+                        <option style={{ background: '#111' }}>UGC</option>
+                        <option style={{ background: '#111' }}>Story</option>
+                      </select>
+                    </div>
+                    <div><label className={labelClass}>Brief Description</label><textarea name="description" value={form.description} onChange={handleFormChange} rows={4} placeholder="Describe your product, target audience, and what you want to convey..." className={`${inputClass} resize-none`} required /></div>
+                    <div><label className={labelClass}>Reference URL (optional)</label><input type="url" name="referenceUrl" value={form.referenceUrl} onChange={handleFormChange} placeholder="https://..." className={inputClass} /></div>
+                    {(visionError || submitError) && (
+                      <div className="flex items-center gap-2 bg-red-500/[0.06] border border-red-500/20 rounded-xl p-3">
+                        <AlertCircle size={14} className="text-red-400 flex-shrink-0" />
+                        <span className="text-red-300 text-xs">{visionError || submitError}</span>
+                      </div>
+                    )}
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <button type="submit" disabled={generatingVision} className="btn-primary text-sm disabled:opacity-50 disabled:cursor-not-allowed">
+                        {generatingVision
+                          ? <><Loader size={14} className="animate-spin" />Generating vision…</>
+                          : <><Sparkles size={14} />{vision ? 'Regenerate Vision' : 'See Our Vision'}</>}
+                      </button>
+                      <button type="button" onClick={() => { setShowForm(false); setVision(null); setVisionError(''); }} className="btn-secondary text-sm">Cancel</button>
+                    </div>
+                  </form>
+                </div>
+
+                {/* Vision panel */}
+                {vision && (
+                  <VisionPanel
+                    vision={vision}
+                    onChange={setVision}
+                    onApprove={handleApproveVision}
+                    submitting={submitting}
+                    submitError={submitError}
+                  />
+                )}
               </div>
             )}
 

@@ -6,7 +6,67 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
 };
 
-function buildNotificationEmail(fullName: string, email: string, brandName: string, niche: string, adFormat: string, description: string, referenceUrl: string): string {
+interface ApprovedVision {
+  creativeVibe?: { label: string; description: string };
+  visualDirection?: string;
+  colorStory?: Array<{ name: string; hex: string }>;
+  hook?: string;
+  adCaption?: string;
+  whatWeWillCreate?: string[];
+}
+
+function buildVisionBlock(vision: ApprovedVision): string {
+  const colorDots = (vision.colorStory ?? []).map(c =>
+    `<span style="display:inline-flex;align-items:center;gap:6px;margin-right:12px;">
+      <span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${c.hex};border:1px solid rgba(255,255,255,0.2);"></span>
+      <span style="font-family:Arial,sans-serif;font-size:12px;color:#8eaacf;">${c.name} <span style="color:#3b5280;">${c.hex}</span></span>
+    </span>`
+  ).join('');
+
+  const deliverables = (vision.whatWeWillCreate ?? []).map(d =>
+    `<li style="font-family:Arial,sans-serif;font-size:13px;color:#8eaacf;line-height:1.8;list-style:none;padding-left:0;">✦ ${d}</li>`
+  ).join('');
+
+  return `
+  <tr>
+    <td style="padding:0 40px 32px 40px;">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#0c1030;border:1px solid rgba(168,85,247,0.25);border-radius:16px;overflow:hidden;">
+        <tr>
+          <td style="padding:18px 24px 14px 24px;border-bottom:1px solid rgba(168,85,247,0.15);">
+            <span style="font-family:Arial,sans-serif;font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#9333ea;">✦ Approved Creative Vision</span>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:20px 24px 0 24px;">
+            ${vision.creativeVibe ? `
+            <p style="margin:0 0 4px 0;font-family:Arial,sans-serif;font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#6b7280;">Creative Vibe</p>
+            <p style="margin:0 0 16px 0;font-family:Arial,sans-serif;font-size:14px;color:#c084fc;font-weight:600;">${vision.creativeVibe.label}</p>
+            <p style="margin:0 0 16px 0;font-family:Arial,sans-serif;font-size:13px;color:#d1d5db;line-height:1.6;">${vision.creativeVibe.description}</p>
+            ` : ''}
+            ${vision.hook ? `
+            <p style="margin:0 0 4px 0;font-family:Arial,sans-serif;font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#6b7280;">Hook</p>
+            <p style="margin:0 0 16px 0;font-family:Arial,sans-serif;font-size:16px;font-weight:900;color:#ffffff;line-height:1.3;">${vision.hook}</p>
+            ` : ''}
+            ${vision.colorStory?.length ? `
+            <p style="margin:0 0 8px 0;font-family:Arial,sans-serif;font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#6b7280;">Color Story</p>
+            <p style="margin:0 0 16px 0;">${colorDots}</p>
+            ` : ''}
+            ${vision.visualDirection ? `
+            <p style="margin:0 0 4px 0;font-family:Arial,sans-serif;font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#6b7280;">Visual Direction</p>
+            <p style="margin:0 0 16px 0;font-family:Arial,sans-serif;font-size:13px;color:#d1d5db;line-height:1.6;">${vision.visualDirection}</p>
+            ` : ''}
+            ${deliverables ? `
+            <p style="margin:0 0 8px 0;font-family:Arial,sans-serif;font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#6b7280;">What We Will Create</p>
+            <ul style="margin:0 0 16px 0;padding:0;">${deliverables}</ul>
+            ` : ''}
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>`;
+}
+
+function buildNotificationEmail(fullName: string, email: string, brandName: string, niche: string, adFormat: string, description: string, referenceUrl: string, approvedVision?: ApprovedVision): string {
   const field = (label: string, value: string, isLink = false) => `
     <tr>
       <td style="padding: 0 0 16px 0;">
@@ -95,6 +155,7 @@ function buildNotificationEmail(fullName: string, email: string, brandName: stri
               </table>
             </td>
           </tr>
+          ${approvedVision ? buildVisionBlock(approvedVision) : ''}
           <tr>
             <td style="padding: 0 40px;">
               <table width="100%" cellpadding="0" cellspacing="0" border="0">
@@ -195,7 +256,7 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const { fullName, email, brandName, niche, adFormat, description, referenceUrl } = await req.json();
+    const { fullName, email, brandName, niche, adFormat, description, referenceUrl, approvedVision } = await req.json();
 
     const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 
@@ -219,7 +280,7 @@ Deno.serve(async (req: Request) => {
         to: ["adhiraj@clout-kart.com", "rounak@clout-kart.com", "shivam@clout-kart.com"],
         subject: `New Free Creative Request from ${fullName} — ${brandName}`,
         text: plainText,
-        html: buildNotificationEmail(fullName, email, brandName, niche, adFormat, description, referenceUrl || ""),
+        html: buildNotificationEmail(fullName, email, brandName, niche, adFormat, description, referenceUrl || "", approvedVision),
       }),
     });
 

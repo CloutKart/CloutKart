@@ -27,6 +27,15 @@ interface Profile {
   subscription_expires_at?: string | null;
 }
 
+interface ApprovedVision {
+  creativeVibe: { label: string; description: string };
+  visualDirection: string;
+  colorStory: Array<{ name: string; hex: string }>;
+  hook: string;
+  adCaption: string;
+  whatWeWillCreate: string[];
+}
+
 interface CreativeRequest {
   id: string;
   user_id: string;
@@ -39,6 +48,7 @@ interface CreativeRequest {
   creative_urls?: string[];
   creative_caption?: string;
   client_message?: string;
+  approved_vision?: ApprovedVision | null;
   created_at: string;
   profiles: { full_name: string | null; company_name: string | null } | null;
 }
@@ -120,6 +130,107 @@ function getGreeting(name: string) {
   const h = new Date().getHours();
   const part = h < 12 ? 'morning' : h < 17 ? 'afternoon' : 'evening';
   return `Good ${part}, ${name}`;
+}
+
+// ─── Vision Modal ────────────────────────────────────────────────────────────
+function VisionModal({ vision, brandName, onClose }: { vision: ApprovedVision; brandName: string; onClose: () => void }) {
+  const sectionLabel = "text-[10px] font-bold text-[#6B7280] uppercase tracking-[0.12em] mb-2 block";
+  return createPortal(
+    <div className="fixed inset-0 z-[200] flex items-center justify-center px-4" onClick={onClose}>
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+      <div className="relative w-full max-w-lg rounded-3xl overflow-hidden max-h-[90vh] overflow-y-auto"
+        style={{ background: 'rgba(12,8,24,0.98)', border: '1px solid rgba(168,85,247,0.25)' }}
+        onClick={e => e.stopPropagation()}>
+        {/* Header */}
+        <div className="sticky top-0 px-6 py-4 flex items-center justify-between border-b z-10"
+          style={{ borderColor: 'rgba(168,85,247,0.15)', background: 'rgba(12,8,24,0.98)' }}>
+          <div className="flex items-center gap-2">
+            <Sparkles size={15} className="text-[#C084FC]" />
+            <div>
+              <h3 className="font-heading font-bold text-white text-base">Approved Vision</h3>
+              <p className="text-[#9CA3AF] text-xs">{brandName}</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 rounded-lg flex items-center justify-center text-[#6B7280] hover:text-white"
+            style={{ border: '1px solid rgba(255,255,255,0.08)' }}><X size={14} /></button>
+        </div>
+
+        <div className="p-6 space-y-5">
+          {/* Creative Vibe */}
+          <div>
+            <span className={sectionLabel}>Creative Vibe</span>
+            <div className="flex items-start gap-3">
+              <span className="flex-shrink-0 px-3 py-1 rounded-full text-xs font-semibold"
+                style={{ background: 'rgba(168,85,247,0.1)', border: '1px solid rgba(168,85,247,0.3)', color: '#C084FC' }}>
+                {vision.creativeVibe.label}
+              </span>
+              <p className="text-[#D1D5DB] text-sm leading-relaxed">{vision.creativeVibe.description}</p>
+            </div>
+          </div>
+
+          <div className="h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />
+
+          {/* Visual Direction */}
+          <div>
+            <span className={sectionLabel}>Visual Direction</span>
+            <p className="text-[#D1D5DB] text-sm leading-relaxed">{vision.visualDirection}</p>
+          </div>
+
+          <div className="h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />
+
+          {/* Color Story */}
+          <div>
+            <span className={sectionLabel}>Color Story</span>
+            <div className="flex gap-4 flex-wrap">
+              {vision.colorStory.map((c, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-full border border-white/20 flex-shrink-0" style={{ background: c.hex }} />
+                  <div>
+                    <p className="text-[#E5E7EB] text-xs font-medium">{c.name}</p>
+                    <p className="text-[#6B7280] text-[10px] font-mono">{c.hex}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />
+
+          {/* Hook */}
+          <div>
+            <span className={sectionLabel}>Hook</span>
+            <div className="rounded-xl px-4 py-3" style={{ background: 'rgba(168,85,247,0.06)', border: '1px solid rgba(168,85,247,0.12)' }}>
+              <p className="text-white font-heading font-bold text-base leading-snug">{vision.hook}</p>
+            </div>
+          </div>
+
+          <div className="h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />
+
+          {/* Ad Caption */}
+          <div>
+            <span className={sectionLabel}>Ad Caption</span>
+            <p className="text-[#D1D5DB] text-sm leading-relaxed">{vision.adCaption}</p>
+          </div>
+
+          <div className="h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />
+
+          {/* What We Will Create */}
+          <div>
+            <span className={sectionLabel}>What We Will Create</span>
+            <div className="space-y-2">
+              {vision.whatWeWillCreate.map((item, i) => (
+                <div key={i} className="flex items-start gap-2.5">
+                  <CheckCircle size={14} className="text-[#10B981] flex-shrink-0 mt-0.5" />
+                  <p className="text-[#D1D5DB] text-sm">{item}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
 }
 
 // ─── Status dropdown ────────────────────────────────────────────────────────
@@ -495,6 +606,7 @@ export default function Admin() {
   const [overviewStats, setOverviewStats] = useState({ totalUsers: 0, requestsToday: 0, totalRevenue: 0, paidUsers: 0, conversionUsers: 0 });
   const [recentUsers, setRecentUsers] = useState<Profile[]>([]);
   const [requests, setRequests] = useState<CreativeRequest[]>([]);
+  const [visionRequest, setVisionRequest] = useState<CreativeRequest | null>(null);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [users, setUsers] = useState<Profile[]>([]);
   const [cloutClubUsers, setCloutClubUsers] = useState<Profile[]>([]);
@@ -994,7 +1106,8 @@ export default function Admin() {
             <div className="glass-card rounded-2xl overflow-hidden">
               {loadingTab ? <div className="flex items-center justify-center p-10"><Loader size={20} className="animate-spin text-[#818CF8]" /></div>
                 : filteredRequests.length === 0 ? <p className="text-[#6B7280] text-sm text-center p-10">No requests found.</p>
-                : <div className="overflow-x-auto"><table className="w-full"><thead><tr>{['User','Brand','Niche','Format','Submitted','Creative','Status'].map(h=><th key={h} className={thClass}>{h}</th>)}</tr></thead><tbody>{filteredRequests.map(r=>(<tr key={r.id}><td className={tdClass}>{r.profiles?.full_name||'—'}</td><td className={tdClass}>{r.brand_name}</td><td className={tdClass+' text-[#9CA3AF]'}>{r.niche}</td><td className={tdClass+' text-[#9CA3AF]'}>{r.ad_format}</td><td className={tdClass+' text-[#9CA3AF]'}>{formatDate(r.created_at)}</td><td className={tdClass}>{r.creative_url?<span className="flex items-center gap-1 text-xs text-[#10B981]"><CheckCircle size={12}/> Uploaded</span>:<span className="flex items-center gap-1 text-xs text-[#6B7280]"><Clock size={12}/> Pending</span>}</td><td className={tdClass}><StatusDropdown request={r} onUpdate={handleRequestUpdate}/></td></tr>))}</tbody></table></div>}
+                : <div className="overflow-x-auto"><table className="w-full"><thead><tr>{['User','Brand','Niche','Format','Submitted','Vision','Creative','Status'].map(h=><th key={h} className={thClass}>{h}</th>)}</tr></thead><tbody>{filteredRequests.map(r=>(<tr key={r.id}><td className={tdClass}>{r.profiles?.full_name||'—'}</td><td className={tdClass}>{r.brand_name}</td><td className={tdClass+' text-[#9CA3AF]'}>{r.niche}</td><td className={tdClass+' text-[#9CA3AF]'}>{r.ad_format}</td><td className={tdClass+' text-[#9CA3AF]'}>{formatDate(r.created_at)}</td><td className={tdClass}>{r.approved_vision?<button onClick={()=>setVisionRequest(r)} className="flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full transition-all" style={{background:'rgba(168,85,247,0.1)',border:'1px solid rgba(168,85,247,0.25)',color:'#C084FC'}}><Eye size={11}/>View</button>:<span className="text-[#6B7280] text-xs">—</span>}</td><td className={tdClass}>{r.creative_url?<span className="flex items-center gap-1 text-xs text-[#10B981]"><CheckCircle size={12}/> Uploaded</span>:<span className="flex items-center gap-1 text-xs text-[#6B7280]"><Clock size={12}/> Pending</span>}</td><td className={tdClass}><StatusDropdown request={r} onUpdate={handleRequestUpdate}/></td></tr>))}</tbody></table></div>}
+              {visionRequest?.approved_vision && <VisionModal vision={visionRequest.approved_vision} brandName={visionRequest.brand_name} onClose={()=>setVisionRequest(null)}/>}
             </div>
           </div>
         )}
