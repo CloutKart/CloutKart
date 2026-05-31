@@ -24,9 +24,29 @@ Direct this like you're on set. Name the exact shot (macro texture close-up, low
 3 colors pulled directly from the brand's actual world — product, packaging, environment, emotion. Not generic palette presets. Name each color like it has a backstory: "Petrol Slick", "Split Milk", "Furious Yellow". Provide the exact hex.
 
 **Hook**
-Generate ONE hook under 8 words. It must stop a thumb mid-scroll.
+Generate ONE hook under 8 words. It must stop a thumb mid-scroll — even if the viewer knows nothing about the product.
 
-HOOK PSYCHOLOGY — use exactly ONE of these triggers:
+FEATURES ≠ HOOKS. Never write:
+- "14 days on one charge" — that's a spec
+- "Contains Niacinamide 10%" — that's an ingredient
+- "Made from premium cotton" — that's a material
+A hook is about transformation, identity, or a truth that makes the reader feel something.
+
+BEFORE WRITING THE HOOK, IDENTIFY:
+1. The product category
+2. The emotional benefit — what does the customer actually want to feel?
+3. The desired transformation — who do they want to become after buying this?
+
+Generate the hook around the transformation, not the feature.
+
+HOOK FOCUS AREAS — choose one lens:
+- DESIRED OUTCOME: The transformation the customer wants
+- IDENTITY: Who the customer wants to become
+- PAIN POINT: The frustration being solved
+- ASPIRATION: The future state being promised
+- CONTRARIAN INSIGHT: A belief worth challenging
+
+EXECUTION — deliver it through ONE psychological trigger:
 - CURIOSITY GAP: Leave an information loop open. "The skincare step everyone skips."
 - PAIN POINT: Name a frustration the buyer feels daily. Make them feel seen instantly.
 - PATTERN INTERRUPT: Say something the reader didn't expect from this product category.
@@ -36,6 +56,7 @@ HOOK PSYCHOLOGY — use exactly ONE of these triggers:
 
 STRICT RULES:
 - Under 8 words. Non-negotiable.
+- Must be instantly understandable by someone who has never heard of the product — no jargon, no brand lingo, no assumed knowledge
 - No commas, no ellipsis, no exclamation marks
 - Must reference something SPECIFIC to this product — not interchangeable with any other product
 - Read it back — could it work for a competitor's product? If yes, rewrite it.
@@ -45,15 +66,20 @@ STRICT RULES:
 - Gut check: would a 22-year-old in Mumbai stop scrolling for this? If no, rewrite.
 
 EXAMPLES OF GOOD HOOKS BY CATEGORY:
+- Fitness / Wearables: "Your next PR starts with last night's sleep"
+- Fitness / Wearables: "Recovery is where champions are made"
+- Skincare: "Your skin doesn't need filters"
+- Skincare: "Clear skin starts before makeup"
 - Skincare: "Your moisturiser is lying to your skin"
-- Activewear: "Rough lines? Blame the pencil"
+- Fashion: "Dress like you've already made it"
+- Fashion: "Confidence is the best fit"
+- Coffee: "Mornings deserve better"
 - Supplements: "You sleep 8 hours. Your skin doesn't"
 - Food: "Happiness is a $3 problem"
-- Fashion: "Wear it once. Hear about it forever"
 - Home: "Clean house. Zero effort. Pick one — just kidding"
 - Tech: "Your phone is smarter than your charger"
 
-Generate the hook, then internally ask: is this specific? is this unexpected? is it under 8 words? Only output if all three are yes.
+Generate the hook, then internally ask: is this about the transformation (not the feature)? Is it specific? Is it unexpected? Is it under 8 words? Only output if all four are yes.
 
 **Ad Caption**
 3 sentences. First: land the hook's promise hard with a product truth. Second: make the reader feel the gap between their current life and their life with this product. Third: one short, confident directional — not a pleading CTA, a statement of inevitability. No exclamation marks unless they're earned.
