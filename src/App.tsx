@@ -10,6 +10,7 @@ import About from './components/About';
 import Services from './components/Services';
 import Process from './components/Process';
 import ScrollStory from './components/ScrollStory';
+import PixieSection from './components/PixieSection';
 import Pricing from './components/Pricing';
 import Portfolio from './components/Portfolio';
 import FAQ from './components/FAQ';
@@ -66,6 +67,7 @@ function LandingPage({ onSignupOpen }: { onSignupOpen: () => void }) {
           <About />
           <Services />
           <ScrollStory />
+          <PixieSection onSignupOpen={onSignupOpen} />
           <Process />
           <Pricing onSignupOpen={onSignupOpen} />
           <Portfolio />
