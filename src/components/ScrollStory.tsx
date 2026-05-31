@@ -305,13 +305,13 @@ export default function ScrollStory() {
       const rect = outerRef.current.getBoundingClientRect();
       const scrollable = outerRef.current.offsetHeight - window.innerHeight;
       if (scrollable <= 0) return;
-      const earlyTrigger = window.innerHeight * 0.25;
+      const earlyTrigger = window.innerHeight * 0.55;
       const scrolled = -rect.top + earlyTrigger;
       const pct = Math.max(0, Math.min(1, scrolled / scrollable));
       setProgress(pct);
 
       const phaseCount = phases.length;
-      const phasePct = Math.min(pct / 0.85, 1);
+      const phasePct = Math.min(pct / 0.92, 1);
       const phaseIdx = Math.min(phaseCount - 1, Math.floor(phasePct * phaseCount));
       const phaseStart = phaseIdx / phaseCount;
       const phaseEnd = (phaseIdx + 1) / phaseCount;
@@ -338,7 +338,7 @@ export default function ScrollStory() {
 
   return (
     <section id="story" className="relative" style={{ background: 'transparent' }}>
-      <div ref={outerRef} style={{ height: '350vh' }}>
+      <div ref={outerRef} style={{ height: '240vh' }}>
         <div className="sticky top-0 h-screen overflow-hidden flex flex-col justify-center">
 
           {/* Parallax background glow — moves slowest */}
@@ -431,7 +431,7 @@ export default function ScrollStory() {
                 <div className="mt-5 ml-8">
                   <div className="h-px bg-white/[0.06] rounded-full overflow-hidden">
                     <div className="h-full rounded-full transition-all duration-200"
-                      style={{ width: `${Math.min(progress / 0.85, 1) * 100}%`, background: 'linear-gradient(90deg,#A855F7,#3B82F6,#06B6D4)' }} />
+                      style={{ width: `${Math.min(progress / 0.92, 1) * 100}%`, background: 'linear-gradient(90deg,#A855F7,#3B82F6,#06B6D4)' }} />
                   </div>
                 </div>
               </div>
