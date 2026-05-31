@@ -109,10 +109,9 @@ function VisionPreview() {
 
         {/* Footer */}
         <div
-          className="flex items-center justify-between px-5 py-3.5"
+          className="flex items-center justify-end px-5 py-3.5"
           style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}
         >
-          <span className="text-[10px] text-white/25 font-mono border border-white/[0.07] rounded-lg px-2.5 py-1">→ Shop Now</span>
           <button
             className="text-[11px] font-bold px-4 py-2 rounded-xl text-white"
             style={{ background: 'linear-gradient(135deg, #A855F7, #6366F1)' }}

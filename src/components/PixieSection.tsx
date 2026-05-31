@@ -123,8 +123,7 @@ function DemoMock() {
           </div>
 
           {/* Footer */}
-          <div className="px-4 py-2.5 flex items-center justify-between mt-auto">
-            <span className="text-[9px] text-white/25 border border-white/[0.08] rounded-lg px-2 py-1">→ Shop Now</span>
+          <div className="px-4 py-2.5 flex items-center justify-end mt-auto">
             <button className="text-[9px] font-bold px-3 py-1.5 rounded-lg text-white"
               style={{ background: 'linear-gradient(135deg,#A855F7,#6366F1)' }}>
               Approve vision

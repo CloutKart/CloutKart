@@ -130,8 +130,7 @@ function VisionScene({ localProg }: { localProg: number }) {
           </div>
         </div>
       </div>
-      <div className="flex items-center justify-between px-5 py-3.5" style={{ borderTop: '1px solid rgba(255,255,255,0.06)', ...vis(sections[4].delay) }}>
-        <span className="text-[10px] text-white/20 font-mono">→ Shop Now</span>
+      <div className="flex items-center justify-end px-5 py-3.5" style={{ borderTop: '1px solid rgba(255,255,255,0.06)', ...vis(sections[4].delay) }}>
         <button className="text-[10px] font-bold px-3.5 py-1.5 rounded-lg text-white" style={{ background: 'linear-gradient(135deg,#A855F7,#6366F1)' }}>Approve vision</button>
       </div>
     </div>
