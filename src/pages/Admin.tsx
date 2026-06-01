@@ -454,8 +454,8 @@ const DiscoverLeadCard = memo(function DiscoverLeadCard({
   );
 });
 
-// ── LeadTrackerRow — memo so it doesn't re-render on parent state changes ─────
-const LeadTrackerRow = memo(function LeadTrackerRow({ lead, onStatusUpdate, onNotesUpdate, onViewContacts, onDelete }: {
+// ── KanbanCard — single lead card in the Mission Log Kanban board ─────────────
+const KanbanCard = memo(function KanbanCard({ lead, onStatusUpdate, onNotesUpdate, onViewContacts, onDelete }: {
   lead: Lead;
   onStatusUpdate: (id: string, status: string) => void;
   onNotesUpdate: (id: string, notes: string) => void;
@@ -464,40 +464,43 @@ const LeadTrackerRow = memo(function LeadTrackerRow({ lead, onStatusUpdate, onNo
 }) {
   const scoreColor = lead.score !== null ? (lead.score >= 8 ? '#10B981' : lead.score >= 5 ? '#F59E0B' : '#F87171') : '#6B7280';
   return (
-    <tr>
-      <td className="px-4 py-3 border-t border-white/[0.04]">
-        <p className="text-sm text-white font-medium">{lead.brand_name}</p>
-        {lead.business_name && <p className="text-[10px] text-[#6B7280] mt-0.5">{lead.business_name}</p>}
-      </td>
-      <td className="px-4 py-3 text-sm text-[#9CA3AF] border-t border-white/[0.04]">{lead.niche || '—'}</td>
-      <td className="px-4 py-3 text-sm text-[#9CA3AF] border-t border-white/[0.04] capitalize">{lead.platform?.replace('_', ' ') || '—'}</td>
-      <td className="px-4 py-3 border-t border-white/[0.04]">
-        {lead.score !== null
-          ? <span className="font-mono text-sm font-bold" style={{ color: scoreColor }}>{lead.score}</span>
-          : <span className="text-[#6B7280] text-sm">—</span>}
-      </td>
-      <td className="px-4 py-3 border-t border-white/[0.04]">
+    <div className="rounded-xl p-3 space-y-2.5 group" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex-1 min-w-0">
+          <p className="text-white text-sm font-semibold leading-tight truncate">{lead.brand_name}</p>
+          {lead.business_name && <p className="text-[#6B7280] text-[10px] mt-0.5 truncate">{lead.business_name}</p>}
+        </div>
+        {lead.score !== null && (
+          <span className="font-mono text-sm font-bold flex-shrink-0" style={{ color: scoreColor }}>{lead.score}</span>
+        )}
+      </div>
+      {(lead.niche || lead.platform) && (
+        <p className="text-[#6B7280] text-[11px] capitalize">
+          {[lead.niche, lead.platform?.replace('_', ' ')].filter(Boolean).join(' · ')}
+        </p>
+      )}
+      <input
+        defaultValue={lead.notes ?? ''}
+        onBlur={e => onNotesUpdate(lead.id, e.target.value)}
+        placeholder="Add notes…"
+        className="w-full bg-transparent text-[11px] text-[#9CA3AF] placeholder-[#4B5563] focus:outline-none focus:text-white transition-colors"
+      />
+      <div className="flex items-center justify-between pt-0.5">
         <LeadStatusDropdown lead={lead} onUpdate={onStatusUpdate} />
-      </td>
-      <td className="px-4 py-3 border-t border-white/[0.04] min-w-[180px]">
-        <input defaultValue={lead.notes ?? ''} onBlur={e => onNotesUpdate(lead.id, e.target.value)}
-          placeholder="Add notes…" className="w-full bg-transparent text-sm text-[#D1D5DB] placeholder-[#4B5563] focus:outline-none" />
-      </td>
-      <td className="px-4 py-3 border-t border-white/[0.04]">
-        <button onClick={() => onViewContacts(lead)}
-          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all"
-          style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)', color: '#818CF8' }}>
-          <Users size={11} /> View
-        </button>
-      </td>
-      <td className="px-4 py-3 text-xs text-[#6B7280] border-t border-white/[0.04]">{formatDate(lead.created_at)}</td>
-      <td className="px-4 py-3 border-t border-white/[0.04]">
-        <button onClick={() => onDelete(lead.id)} className="w-7 h-7 rounded-lg flex items-center justify-center opacity-40 hover:opacity-100 transition-opacity"
-          style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.15)' }}>
-          <Trash2 size={12} className="text-red-400" />
-        </button>
-      </td>
-    </tr>
+        <div className="flex items-center gap-1">
+          <button onClick={() => onViewContacts(lead)} title="View contacts"
+            className="w-6 h-6 rounded-lg flex items-center justify-center"
+            style={{ background: 'rgba(99,102,241,0.1)', color: '#818CF8' }}>
+            <Users size={11} />
+          </button>
+          <button onClick={() => onDelete(lead.id)} title="Delete"
+            className="w-6 h-6 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+            style={{ background: 'rgba(239,68,68,0.08)', color: '#F87171' }}>
+            <Trash2 size={11} />
+          </button>
+        </div>
+      </div>
+    </div>
   );
 });
 
@@ -1086,6 +1089,8 @@ export default function Admin() {
 
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loadingLeads, setLoadingLeads] = useState(false);
+  const [draggingLeadId, setDraggingLeadId] = useState<string | null>(null);
+  const [dragOverStatus, setDragOverStatus] = useState<string | null>(null);
   const [showAddLead, setShowAddLead] = useState(false);
   const [addLeadForm, setAddLeadForm] = useState({ ...DEFAULT_ADD_LEAD_FORM });
   const [savingLead, setSavingLead] = useState(false);
@@ -2464,30 +2469,81 @@ export default function Admin() {
                   ? <div className="p-10 text-center">
                       <Target size={22} className="text-[#6B7280] mx-auto mb-2" />
                       <p className="text-[#6B7280] text-sm">No leads saved yet.</p>
-                      <p className="text-[#4B5563] text-xs mt-1">Use Discover or Score above to find your first prospects.</p>
+                      <p className="text-[#4B5563] text-xs mt-1">Use Hunt or Qualify above to find your first targets.</p>
                     </div>
-                  : <div className="overflow-x-auto">
-                      <table className="w-full">
-                        <thead>
-                          <tr>
-                            {['Brand / Business', 'Niche', 'Platform', 'Score', 'Status', 'Notes', 'Contacts', 'Date', ''].map(h => (
-                              <th key={h} className="text-left text-[10px] font-bold text-[#6B7280] uppercase tracking-widest px-4 py-3">{h}</th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {leads.map(lead => (
-                            <LeadTrackerRow
-                              key={lead.id}
-                              lead={lead}
-                              onStatusUpdate={updateLeadStatus}
-                              onNotesUpdate={updateLeadNotes}
-                              onViewContacts={openContactsModal}
-                              onDelete={deleteLead}
-                            />
-                          ))}
-                        </tbody>
-                      </table>
+                  : <div className="overflow-x-auto p-4">
+                      <div className="flex gap-3" style={{ minWidth: 'max-content' }}>
+                        {Object.entries(leadStatusColors).map(([status, colors]) => {
+                          const col = leads.filter(l => l.status === status);
+                          const isOver = dragOverStatus === status;
+                          return (
+                            <div
+                              key={status}
+                              className="flex flex-col gap-2 rounded-xl transition-colors duration-150"
+                              style={{
+                                width: 220,
+                                padding: '6px',
+                                background: isOver ? colors.bg : 'transparent',
+                                outline: isOver ? `1px solid ${colors.border}` : '1px solid transparent',
+                              }}
+                              onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; setDragOverStatus(status); }}
+                              onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setDragOverStatus(null); }}
+                              onDrop={e => {
+                                e.preventDefault();
+                                const leadId = e.dataTransfer.getData('leadId');
+                                if (leadId && leadId !== leads.find(l => l.id === leadId && l.status === status)?.id) {
+                                  updateLeadStatus(leadId, status);
+                                }
+                                setDraggingLeadId(null);
+                                setDragOverStatus(null);
+                              }}
+                            >
+                              <div className="flex items-center gap-2 px-1 pb-1">
+                                <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: colors.text }} />
+                                <span className="text-[11px] font-bold uppercase tracking-widest" style={{ color: colors.text }}>{colors.label}</span>
+                                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md ml-auto tabular-nums"
+                                  style={{ background: colors.bg, color: colors.text, border: `1px solid ${colors.border}` }}>
+                                  {col.length}
+                                </span>
+                              </div>
+                              {col.length === 0
+                                ? <div className="rounded-xl p-4 text-center transition-colors"
+                                    style={{ border: `1px dashed ${isOver ? colors.border : 'rgba(255,255,255,0.07)'}` }}>
+                                    <p className="text-[11px]" style={{ color: isOver ? colors.text : '#3B4049' }}>
+                                      {isOver ? `Move here` : 'Empty'}
+                                    </p>
+                                  </div>
+                                : col.map(lead => (
+                                    <div
+                                      key={lead.id}
+                                      draggable
+                                      onDragStart={e => {
+                                        e.dataTransfer.setData('leadId', lead.id);
+                                        e.dataTransfer.effectAllowed = 'move';
+                                        setDraggingLeadId(lead.id);
+                                      }}
+                                      onDragEnd={() => { setDraggingLeadId(null); setDragOverStatus(null); }}
+                                      style={{
+                                        opacity: draggingLeadId === lead.id ? 0.4 : 1,
+                                        cursor: 'grab',
+                                        transform: draggingLeadId === lead.id ? 'scale(0.98)' : 'none',
+                                        transition: 'opacity 0.15s, transform 0.15s',
+                                      }}
+                                    >
+                                      <KanbanCard
+                                        lead={lead}
+                                        onStatusUpdate={updateLeadStatus}
+                                        onNotesUpdate={updateLeadNotes}
+                                        onViewContacts={openContactsModal}
+                                        onDelete={deleteLead}
+                                      />
+                                    </div>
+                                  ))
+                              }
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
               }
             </div>
