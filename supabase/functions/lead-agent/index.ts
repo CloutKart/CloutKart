@@ -109,63 +109,75 @@ async function googlePlacesSearch(
   apiKey: string,
   limitPerQuery = 5
 ): Promise<OutscraperBusiness[]> {
-  const results: OutscraperBusiness[] = [];
-  for (const query of queries) {
-    try {
-      const params = new URLSearchParams({
-        query,
-        key: apiKey,
-        language: "en",
-        region: "IN",
-        type: "establishment",
-      });
+  const allPlaces: Array<{ name: string; place_id: string; formatted_address: string; types: string[]; rating?: number; user_ratings_total?: number }> = [];
+
+  // Step 1: Text Search for each query — run in parallel
+  let requestDenied = false;
+  const searchResults = await Promise.allSettled(
+    queries.map(async (query) => {
+      const params = new URLSearchParams({ query, key: apiKey, language: "en", region: "IN" });
       const res = await fetch(
         `https://maps.googleapis.com/maps/api/place/textsearch/json?${params}`,
-        { signal: AbortSignal.timeout(10000) }
+        { signal: AbortSignal.timeout(12000) }
       );
-      if (!res.ok) { console.warn(`[GooglePlaces] HTTP ${res.status}`); continue; }
+      if (!res.ok) {
+        console.warn(`[GooglePlaces] Text search HTTP ${res.status} for "${query}"`);
+        return null;
+      }
       const data = await res.json();
-      if (data.status !== "OK" && data.status !== "ZERO_RESULTS") {
-        console.warn(`[GooglePlaces] Status: ${data.status}`);
-        continue;
+      console.log(`[GooglePlaces] Query="${query}" status=${data.status} results=${data.results?.length ?? 0}`);
+      if (data.status === "REQUEST_DENIED") {
+        console.error(`[GooglePlaces] REQUEST_DENIED — check: 1) Places API is enabled in GCP, 2) billing is set up, 3) key has no HTTP referrer restrictions`);
+        return "REQUEST_DENIED";
       }
-      const places = (data.results ?? []).slice(0, limitPerQuery);
-      for (const p of places) {
-        // Fetch details for phone + website (separate Details call)
-        let phone = "";
-        let site = "";
-        let google_maps_url = "";
-        if (p.place_id) {
-          try {
-            const det = await fetch(
-              `https://maps.googleapis.com/maps/api/place/details/json?place_id=${p.place_id}&fields=formatted_phone_number,website,url&key=${apiKey}`,
-              { signal: AbortSignal.timeout(8000) }
-            );
-            if (det.ok) {
-              const dj = await det.json();
-              phone = dj.result?.formatted_phone_number ?? "";
-              site  = dj.result?.website ?? "";
-              google_maps_url = dj.result?.url ?? "";
-            }
-          } catch { /* skip details on timeout */ }
-        }
-        results.push({
-          name: p.name,
-          full_address: p.formatted_address,
-          city: p.formatted_address?.split(",").slice(-3, -1).join(",").trim() ?? "",
-          phone: phone || undefined,
-          site: site || undefined,
-          category: p.types?.[0]?.replace(/_/g, " ") ?? "",
-          rating: p.rating,
-          reviews: p.user_ratings_total,
-          google_maps_url: google_maps_url || undefined,
-        });
-      }
-    } catch (e) {
-      console.warn(`[GooglePlaces] Query "${query}" failed:`, (e as Error).message);
+      if (data.status !== "OK") return null;
+      return (data.results ?? []).slice(0, limitPerQuery);
+    })
+  );
+
+  for (const r of searchResults) {
+    if (r.status === "fulfilled") {
+      if (r.value === "REQUEST_DENIED") { requestDenied = true; break; }
+      if (Array.isArray(r.value)) allPlaces.push(...r.value);
     }
   }
-  return results;
+
+  if (requestDenied || allPlaces.length === 0) return [];
+
+  // Step 2: Fetch place details in parallel (phone + website)
+  const detailsResults = await Promise.allSettled(
+    allPlaces.map(async (p) => {
+      if (!p.place_id) return null;
+      try {
+        const det = await fetch(
+          `https://maps.googleapis.com/maps/api/place/details/json?place_id=${p.place_id}&fields=formatted_phone_number,website,url&key=${apiKey}`,
+          { signal: AbortSignal.timeout(8000) }
+        );
+        if (!det.ok) return null;
+        const dj = await det.json();
+        return {
+          phone: dj.result?.formatted_phone_number ?? "",
+          site: dj.result?.website ?? "",
+          google_maps_url: dj.result?.url ?? "",
+        };
+      } catch { return null; }
+    })
+  );
+
+  return allPlaces.map((p, i) => {
+    const det = detailsResults[i].status === "fulfilled" ? detailsResults[i].value : null;
+    return {
+      name: p.name,
+      full_address: p.formatted_address,
+      city: p.formatted_address?.split(",").slice(-3, -1).join(",").trim() ?? "",
+      phone: det?.phone || undefined,
+      site: det?.site || undefined,
+      category: p.types?.[0]?.replace(/_/g, " ") ?? "",
+      rating: p.rating,
+      reviews: p.user_ratings_total,
+      google_maps_url: det?.google_maps_url || undefined,
+    };
+  });
 }
 
 function formatBusinessForPrompt(b: OutscraperBusiness, idx: number): string {
@@ -182,15 +194,17 @@ Category: ${b.category ?? "Unknown"}${phone}${site}${ig}${rating}${desc}`.trim()
 
 function buildSearchQueries(niche: string, targetMode: string, city: string): string[] {
   const loc = city?.trim() || "India";
+  // Use Google Maps-friendly queries — match what someone would search on Google Maps
   if (targetMode === "growth") {
     return [
-      `${niche} D2C brand ${loc}`,
-      `online ${niche} brand ${loc}`,
+      `${niche} brand ${loc}`,
+      `${niche} company ${loc}`,
     ];
   }
+  // Local mode — small shops, boutiques, home businesses
   return [
-    `homemade ${niche} ${loc}`,
-    `local ${niche} seller ${loc}`,
+    `${niche} boutique ${loc}`,
+    `${niche} store ${loc}`,
   ];
 }
 
@@ -207,11 +221,13 @@ function extractDomain(url: string): string | null {
 
 // ── System prompts ────────────────────────────────────────────────────────────
 
-const DISCOVER_LOCAL_SYSTEM = `You are CloutKart's lead generation specialist. CloutKart is an India-based performance creative studio that makes ads and social media creatives for small D2C brands. CloutKart is early-stage and NOT well-known — this means it must win clients that bigger agencies ignore.
+const DISCOVER_LOCAL_SYSTEM = `You are Ezio — CloutKart's precision lead hunter. Like the assassin who moves unseen through the crowd and strikes only the right target, you identify the exact brands that need CloutKart's help and ignore everyone else. No wasted effort. No missed targets. Every lead is a calculated strike.
+
+CloutKart is an India-based performance creative studio that makes ads and social media creatives for small D2C brands. CloutKart is early-stage and NOT well-known — this means it must win clients that bigger agencies ignore.
 
 TARGET: The smallest, least-known brands possible. Local city-level brands, home-kitchen food businesses, handmade product sellers, Instagram-only boutiques, WhatsApp-based businesses, first-time founders. These brands have zero creative team, use iPhone photos or Canva, and are desperate to look professional. A brand with 200–2,000 Instagram followers is a BETTER lead than one with 50,000.
 
-Your job: generate 4–6 scored lead profiles matching the given criteria.
+Your job: identify 4–6 high-value targets matching the given criteria. Be surgical. Every profile should feel like intel gathered from the shadows — specific, actionable, no filler.
 
 ## India-Specific Context
 CloutKart's best prospects are Indian local brands in niches like: homemade skincare/beauty, regional food & snacks, handmade fashion & jewellery, local fitness & wellness, small home decor sellers, regional pet care brands. They sell via Instagram DM, WhatsApp Business, local markets, and Meesho/Amazon India. They are NOT on LinkedIn. Find them on Instagram.
@@ -262,11 +278,13 @@ Return ONLY valid raw JSON — no markdown fences, no preamble. Exact structure:
   ]
 }`;
 
-const DISCOVER_GROWTH_SYSTEM = `You are CloutKart's lead generation specialist. CloutKart is an India-based performance creative studio that makes performance ads and social creatives for growing D2C brands. CloutKart is early-stage — it targets brands that are scaling fast but haven't yet hired a proper creative team or agency.
+const DISCOVER_GROWTH_SYSTEM = `You are Ezio — CloutKart's precision lead hunter. Like the assassin who studies his target before striking, you analyse every signal before committing to a lead. You move through the noise of thousands of D2C brands and surface only the ones worth pursuing — the ones at the exact inflection point where CloutKart's work will change their trajectory.
+
+CloutKart is an India-based performance creative studio that makes performance ads and social creatives for growing D2C brands. CloutKart is early-stage — it targets brands that are scaling fast but haven't yet hired a proper creative team or agency.
 
 TARGET: Bootstrapped or angel-funded Indian D2C brands with 5K–100K Instagram followers, running Meta/Instagram ads inconsistently, selling online (own website, Amazon, Nykaa, or similar), 1–3 years old, team of 1–10. These brands know they need better creatives but haven't committed to an agency yet.
 
-Your job: generate 4–6 scored lead profiles matching the given criteria.
+Your job: identify 4–6 high-value targets matching the given criteria. Be surgical. Every profile should feel like a dossier prepared before a mission — specific, actionable, no filler.
 
 ## India-Specific Context
 Growing D2C niches in India: skincare & personal care, health supplements, fashion & accessories, food & beverages, fitness gear, home & living, baby & kids. These brands run Meta ads, post Reels, have a Shopify or WooCommerce store, and are spending ₹50K–5L/month on ads but using generic or Canva creatives.
@@ -315,7 +333,7 @@ Return ONLY valid raw JSON — no markdown fences, no preamble. Exact structure:
   ]
 }`;
 
-const SCORE_SYSTEM = `You are CloutKart's lead qualification specialist. CloutKart is an India-based performance creative studio making ads and social creatives for the smallest D2C brands — local sellers, home-based businesses, first-time founders. CloutKart is NOT well-known and deliberately targets brands that bigger agencies ignore.
+const SCORE_SYSTEM = `You are Ezio — CloutKart's precision lead qualifier. You don't spray and pray. You study a target, assess every signal, and deliver a verdict: worthy or not. Your scoring is your blade — sharp, decisive, and always explained. CloutKart is an India-based performance creative studio making ads and social creatives for the smallest D2C brands — local sellers, home-based businesses, first-time founders. CloutKart is NOT well-known and deliberately targets brands that bigger agencies ignore.
 
 ## Who is a perfect CloutKart lead
 A local Indian brand selling via Instagram DM or WhatsApp, founder doing everything alone, posting Canva or iPhone photos, getting some orders but looking amateurish. They need to look professional but can't afford a full agency.
@@ -385,8 +403,8 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const PDL_API_KEY       = Deno.env.get("PDL_API_KEY")       ?? "";
-    const HUNTER_API_KEY    = Deno.env.get("HUNTER_API_KEY")    ?? "";
+    const PDL_API_KEY           = Deno.env.get("PDL_API_KEY")           ?? "";
+    const HUNTER_API_KEY        = Deno.env.get("HUNTER_API_KEY")        ?? "";
     const GOOGLE_PLACES_API_KEY = Deno.env.get("GOOGLE_PLACES_API_KEY") ?? "";
     const groq = new Groq({ apiKey: GROQ_API_KEY });
 
@@ -434,26 +452,29 @@ Return only the JSON object.`;
           { role: "system", content: discoverSystem },
           { role: "user", content: userPrompt },
         ],
-        max_tokens: 2400,
+        max_tokens: 3500,
         temperature: realBusinesses.length > 0 ? 0.3 : 0.6,
+        response_format: { type: "json_object" },
       });
 
       const raw = res.choices?.[0]?.message?.content?.trim() ?? "";
-      const cleaned = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/i, "").trim();
 
-      let result;
+      let result: { leads?: Array<Record<string, unknown>>; source?: string };
       try {
-        result = JSON.parse(cleaned);
+        result = JSON.parse(raw);
       } catch {
         console.error("[lead-agent discover] JSON parse failed:", raw);
         throw new Error("Model returned malformed JSON. Try again.");
       }
 
-      // Attach real contact info from Outscraper back onto each lead result
-      // (Groq may paraphrase names — match by index order when real businesses were used)
+      // Re-attach real contact info by name match (index-based matching is unreliable
+      // because the model may reorder results)
       if (realBusinesses.length > 0 && Array.isArray(result.leads)) {
-        result.leads = result.leads.map((lead: Record<string, unknown>, i: number) => {
-          const biz = realBusinesses[i];
+        const bizByName = Object.fromEntries(
+          realBusinesses.map(b => [b.name?.toLowerCase().trim() ?? "", b])
+        );
+        result.leads = result.leads.map((lead: Record<string, unknown>) => {
+          const biz = bizByName[(lead.name as string)?.toLowerCase().trim() ?? ""] ?? null;
           if (!biz) return lead;
           return {
             ...lead,
@@ -515,16 +536,16 @@ Return only the JSON object.`;
           { role: "system", content: SCORE_SYSTEM },
           { role: "user", content: userPrompt },
         ],
-        max_tokens: 1000,
-        temperature: 0.55,
+        max_tokens: 1400,
+        temperature: 0.4,
+        response_format: { type: "json_object" },
       });
 
       const raw = res.choices?.[0]?.message?.content?.trim() ?? "";
-      const cleaned = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/i, "").trim();
 
-      let result;
+      let result: Record<string, unknown>;
       try {
-        result = JSON.parse(cleaned);
+        result = JSON.parse(raw);
       } catch {
         console.error("[lead-agent score] JSON parse failed:", raw);
         throw new Error("Model returned malformed JSON. Try again.");

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, memo } from 'react';
+import { useState, useEffect, useRef, memo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate, Link } from 'react-router-dom';
 import {
@@ -227,7 +227,7 @@ const CustomSelect = memo(function CustomSelect({ value, onChange, options, plac
   );
 });
 
-function ScoreBar({ value, max = 10 }: { value: number; max?: number }) {
+const ScoreBar = memo(function ScoreBar({ value, max = 10 }: { value: number; max?: number }) {
   const pct = Math.min((value / max) * 100, 100);
   const color = pct >= 80 ? '#10B981' : pct >= 50 ? '#F59E0B' : '#F87171';
   return (
@@ -238,7 +238,7 @@ function ScoreBar({ value, max = 10 }: { value: number; max?: number }) {
       <span className="text-xs font-mono w-6 text-right flex-shrink-0" style={{ color }}>{value}</span>
     </div>
   );
-}
+});
 
 const LeadStatusDropdown = memo(function LeadStatusDropdown({ lead, onUpdate }: {
   lead: Lead;
@@ -285,6 +285,197 @@ const LeadStatusDropdown = memo(function LeadStatusDropdown({ lead, onUpdate }: 
         document.body
       )}
     </>
+  );
+});
+
+// ── DiscoverLeadCard — memo so it doesn't re-render on parent form changes ────
+const DiscoverLeadCard = memo(function DiscoverLeadCard({
+  lead, onSave,
+}: {
+  lead: LeadResult;
+  onSave: (lead: LeadResult) => void;
+}) {
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const scoreColor = lead.compositeScore >= 8 ? '#10B981' : lead.compositeScore >= 5 ? '#F59E0B' : '#F87171';
+
+  async function copy(text: string, id: string) {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedId(id);
+      setTimeout(() => setCopiedId(p => (p === id ? null : p)), 1800);
+    } catch { /* silent */ }
+  }
+
+  return (
+    <div className="rounded-2xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.08)' }}>
+      <div className="px-5 py-4 flex items-start justify-between gap-4 border-b" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
+        <div>
+          <p className="text-white font-heading font-bold text-base">{lead.name}</p>
+          <p className="text-[#9CA3AF] text-xs mt-0.5">Fit analysis for CloutKart</p>
+        </div>
+        <div className="flex items-center gap-3 flex-shrink-0">
+          <div className="text-right">
+            <p className="font-mono font-bold text-2xl leading-none" style={{ color: scoreColor }}>{lead.compositeScore}</p>
+            <p className="text-[10px] text-[#6B7280] mt-0.5">/ 10</p>
+          </div>
+          <button onClick={() => onSave(lead)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all"
+            style={{ background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.25)', color: '#818CF8' }}>
+            <Plus size={11} /> Save
+          </button>
+        </div>
+      </div>
+      <div className="px-5 py-4 space-y-4">
+        <div>
+          <p className="text-[10px] font-bold text-[#6B7280] uppercase tracking-widest mb-2">Score Breakdown</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {([
+              ['Creative Volume Need', lead.scoreBreakdown.creativeVolumeNeed],
+              ['Capacity Gap', lead.scoreBreakdown.capacityGap],
+              ['Budget Readiness', lead.scoreBreakdown.budgetReadiness],
+              ['Growth Stage Fit', lead.scoreBreakdown.growthStageFit],
+            ] as [string, number][]).map(([label, val]) => (
+              <div key={label}>
+                <p className="text-[10px] text-[#9CA3AF] mb-1">{label}</p>
+                <ScoreBar value={val} />
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />
+        <div>
+          <p className="text-[10px] font-bold text-[#6B7280] uppercase tracking-widest mb-1">Why They Need CloutKart</p>
+          <p className="text-[#D1D5DB] text-sm leading-relaxed">{lead.whyTheyNeedUs}</p>
+        </div>
+        <div>
+          <p className="text-[10px] font-bold text-[#6B7280] uppercase tracking-widest mb-1">Score Rationale</p>
+          <p className="text-[#9CA3AF] text-xs leading-relaxed italic">{lead.scoreRationale}</p>
+        </div>
+        <div className="h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />
+        <div className="grid sm:grid-cols-2 gap-4">
+          <div>
+            <p className="text-[10px] font-bold text-[#6B7280] uppercase tracking-widest mb-1">Target Profile</p>
+            <p className="text-[#D1D5DB] text-xs leading-relaxed">{lead.targetProfile}</p>
+          </div>
+          {lead.whereToFindThem && (
+            <div>
+              <p className="text-[10px] font-bold text-[#6B7280] uppercase tracking-widest mb-1">Where to Find Them</p>
+              <p className="text-[#D1D5DB] text-xs leading-relaxed">{lead.whereToFindThem}</p>
+            </div>
+          )}
+        </div>
+        {lead.outreachAngle && (
+          <div className="rounded-xl px-4 py-3 flex items-start gap-2" style={{ background: 'rgba(99,102,241,0.06)', border: '1px solid rgba(99,102,241,0.12)' }}>
+            <Send size={12} className="text-[#818CF8] mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="text-[10px] font-bold text-[#818CF8] uppercase tracking-widest mb-0.5">Outreach Angle</p>
+              <p className="text-[#C4C4E0] text-xs leading-relaxed">{lead.outreachAngle}</p>
+            </div>
+          </div>
+        )}
+        {(lead.phone || lead.website || lead.instagramHandle || lead.address) && (
+          <div className="rounded-xl p-4 space-y-2" style={{ background: 'rgba(16,185,129,0.05)', border: '1px solid rgba(16,185,129,0.2)' }}>
+            <p className="text-[10px] font-bold text-[#10B981] uppercase tracking-widest">Contact Info</p>
+            <div className="space-y-1.5">
+              {lead.phone && (
+                <div className="flex items-center justify-between gap-3 group">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-bold text-[#6B7280] uppercase w-16 flex-shrink-0">Phone</span>
+                    <span className="text-[#D1D5DB] text-xs">{lead.phone}</span>
+                  </div>
+                  <button onClick={() => copy(lead.phone!, 'ph')} className="opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: copiedId === 'ph' ? '#10B981' : '#6B7280' }}>
+                    <Copy size={11} />
+                  </button>
+                </div>
+              )}
+              {lead.website && (
+                <div className="flex items-center justify-between gap-3 group">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-bold text-[#6B7280] uppercase w-16 flex-shrink-0">Website</span>
+                    <a href={lead.website.startsWith('http') ? lead.website : `https://${lead.website}`} target="_blank" rel="noopener noreferrer"
+                      className="text-[#818CF8] text-xs hover:underline truncate max-w-[180px]">{lead.website.replace(/^https?:\/\/(www\.)?/, '')}</a>
+                  </div>
+                  <button onClick={() => copy(lead.website!, 'web')} className="opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: copiedId === 'web' ? '#10B981' : '#6B7280' }}>
+                    <Copy size={11} />
+                  </button>
+                </div>
+              )}
+              {lead.instagramHandle && (
+                <div className="flex items-center justify-between gap-3 group">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-bold text-[#6B7280] uppercase w-16 flex-shrink-0">Instagram</span>
+                    <a href={lead.instagramHandle} target="_blank" rel="noopener noreferrer"
+                      className="text-[#818CF8] text-xs hover:underline truncate max-w-[180px]">{lead.instagramHandle.replace('https://www.instagram.com/', '@').replace(/\/$/, '')}</a>
+                  </div>
+                  <button onClick={() => copy(lead.instagramHandle!, 'ig')} className="opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: copiedId === 'ig' ? '#10B981' : '#6B7280' }}>
+                    <Copy size={11} />
+                  </button>
+                </div>
+              )}
+              {lead.address && (
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-bold text-[#6B7280] uppercase w-16 flex-shrink-0">Location</span>
+                  <span className="text-[#9CA3AF] text-xs">{lead.address}</span>
+                </div>
+              )}
+              {lead.googleMapsUrl && (
+                <a href={lead.googleMapsUrl} target="_blank" rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-[10px] font-semibold mt-1" style={{ color: '#10B981' }}>
+                  View on Google Maps →
+                </a>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+});
+
+// ── LeadTrackerRow — memo so it doesn't re-render on parent state changes ─────
+const LeadTrackerRow = memo(function LeadTrackerRow({ lead, onStatusUpdate, onNotesUpdate, onViewContacts, onDelete }: {
+  lead: Lead;
+  onStatusUpdate: (id: string, status: string) => void;
+  onNotesUpdate: (id: string, notes: string) => void;
+  onViewContacts: (lead: Lead) => void;
+  onDelete: (id: string) => void;
+}) {
+  const scoreColor = lead.score !== null ? (lead.score >= 8 ? '#10B981' : lead.score >= 5 ? '#F59E0B' : '#F87171') : '#6B7280';
+  return (
+    <tr>
+      <td className="px-4 py-3 border-t border-white/[0.04]">
+        <p className="text-sm text-white font-medium">{lead.brand_name}</p>
+        {lead.business_name && <p className="text-[10px] text-[#6B7280] mt-0.5">{lead.business_name}</p>}
+      </td>
+      <td className="px-4 py-3 text-sm text-[#9CA3AF] border-t border-white/[0.04]">{lead.niche || '—'}</td>
+      <td className="px-4 py-3 text-sm text-[#9CA3AF] border-t border-white/[0.04] capitalize">{lead.platform?.replace('_', ' ') || '—'}</td>
+      <td className="px-4 py-3 border-t border-white/[0.04]">
+        {lead.score !== null
+          ? <span className="font-mono text-sm font-bold" style={{ color: scoreColor }}>{lead.score}</span>
+          : <span className="text-[#6B7280] text-sm">—</span>}
+      </td>
+      <td className="px-4 py-3 border-t border-white/[0.04]">
+        <LeadStatusDropdown lead={lead} onUpdate={onStatusUpdate} />
+      </td>
+      <td className="px-4 py-3 border-t border-white/[0.04] min-w-[180px]">
+        <input defaultValue={lead.notes ?? ''} onBlur={e => onNotesUpdate(lead.id, e.target.value)}
+          placeholder="Add notes…" className="w-full bg-transparent text-sm text-[#D1D5DB] placeholder-[#4B5563] focus:outline-none" />
+      </td>
+      <td className="px-4 py-3 border-t border-white/[0.04]">
+        <button onClick={() => onViewContacts(lead)}
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all"
+          style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)', color: '#818CF8' }}>
+          <Users size={11} /> View
+        </button>
+      </td>
+      <td className="px-4 py-3 text-xs text-[#6B7280] border-t border-white/[0.04]">{formatDate(lead.created_at)}</td>
+      <td className="px-4 py-3 border-t border-white/[0.04]">
+        <button onClick={() => onDelete(lead.id)} className="w-7 h-7 rounded-lg flex items-center justify-center opacity-40 hover:opacity-100 transition-opacity"
+          style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.15)' }}>
+          <Trash2 size={12} className="text-red-400" />
+        </button>
+      </td>
+    </tr>
   );
 });
 
@@ -1287,19 +1478,19 @@ export default function Admin() {
     setSavingLead(false);
   }
 
-  async function updateLeadStatus(id: string, status: string) {
+  const updateLeadStatus = useCallback(async (id: string, status: string) => {
     setLeads(prev => prev.map(l => l.id === id ? { ...l, status } : l));
     await supabase.from('leads').update({ status }).eq('id', id);
-  }
+  }, []);
 
-  async function updateLeadNotes(id: string, notes: string) {
+  const updateLeadNotes = useCallback(async (id: string, notes: string) => {
     await supabase.from('leads').update({ notes: notes.trim() || null }).eq('id', id);
-  }
+  }, []);
 
-  async function deleteLead(id: string) {
+  const deleteLead = useCallback(async (id: string) => {
     setLeads(prev => prev.filter(l => l.id !== id));
     await supabase.from('leads').delete().eq('id', id);
-  }
+  }, []);
 
   function exportLeadsCSV() {
     const rows = [['Brand Name', 'Business Name', 'Niche', 'Platform', 'Score', 'Status', 'Contact Info', 'Notes', 'Date']];
@@ -1344,7 +1535,7 @@ export default function Admin() {
     a.click();
   }
 
-  function openAddLeadFromResult(result: LeadResult) {
+  const openAddLeadFromResult = useCallback(function openAddLeadFromResult(result: LeadResult) {
     const platformMap: Record<string, string> = { 'Instagram DM': 'instagram_dm', 'WhatsApp': 'whatsapp', 'Email': 'email', 'LinkedIn': 'linkedin' };
     setAddLeadForm({
       ...DEFAULT_ADD_LEAD_FORM,
@@ -1363,7 +1554,7 @@ export default function Admin() {
         }
       }
     }
-  }
+  }, []);
 
   async function copyText(text: string, id: string) {
     try {
@@ -1374,7 +1565,7 @@ export default function Admin() {
   }
 
   // ── Lead contacts functions ─────────────────────────────────────────────────
-  async function openContactsModal(lead: Lead) {
+  const openContactsModal = useCallback(async function openContactsModal(lead: Lead) {
     setContactsLead(lead);
     setShowAddContact(false);
     setContactForm({ ...DEFAULT_CONTACT_FORM });
@@ -1387,7 +1578,7 @@ export default function Admin() {
       .order('created_at', { ascending: true });
     setLeadContacts((data as LeadContact[]) ?? []);
     setLoadingContacts(false);
-  }
+  }, []);
 
   async function fetchContactsFromHunter() {
     if (!contactsLead || !hunterDomain.trim()) return;
@@ -1465,7 +1656,7 @@ export default function Admin() {
     { id: 'users',      icon: Users,           label: 'Users'             },
     { id: 'cloutclub',  icon: Sparkles,        label: 'Clout Club'        },
     { id: 'messages',   icon: MessageSquare,   label: 'Messages'          },
-    { id: 'leads',      icon: Target,          label: 'Lead Agent'        },
+    { id: 'leads',      icon: Target,          label: 'Ezio'              },
     { id: 'portfolio',  icon: Image,           label: 'Portfolio'         },
     { id: 'settings',   icon: Settings,        label: 'Settings'          },
   ];
@@ -1932,16 +2123,16 @@ export default function Admin() {
         {tab === 'leads' && (
           <div className="space-y-8">
             <div>
-              <h2 className="font-heading font-bold text-white text-2xl">Lead Agent</h2>
-              <p className="text-[#9CA3AF] text-sm mt-1">Find and score prospects for CloutKart — biased toward small brands and startups.</p>
+              <h2 className="font-heading font-bold text-white text-2xl">Ezio</h2>
+              <p className="text-[#9CA3AF] text-sm mt-1">Precision lead hunting for CloutKart — surgical targeting, no wasted effort.</p>
             </div>
 
             {/* ── Discover Leads ─────────────────────────────────────── */}
             <div className="glass-card rounded-2xl overflow-hidden" style={{ border: '1px solid rgba(99,102,241,0.15)' }}>
               <div className="px-6 py-4 border-b flex items-center gap-2" style={{ borderColor: 'rgba(99,102,241,0.1)' }}>
                 <Target size={15} className="text-[#818CF8]" />
-                <h3 className="font-heading font-semibold text-white text-base">Discover Leads</h3>
-                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full ml-auto" style={{ background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.2)', color: '#818CF8' }}>Groq AI</span>
+                <h3 className="font-heading font-semibold text-white text-base">Hunt Targets</h3>
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full ml-auto" style={{ background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.2)', color: '#818CF8' }}>Ezio · Groq</span>
               </div>
               <div className="p-6 space-y-5">
                 {/* Mode toggle */}
@@ -2039,7 +2230,7 @@ export default function Admin() {
                 <button onClick={discoverLeads} disabled={discovering}
                   className="flex items-center gap-2 px-6 py-3 rounded-2xl text-sm font-semibold transition-all disabled:opacity-50"
                   style={{ background: 'linear-gradient(135deg,rgba(99,102,241,0.9),rgba(59,130,246,0.9))', color: '#fff' }}>
-                  {discovering ? <><Loader size={14} className="animate-spin" /> Finding Leads…</> : <><Target size={14} /> Find Leads</>}
+                  {discovering ? <><Loader size={14} className="animate-spin" /> Hunting…</> : <><Target size={14} /> Hunt Targets</>}
                 </button>
 
                 {discoverError && (
@@ -2071,143 +2262,9 @@ export default function Admin() {
                         <ArrowRight size={11} style={{ transform: 'rotate(90deg)' }} /> Export CSV
                       </button>
                     </div>
-                    {discoverResults.map((lead, i) => {
-                      const scoreColor = lead.compositeScore >= 8 ? '#10B981' : lead.compositeScore >= 5 ? '#F59E0B' : '#F87171';
-                      return (
-                        <div key={i} className="rounded-2xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                          <div className="px-5 py-4 flex items-start justify-between gap-4 border-b" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
-                            <div>
-                              <p className="text-white font-heading font-bold text-base">{lead.name}</p>
-                              <p className="text-[#9CA3AF] text-xs mt-0.5">Fit analysis for CloutKart</p>
-                            </div>
-                            <div className="flex items-center gap-3 flex-shrink-0">
-                              <div className="text-right">
-                                <p className="font-mono font-bold text-2xl leading-none" style={{ color: scoreColor }}>{lead.compositeScore}</p>
-                                <p className="text-[10px] text-[#6B7280] mt-0.5">/ 10</p>
-                              </div>
-                              <button onClick={() => openAddLeadFromResult(lead)}
-                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all"
-                                style={{ background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.25)', color: '#818CF8' }}>
-                                <Plus size={11} /> Save
-                              </button>
-                            </div>
-                          </div>
-                          <div className="px-5 py-4 space-y-4">
-                            {/* Score breakdown */}
-                            <div>
-                              <p className="text-[10px] font-bold text-[#6B7280] uppercase tracking-widest mb-2">Score Breakdown</p>
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                {([
-                                  ['Creative Volume Need', lead.scoreBreakdown.creativeVolumeNeed],
-                                  ['Capacity Gap', lead.scoreBreakdown.capacityGap],
-                                  ['Budget Readiness', lead.scoreBreakdown.budgetReadiness],
-                                  ['Growth Stage Fit', lead.scoreBreakdown.growthStageFit],
-                                ] as [string, number][]).map(([label, val]) => (
-                                  <div key={label}>
-                                    <p className="text-[10px] text-[#9CA3AF] mb-1">{label}</p>
-                                    <ScoreBar value={val} />
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                            <div className="h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />
-                            {/* Why they need us */}
-                            <div>
-                              <p className="text-[10px] font-bold text-[#6B7280] uppercase tracking-widest mb-1">Why They Need CloutKart</p>
-                              <p className="text-[#D1D5DB] text-sm leading-relaxed">{lead.whyTheyNeedUs}</p>
-                            </div>
-                            <div>
-                              <p className="text-[10px] font-bold text-[#6B7280] uppercase tracking-widest mb-1">Score Rationale</p>
-                              <p className="text-[#9CA3AF] text-xs leading-relaxed italic">{lead.scoreRationale}</p>
-                            </div>
-                            <div className="h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />
-                            <div className="grid sm:grid-cols-2 gap-4">
-                              <div>
-                                <p className="text-[10px] font-bold text-[#6B7280] uppercase tracking-widest mb-1">Target Profile</p>
-                                <p className="text-[#D1D5DB] text-xs leading-relaxed">{lead.targetProfile}</p>
-                              </div>
-                              {lead.whereToFindThem && (
-                                <div>
-                                  <p className="text-[10px] font-bold text-[#6B7280] uppercase tracking-widest mb-1">Where to Find Them</p>
-                                  <p className="text-[#D1D5DB] text-xs leading-relaxed">{lead.whereToFindThem}</p>
-                                </div>
-                              )}
-                            </div>
-                            {lead.outreachAngle && (
-                              <div className="rounded-xl px-4 py-3 flex items-start gap-2" style={{ background: 'rgba(99,102,241,0.06)', border: '1px solid rgba(99,102,241,0.12)' }}>
-                                <Send size={12} className="text-[#818CF8] mt-0.5 flex-shrink-0" />
-                                <div>
-                                  <p className="text-[10px] font-bold text-[#818CF8] uppercase tracking-widest mb-0.5">Outreach Angle</p>
-                                  <p className="text-[#C4C4E0] text-xs leading-relaxed">{lead.outreachAngle}</p>
-                                </div>
-                              </div>
-                            )}
-                            {/* Real contact info from Outscraper */}
-                            {(lead.phone || lead.website || lead.instagramHandle || lead.address) && (
-                              <div className="rounded-xl p-4 space-y-2" style={{ background: 'rgba(16,185,129,0.05)', border: '1px solid rgba(16,185,129,0.2)' }}>
-                                <p className="text-[10px] font-bold text-[#10B981] uppercase tracking-widest">Contact Info</p>
-                                <div className="space-y-1.5">
-                                  {lead.phone && (
-                                    <div className="flex items-center justify-between gap-3 group">
-                                      <div className="flex items-center gap-2">
-                                        <span className="text-[10px] font-bold text-[#6B7280] uppercase w-16 flex-shrink-0">Phone</span>
-                                        <span className="text-[#D1D5DB] text-xs">{lead.phone}</span>
-                                      </div>
-                                      <button onClick={() => copyText(lead.phone!, `ph-disc-${i}`)}
-                                        className="opacity-0 group-hover:opacity-100 transition-opacity"
-                                        style={{ color: copiedId === `ph-disc-${i}` ? '#10B981' : '#6B7280' }}>
-                                        <Copy size={11} />
-                                      </button>
-                                    </div>
-                                  )}
-                                  {lead.website && (
-                                    <div className="flex items-center justify-between gap-3 group">
-                                      <div className="flex items-center gap-2">
-                                        <span className="text-[10px] font-bold text-[#6B7280] uppercase w-16 flex-shrink-0">Website</span>
-                                        <a href={lead.website.startsWith('http') ? lead.website : `https://${lead.website}`} target="_blank" rel="noopener noreferrer"
-                                          className="text-[#818CF8] text-xs hover:underline truncate max-w-[180px]">{lead.website.replace(/^https?:\/\/(www\.)?/, '')}</a>
-                                      </div>
-                                      <button onClick={() => copyText(lead.website!, `web-disc-${i}`)}
-                                        className="opacity-0 group-hover:opacity-100 transition-opacity"
-                                        style={{ color: copiedId === `web-disc-${i}` ? '#10B981' : '#6B7280' }}>
-                                        <Copy size={11} />
-                                      </button>
-                                    </div>
-                                  )}
-                                  {lead.instagramHandle && (
-                                    <div className="flex items-center justify-between gap-3 group">
-                                      <div className="flex items-center gap-2">
-                                        <span className="text-[10px] font-bold text-[#6B7280] uppercase w-16 flex-shrink-0">Instagram</span>
-                                        <a href={lead.instagramHandle} target="_blank" rel="noopener noreferrer"
-                                          className="text-[#818CF8] text-xs hover:underline truncate max-w-[180px]">{lead.instagramHandle.replace('https://www.instagram.com/', '@').replace(/\/$/, '')}</a>
-                                      </div>
-                                      <button onClick={() => copyText(lead.instagramHandle!, `ig-disc-${i}`)}
-                                        className="opacity-0 group-hover:opacity-100 transition-opacity"
-                                        style={{ color: copiedId === `ig-disc-${i}` ? '#10B981' : '#6B7280' }}>
-                                        <Copy size={11} />
-                                      </button>
-                                    </div>
-                                  )}
-                                  {lead.address && (
-                                    <div className="flex items-center gap-2">
-                                      <span className="text-[10px] font-bold text-[#6B7280] uppercase w-16 flex-shrink-0">Location</span>
-                                      <span className="text-[#9CA3AF] text-xs">{lead.address}</span>
-                                    </div>
-                                  )}
-                                  {lead.googleMapsUrl && (
-                                    <a href={lead.googleMapsUrl} target="_blank" rel="noopener noreferrer"
-                                      className="inline-flex items-center gap-1 text-[10px] font-semibold mt-1"
-                                      style={{ color: '#10B981' }}>
-                                      View on Google Maps →
-                                    </a>
-                                  )}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
+                    {discoverResults.map((lead, i) => (
+                      <DiscoverLeadCard key={i} lead={lead} onSave={openAddLeadFromResult} />
+                    ))}
                   </div>
                 )}
               </div>
@@ -2217,8 +2274,8 @@ export default function Admin() {
             <div className="glass-card rounded-2xl overflow-hidden" style={{ border: '1px solid rgba(168,85,247,0.15)' }}>
               <div className="px-6 py-4 border-b flex items-center gap-2" style={{ borderColor: 'rgba(168,85,247,0.1)' }}>
                 <Sparkles size={15} className="text-[#C084FC]" />
-                <h3 className="font-heading font-semibold text-white text-base">Score a Brand</h3>
-                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full ml-auto" style={{ background: 'rgba(168,85,247,0.1)', border: '1px solid rgba(168,85,247,0.2)', color: '#C084FC' }}>Groq AI · PDL if URL provided</span>
+                <h3 className="font-heading font-semibold text-white text-base">Qualify a Target</h3>
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full ml-auto" style={{ background: 'rgba(168,85,247,0.1)', border: '1px solid rgba(168,85,247,0.2)', color: '#C084FC' }}>Ezio · Groq · PDL if URL</span>
               </div>
               <div className="p-6 space-y-4">
                 <div className="grid grid-cols-2 gap-4">
@@ -2249,7 +2306,7 @@ export default function Admin() {
                 <button onClick={scoreBrand} disabled={scoring || !scoreForm.brandName.trim()}
                   className="flex items-center gap-2 px-6 py-3 rounded-2xl text-sm font-semibold transition-all disabled:opacity-50"
                   style={{ background: 'linear-gradient(135deg,rgba(168,85,247,0.8),rgba(99,102,241,0.8))', color: '#fff' }}>
-                  {scoring ? <><Loader size={14} className="animate-spin" /> Scoring…</> : <><Sparkles size={14} /> Score This Brand</>}
+                  {scoring ? <><Loader size={14} className="animate-spin" /> Qualifying…</> : <><Sparkles size={14} /> Qualify This Target</>}
                 </button>
 
                 {scoreError && (
@@ -2362,7 +2419,7 @@ export default function Admin() {
             <div className="glass-card rounded-2xl overflow-hidden" style={{ border: '1px solid rgba(16,185,129,0.12)' }}>
               <div className="px-6 py-4 border-b flex items-center gap-2" style={{ borderColor: 'rgba(16,185,129,0.1)' }}>
                 <TrendingUp size={15} className="text-[#10B981]" />
-                <h3 className="font-heading font-semibold text-white text-base">Lead Tracker</h3>
+                <h3 className="font-heading font-semibold text-white text-base">Mission Log</h3>
                 <div className="ml-auto flex items-center gap-2">
                   <button onClick={loadLeads} className="flex items-center gap-1.5 text-xs text-[#9CA3AF] hover:text-white transition-colors"><RefreshCw size={12} /></button>
                   {leads.length > 0 && (
@@ -2397,48 +2454,16 @@ export default function Admin() {
                           </tr>
                         </thead>
                         <tbody>
-                          {leads.map(lead => {
-                            const scoreColor = lead.score !== null ? (lead.score >= 8 ? '#10B981' : lead.score >= 5 ? '#F59E0B' : '#F87171') : '#6B7280';
-                            return (
-                              <tr key={lead.id}>
-                                <td className="px-4 py-3 border-t border-white/[0.04]">
-                                  <p className="text-sm text-white font-medium">{lead.brand_name}</p>
-                                  {lead.business_name && <p className="text-[10px] text-[#6B7280] mt-0.5">{lead.business_name}</p>}
-                                </td>
-                                <td className="px-4 py-3 text-sm text-[#9CA3AF] border-t border-white/[0.04]">{lead.niche || '—'}</td>
-                                <td className="px-4 py-3 text-sm text-[#9CA3AF] border-t border-white/[0.04] capitalize">{lead.platform?.replace('_', ' ') || '—'}</td>
-                                <td className="px-4 py-3 border-t border-white/[0.04]">
-                                  {lead.score !== null
-                                    ? <span className="font-mono text-sm font-bold" style={{ color: scoreColor }}>{lead.score}</span>
-                                    : <span className="text-[#6B7280] text-sm">—</span>}
-                                </td>
-                                <td className="px-4 py-3 border-t border-white/[0.04]">
-                                  <LeadStatusDropdown lead={lead} onUpdate={updateLeadStatus} />
-                                </td>
-                                <td className="px-4 py-3 border-t border-white/[0.04] min-w-[180px]">
-                                  <input
-                                    defaultValue={lead.notes ?? ''}
-                                    onBlur={e => updateLeadNotes(lead.id, e.target.value)}
-                                    placeholder="Add notes…"
-                                    className="w-full bg-transparent text-sm text-[#D1D5DB] placeholder-[#4B5563] focus:outline-none" />
-                                </td>
-                                <td className="px-4 py-3 border-t border-white/[0.04]">
-                                  <button onClick={() => openContactsModal(lead)}
-                                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all"
-                                    style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)', color: '#818CF8' }}>
-                                    <Users size={11} /> View
-                                  </button>
-                                </td>
-                                <td className="px-4 py-3 text-xs text-[#6B7280] border-t border-white/[0.04]">{formatDate(lead.created_at)}</td>
-                                <td className="px-4 py-3 border-t border-white/[0.04]">
-                                  <button onClick={() => deleteLead(lead.id)} className="w-7 h-7 rounded-lg flex items-center justify-center opacity-40 hover:opacity-100 transition-opacity"
-                                    style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.15)' }}>
-                                    <Trash2 size={12} className="text-red-400" />
-                                  </button>
-                                </td>
-                              </tr>
-                            );
-                          })}
+                          {leads.map(lead => (
+                            <LeadTrackerRow
+                              key={lead.id}
+                              lead={lead}
+                              onStatusUpdate={updateLeadStatus}
+                              onNotesUpdate={updateLeadNotes}
+                              onViewContacts={openContactsModal}
+                              onDelete={deleteLead}
+                            />
+                          ))}
                         </tbody>
                       </table>
                     </div>
