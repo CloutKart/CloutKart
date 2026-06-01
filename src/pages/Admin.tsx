@@ -39,6 +39,13 @@ interface ApprovedVision {
   whatWeWillCreate: string[];
 }
 
+interface PixieVisionResult {
+  creativeVibe: { label: string; description: string };
+  whyItFits: string;
+  hook: string;
+  visualDirection: string;
+}
+
 interface CreativeRequest {
   id: string;
   user_id: string;
@@ -470,11 +477,12 @@ const DiscoverLeadCard = memo(function DiscoverLeadCard({
 });
 
 // ── KanbanCard — single lead card in the Mission Log Kanban board ─────────────
-const KanbanCard = memo(function KanbanCard({ lead, onStatusUpdate, onNotesUpdate, onViewContacts, onDelete }: {
+const KanbanCard = memo(function KanbanCard({ lead, onStatusUpdate, onNotesUpdate, onViewContacts, onPixieVision, onDelete }: {
   lead: Lead;
   onStatusUpdate: (id: string, status: string) => void;
   onNotesUpdate: (id: string, notes: string) => void;
   onViewContacts: (lead: Lead) => void;
+  onPixieVision: (lead: Lead) => void;
   onDelete: (id: string) => void;
 }) {
   const scoreColor = lead.score !== null ? (lead.score >= 8 ? '#10B981' : lead.score >= 5 ? '#F59E0B' : '#F87171') : '#6B7280';
@@ -507,6 +515,11 @@ const KanbanCard = memo(function KanbanCard({ lead, onStatusUpdate, onNotesUpdat
             className="w-6 h-6 rounded-lg flex items-center justify-center"
             style={{ background: 'rgba(99,102,241,0.1)', color: '#818CF8' }}>
             <Users size={11} />
+          </button>
+          <button onClick={() => onPixieVision(lead)} title="Pixie Vision"
+            className="w-6 h-6 rounded-lg flex items-center justify-center"
+            style={{ background: 'rgba(168,85,247,0.1)', color: '#C084FC' }}>
+            <Sparkles size={11} />
           </button>
           <a
             href={`https://www.facebook.com/ads/library/?ad_type=all&country=ALL&q=${encodeURIComponent(lead.brand_name)}&search_type=keyword_unordered`}
@@ -677,6 +690,210 @@ function VisionModal({ vision, brandName, onClose }: { vision: ApprovedVision; b
                 </div>
               ))}
             </div>
+          </div>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
+// ─── Pixie Vision Modal ──────────────────────────────────────────────────────
+function PixieVisionModal({
+  lead,
+  products,
+  loadingProducts,
+  selectedProduct,
+  onSelectProduct,
+  vision,
+  generatingVision,
+  onGenerate,
+  onRegenerate,
+  onClose,
+}: {
+  lead: { brand_name: string; score: number | null; niche: string | null; notes: string | null };
+  products: string[];
+  loadingProducts: boolean;
+  selectedProduct: string | null;
+  onSelectProduct: (p: string) => void;
+  vision: PixieVisionResult | null;
+  generatingVision: boolean;
+  onGenerate: () => void;
+  onRegenerate: () => void;
+  onClose: () => void;
+}) {
+  const scoreColor = lead.score !== null ? (lead.score >= 8 ? '#10B981' : lead.score >= 5 ? '#F59E0B' : '#F87171') : '#6B7280';
+  const sectionLabel = "text-[10px] font-bold text-[#6B7280] uppercase tracking-[0.12em] mb-2 block";
+
+  return createPortal(
+    <div className="fixed inset-0 z-[200] flex items-center justify-center px-4" onClick={onClose}>
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+      <div
+        className="relative w-full max-w-2xl rounded-3xl overflow-hidden flex flex-col"
+        style={{ background: 'rgba(12,8,24,0.98)', border: '1px solid rgba(168,85,247,0.25)', maxHeight: '90vh' }}
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="px-6 py-4 flex items-center justify-between border-b flex-shrink-0"
+          style={{ borderColor: 'rgba(168,85,247,0.15)' }}>
+          <div className="flex items-center gap-2">
+            <Sparkles size={15} className="text-[#C084FC]" />
+            <div>
+              <h3 className="font-heading font-bold text-white text-base leading-tight">Pixie Vision</h3>
+              <p className="text-[#9CA3AF] text-xs">
+                {lead.brand_name}{selectedProduct ? ` — ${selectedProduct}` : ''}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            {vision && (
+              <span className="flex items-center gap-1.5 text-[10px] font-semibold px-2.5 py-1 rounded-full"
+                style={{ background: 'rgba(168,85,247,0.1)', border: '1px solid rgba(168,85,247,0.2)', color: '#C084FC' }}>
+                <Sparkles size={9} /> Outreach preview
+              </span>
+            )}
+            <button onClick={onClose}
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-[#6B7280] hover:text-white"
+              style={{ border: '1px solid rgba(255,255,255,0.08)' }}>
+              <X size={14} />
+            </button>
+          </div>
+        </div>
+
+        {/* Body */}
+        <div className="flex overflow-hidden flex-1 min-h-0">
+          {/* Left — brand card + product picker */}
+          <div className="w-52 flex-shrink-0 border-r flex flex-col overflow-y-auto"
+            style={{ borderColor: 'rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.015)' }}>
+            <div className="p-4 space-y-3">
+              {/* Mini brand card */}
+              <div>
+                <div className="flex items-start justify-between gap-1">
+                  <p className="text-white text-sm font-semibold leading-tight">{lead.brand_name}</p>
+                  {lead.score !== null && (
+                    <span className="font-mono text-sm font-bold flex-shrink-0" style={{ color: scoreColor }}>{lead.score}</span>
+                  )}
+                </div>
+                {lead.niche && <p className="text-[#6B7280] text-[11px] mt-0.5">{lead.niche}</p>}
+                {lead.notes && <p className="text-[#9CA3AF] text-[11px] mt-2 leading-relaxed line-clamp-3">{lead.notes}</p>}
+              </div>
+
+              <div className="h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />
+
+              {/* Product picker */}
+              <div>
+                <span className={sectionLabel}>Top Products</span>
+                {loadingProducts ? (
+                  <div className="flex items-center gap-2 text-[#6B7280] text-xs">
+                    <Loader size={11} className="animate-spin" /> Loading…
+                  </div>
+                ) : products.length === 0 ? (
+                  <p className="text-[#6B7280] text-xs">No products found.</p>
+                ) : (
+                  <div className="space-y-1.5">
+                    {products.map(p => (
+                      <button
+                        key={p}
+                        onClick={() => onSelectProduct(p)}
+                        className="w-full text-left px-2.5 py-1.5 rounded-lg text-xs transition-all"
+                        style={{
+                          background: selectedProduct === p ? 'rgba(168,85,247,0.15)' : 'rgba(255,255,255,0.03)',
+                          border: `1px solid ${selectedProduct === p ? 'rgba(168,85,247,0.4)' : 'rgba(255,255,255,0.07)'}`,
+                          color: selectedProduct === p ? '#C084FC' : '#D1D5DB',
+                        }}
+                      >
+                        {p}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Generate button pinned to bottom */}
+            <div className="p-4 pt-0 mt-auto">
+              {!vision ? (
+                <button
+                  onClick={onGenerate}
+                  disabled={generatingVision || !selectedProduct}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all disabled:opacity-40"
+                  style={{ background: 'rgba(168,85,247,0.15)', border: '1px solid rgba(168,85,247,0.35)', color: '#C084FC' }}
+                >
+                  {generatingVision ? <><Loader size={13} className="animate-spin" /> Generating…</> : <><Sparkles size={13} /> Generate vision</>}
+                </button>
+              ) : (
+                <button
+                  onClick={onRegenerate}
+                  disabled={generatingVision}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all disabled:opacity-40"
+                  style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: '#9CA3AF' }}
+                >
+                  {generatingVision ? <><Loader size={13} className="animate-spin" /> Regenerating…</> : <><RefreshCw size={13} /> Regenerate</>}
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Right — vision output */}
+          <div className="flex-1 overflow-y-auto p-6">
+            {generatingVision && !vision && (
+              <div className="h-full flex flex-col items-center justify-center gap-3 text-[#6B7280]">
+                <Sparkles size={22} className="text-[#C084FC] animate-pulse" />
+                <p className="text-sm">Crafting your vision…</p>
+              </div>
+            )}
+
+            {!vision && !generatingVision && (
+              <div className="h-full flex flex-col items-center justify-center gap-2 text-[#4B5563]">
+                <Sparkles size={22} />
+                <p className="text-sm text-center">Select a product and click<br />Generate vision</p>
+              </div>
+            )}
+
+            {vision && (
+              <div className="space-y-5">
+                {/* Creative Vibe */}
+                <div>
+                  <span className={sectionLabel}>Creative Vibe</span>
+                  <div className="flex items-start gap-3">
+                    <span className="flex-shrink-0 px-3 py-1 rounded-full text-xs font-semibold"
+                      style={{ background: 'rgba(168,85,247,0.1)', border: '1px solid rgba(168,85,247,0.3)', color: '#C084FC' }}>
+                      {vision.creativeVibe.label}
+                    </span>
+                    <p className="text-[#D1D5DB] text-sm leading-relaxed">{vision.creativeVibe.description}</p>
+                  </div>
+                </div>
+
+                <div className="h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />
+
+                {/* Why It Fits */}
+                {vision.whyItFits && (
+                  <>
+                    <div>
+                      <span className={sectionLabel}>Why It Fits</span>
+                      <p className="text-[#D1D5DB] text-sm leading-relaxed">{vision.whyItFits}</p>
+                    </div>
+                    <div className="h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />
+                  </>
+                )}
+
+                {/* Hook */}
+                <div>
+                  <span className={sectionLabel}>Hook</span>
+                  <div className="rounded-xl px-4 py-3" style={{ background: 'rgba(168,85,247,0.06)', borderLeft: '3px solid rgba(168,85,247,0.5)' }}>
+                    <p className="text-white font-semibold text-base leading-snug">{vision.hook}</p>
+                  </div>
+                </div>
+
+                <div className="h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />
+
+                {/* Visual Direction */}
+                <div>
+                  <span className={sectionLabel}>Visual Direction</span>
+                  <p className="text-[#D1D5DB] text-sm leading-relaxed">{vision.visualDirection}</p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -1130,6 +1347,14 @@ export default function Admin() {
   const [savingContact, setSavingContact] = useState(false);
   const [deletingContactId, setDeletingContactId] = useState<string | null>(null);
 
+  // Pixie Vision state
+  const [pixieLead, setPixieLead] = useState<Lead | null>(null);
+  const [pixieProducts, setPixieProducts] = useState<string[]>([]);
+  const [pixieLoadingProducts, setPixieLoadingProducts] = useState(false);
+  const [pixieSelectedProduct, setPixieSelectedProduct] = useState<string | null>(null);
+  const [pixieVision, setPixieVision] = useState<PixieVisionResult | null>(null);
+  const [pixieGenerating, setPixieGenerating] = useState(false);
+
   const handleSignOut = async () => { await signOut(); navigate('/'); };
 
   useEffect(() => { loadOverview(); loadAdminProfile(); }, []);
@@ -1427,6 +1652,53 @@ export default function Admin() {
     const csv = rows.map(r => r.map(c => `"${c}"`).join(',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'users.csv'; a.click();
+  }
+
+  // ── Pixie Vision functions ────────────────────────────────────────────────
+  function detectWebsiteFromLead(lead: Lead): string | null {
+    const ci = lead.contact_info ?? '';
+    if (ci.startsWith('http') || ci.includes('.com') || ci.includes('.in') || ci.includes('.co')) return ci;
+    return null;
+  }
+
+  async function openPixieVision(lead: Lead) {
+    setPixieLead(lead);
+    setPixieVision(null);
+    setPixieSelectedProduct(null);
+    setPixieProducts([]);
+
+    const website = detectWebsiteFromLead(lead);
+    if (!website) return;
+
+    setPixieLoadingProducts(true);
+    try {
+      const { data } = await supabase.functions.invoke('lead-agent', {
+        body: { mode: 'scrape_products', website, brandName: lead.brand_name, niche: lead.niche ?? '' },
+      });
+      setPixieProducts(data?.products ?? []);
+      if (data?.products?.length > 0) setPixieSelectedProduct(data.products[0]);
+    } catch { /* ignore */ }
+    setPixieLoadingProducts(false);
+  }
+
+  async function generatePixieVision() {
+    if (!pixieLead || !pixieSelectedProduct) return;
+    setPixieGenerating(true);
+    const website = detectWebsiteFromLead(pixieLead);
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-creative-vision', {
+        body: {
+          brandName: pixieLead.brand_name,
+          niche: pixieLead.niche ?? 'D2C Brand',
+          adFormat: 'Instagram Feed Static',
+          description: `Product: ${pixieSelectedProduct}. ${pixieLead.notes ?? ''}`.trim(),
+          referenceUrl: website ?? undefined,
+        },
+      });
+      if (error) throw new Error(error.message);
+      setPixieVision(data as PixieVisionResult);
+    } catch { /* ignore */ }
+    setPixieGenerating(false);
   }
 
   // ── Lead Agent functions ────────────────────────────────────────────────────
@@ -2560,6 +2832,7 @@ export default function Admin() {
                                         onStatusUpdate={updateLeadStatus}
                                         onNotesUpdate={updateLeadNotes}
                                         onViewContacts={openContactsModal}
+                                        onPixieVision={openPixieVision}
                                         onDelete={deleteLead}
                                       />
                                     </div>
@@ -2843,6 +3116,22 @@ export default function Admin() {
                 </div>
               </div>,
               document.body
+            )}
+
+            {/* ── Pixie Vision Modal ────────────────────────────────────────── */}
+            {pixieLead && (
+              <PixieVisionModal
+                lead={pixieLead}
+                products={pixieProducts}
+                loadingProducts={pixieLoadingProducts}
+                selectedProduct={pixieSelectedProduct}
+                onSelectProduct={setPixieSelectedProduct}
+                vision={pixieVision}
+                generatingVision={pixieGenerating}
+                onGenerate={generatePixieVision}
+                onRegenerate={() => { setPixieVision(null); generatePixieVision(); }}
+                onClose={() => { setPixieLead(null); setPixieVision(null); setPixieProducts([]); setPixieSelectedProduct(null); }}
+              />
             )}
           </div>
         )}

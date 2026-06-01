@@ -19,6 +19,9 @@ A client has submitted a brief. Your job is to write a creative vision document 
 **Creative Vibe**
 Name the world the campaign lives in. 2–3 words that feel like a subculture, a decade, a texture — not a marketing category. "Raw Signal" beats "Bold and Modern". "Borrowed Nostalgia" beats "Retro Feel". "Fever Dream Commerce" beats "Playful and Fun". Then in 1–2 sentences: what emotional state does this aesthetic provoke in the viewer, and why does it work for this specific brand?
 
+**Why It Fits**
+2 sentences. First: what about this brand's specific positioning, product truth, or customer makes this creative vibe a natural match — not a generic fit, something specific to them. Second: what tension or insight does this direction resolve that a safer, more generic approach would miss. This is brand alignment, not vibe explanation — you already explained the vibe above.
+
 **Visual Direction**
 Direct this like you're on set. Name the exact shot (macro texture close-up, low-angle hero, over-shoulder POV), the exact light (practical tungsten spill, overexposed midday bleach, single hard key with deep shadow fall-off), and the ONE visual detail that makes this frame unforgettable. 3 sentences max. No "vibrant" or "sleek" — describe what the camera actually sees.
 
@@ -111,6 +114,7 @@ Exact structure required:
     "label": "2–3 word aesthetic name",
     "description": "1–2 sentences on mood, brand positioning, and emotional provocation"
   },
+  "whyItFits": "2 sentences on why this creative direction is the right match for this specific brand — grounded in their positioning, product truth, or customer insight",
   "visualDirection": "2–3 sentences of specific directorial instruction — shot, light, the one unforgettable detail",
   "productColors": [
     { "name": "Evocative name tied to the physical product", "hex": "#RRGGBB" },

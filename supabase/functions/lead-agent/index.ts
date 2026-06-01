@@ -219,6 +219,29 @@ function extractDomain(url: string): string | null {
   }
 }
 
+async function scrapeWebsiteSnippet(url: string): Promise<string> {
+  try {
+    const fullUrl = url.startsWith("http") ? url : `https://${url}`;
+    const res = await fetch(fullUrl, {
+      signal: AbortSignal.timeout(6000),
+      headers: { "User-Agent": "Mozilla/5.0 (compatible; CloutKart/1.0)" },
+    });
+    if (!res.ok) return "";
+    const html = await res.text();
+
+    const title = html.match(/<title[^>]*>([^<]{4,120})<\/title>/i)?.[1]?.replace(/\s+/g, " ").trim() ?? "";
+    const metaDesc =
+      html.match(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']{10,300})["']/i)?.[1] ??
+      html.match(/<meta[^>]+content=["']([^"']{10,300})["'][^>]+name=["']description["']/i)?.[1] ??
+      "";
+    const h1 = html.match(/<h1[^>]*>([^<]{4,120})<\/h1>/i)?.[1]?.replace(/\s+/g, " ").trim() ?? "";
+
+    return [title, h1, metaDesc].filter(Boolean).join(" | ").slice(0, 400);
+  } catch {
+    return "";
+  }
+}
+
 // ── System prompts ────────────────────────────────────────────────────────────
 
 const DISCOVER_LOCAL_SYSTEM = `You are Ezio — CloutKart's precision lead hunter. Like the assassin who moves unseen through the crowd and strikes only the right target, you identify the exact brands that need CloutKart's help and ignore everyone else. No wasted effort. No missed targets. Every lead is a calculated strike.
@@ -253,6 +276,18 @@ LOWEST FIT SIGNALS — score 3–5:
 - 50,000+ followers
 - Mentions "agency" or "team" in bio
 - Already running polished Meta ads
+
+## Outreach Angle Rules
+
+1. NEVER begin with: "Hi, I saw your brand...", "I came across your profile...", "Hope you're doing well...", or any generic sales opener.
+2. The first sentence MUST reference a specific observation about the brand.
+3. Identify ONE opportunity — do not list multiple problems.
+4. Never claim the brand has poor creatives, poor ROAS, low engagement, or weak marketing unless objective evidence exists. If evidence is unavailable, frame as opportunity: "There may be an opportunity to…", "One area worth exploring…", "We noticed potential to…"
+5. Sound founder-to-founder, not agency-to-client.
+6. Structure: Observation → Opportunity → Why CloutKart → Conversation starter.
+7. Maximum 50 words.
+8. Banned buzzwords: disruptive, game-changing, innovative, cutting-edge, revolutionary.
+9. Every outreach angle must feel custom-written for this specific brand — no templates.
 
 ## Output Format
 
@@ -309,6 +344,18 @@ LOWEST FIT SIGNALS — score 3–5:
 - 100K+ followers with polished, consistent brand aesthetic
 - Series A+ funded with a full marketing team
 
+## Outreach Angle Rules
+
+1. NEVER begin with: "Hi, I saw your brand...", "I came across your profile...", "Hope you're doing well...", or any generic sales opener.
+2. The first sentence MUST reference a specific observation about the brand.
+3. Identify ONE opportunity — do not list multiple problems.
+4. Never claim the brand has poor creatives, poor ROAS, low engagement, or weak marketing unless objective evidence exists. If evidence is unavailable, frame as opportunity: "There may be an opportunity to…", "One area worth exploring…", "We noticed potential to…"
+5. Sound founder-to-founder, not agency-to-client.
+6. Structure: Observation → Opportunity → Why CloutKart → Conversation starter.
+7. Maximum 50 words.
+8. Banned buzzwords: disruptive, game-changing, innovative, cutting-edge, revolutionary.
+9. Every outreach angle must feel custom-written for this specific brand — no templates.
+
 ## Output Format
 
 Return ONLY valid raw JSON — no markdown fences, no preamble. Exact structure:
@@ -348,13 +395,18 @@ A local Indian brand selling via Instagram DM or WhatsApp, founder doing everyth
 BIAS: Score higher if the brand has "DM to order", homemade/handmade/local in bio, WhatsApp number visible, city name in bio, under 5K followers, no website. These are the best CloutKart prospects.
 
 ## Outreach Message Rules
-- 2–4 sentences only — these founders are busy, not corporate
-- Instagram DM / WhatsApp = super casual, like a peer texting — no formality, no "Dear founder"
-- Email = short and direct, one clear value line
-- Reference something SPECIFIC you can see about this brand — their product, their bio, their posting style
-- Lead with what you noticed, not what you sell
-- End with one easy question, not a pitch
-- BANNED: "elevate", "game changer", "revolutionize", "unleash", "world-class", "innovative", "Dear", "I hope this message finds you"
+
+1. NEVER begin with: "Hi, I saw your brand...", "I came across your profile...", "Hope you're doing well...", or any generic sales opener.
+2. The first sentence MUST reference a specific observation about the brand.
+3. Identify ONE opportunity — do not list multiple problems.
+4. Never claim the brand has poor creatives, poor ROAS, low engagement, or weak marketing unless objective evidence exists. If evidence is unavailable, frame as opportunity: "There may be an opportunity to…", "One area worth exploring…", "We noticed potential to…"
+5. Sound founder-to-founder, not agency-to-client.
+6. Structure: Observation → Opportunity → Why CloutKart → Conversation starter.
+7. Maximum 50 words.
+8. Banned buzzwords: disruptive, game-changing, innovative, cutting-edge, revolutionary. Also banned: "elevate", "unleash", "world-class", "Dear", "I hope this message finds you".
+9. Instagram DM / WhatsApp = peer texting tone. Email = short and direct.
+10. End with one easy question, not a pitch.
+11. Every message must feel custom-written for this specific brand — no templates.
 
 ## Output Format
 
@@ -388,9 +440,9 @@ Deno.serve(async (req: Request) => {
     const body = await req.json();
     const { mode } = body;
 
-    if (mode !== "discover" && mode !== "score" && mode !== "fetch_contacts") {
+    if (mode !== "discover" && mode !== "score" && mode !== "fetch_contacts" && mode !== "scrape_products") {
       return new Response(
-        JSON.stringify({ error: "mode must be 'discover', 'score', or 'fetch_contacts'" }),
+        JSON.stringify({ error: "mode must be 'discover', 'score', 'fetch_contacts', or 'scrape_products'" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -423,21 +475,38 @@ Deno.serve(async (req: Request) => {
         realBusinesses = await googlePlacesSearch(queries, GOOGLE_PLACES_API_KEY, 5);
         console.log(`[Ezio] Places returned ${realBusinesses.length} businesses`);
 
-        // For growth-mode businesses with a website, enrich with PDL in parallel
+        // Enrich with PDL (growth mode) and website snippets — run in parallel
         let pdlMap: Record<string, PDLCompany> = {};
-        if (PDL_API_KEY && targetMode === "growth" && realBusinesses.length > 0) {
-          const enrichResults = await Promise.allSettled(
-            realBusinesses.map(async (b) => {
-              if (!b.site) return null;
-              const domain = b.site.replace(/^https?:\/\/(www\.)?/, "").split("/")[0];
-              const data = await pdlEnrich(domain, PDL_API_KEY);
-              return data ? { domain, data } : null;
-            })
-          );
-          for (const r of enrichResults) {
-            if (r.status === "fulfilled" && r.value) {
-              pdlMap[r.value.domain] = r.value.data;
-            }
+        let websiteMap: Record<string, string> = {};
+
+        if (realBusinesses.length > 0) {
+          const [pdlResults, websiteResults] = await Promise.all([
+            // PDL: growth mode only
+            PDL_API_KEY && targetMode === "growth"
+              ? Promise.allSettled(
+                  realBusinesses.map(async (b) => {
+                    if (!b.site) return null;
+                    const domain = b.site.replace(/^https?:\/\/(www\.)?/, "").split("/")[0];
+                    const data = await pdlEnrich(domain, PDL_API_KEY);
+                    return data ? { domain, data } : null;
+                  })
+                )
+              : Promise.resolve([]),
+            // Website snippets: all modes
+            Promise.allSettled(
+              realBusinesses.map(async (b) => {
+                if (!b.site) return null;
+                const snippet = await scrapeWebsiteSnippet(b.site);
+                return snippet ? { site: b.site, snippet } : null;
+              })
+            ),
+          ]);
+
+          for (const r of pdlResults) {
+            if (r.status === "fulfilled" && r.value) pdlMap[r.value.domain] = r.value.data;
+          }
+          for (const r of websiteResults) {
+            if (r.status === "fulfilled" && r.value) websiteMap[r.value.site] = r.value.snippet;
           }
         }
 
@@ -447,7 +516,8 @@ Deno.serve(async (req: Request) => {
               const domain = b.site?.replace(/^https?:\/\/(www\.)?/, "").split("/")[0] ?? "";
               const pdl = pdlMap[domain];
               const pdlSection = pdl ? `\nPDL Data: ${formatPDLForPrompt(pdl)}` : "";
-              return formatBusinessForPrompt(b, i) + pdlSection;
+              const websiteSnippet = b.site && websiteMap[b.site] ? `\nWebsite copy: ${websiteMap[b.site]}` : "";
+              return formatBusinessForPrompt(b, i) + pdlSection + websiteSnippet;
             }).join("\n\n")
           }`;
         }
@@ -535,13 +605,17 @@ Return only the JSON object.`;
       }
 
       let enrichContext = "";
-      if (PDL_API_KEY && brandUrl) {
+      if (brandUrl) {
         const domain = extractDomain(brandUrl);
-        if (domain) {
-          const company = await pdlEnrich(domain, PDL_API_KEY);
-          if (company) {
-            enrichContext = `\n\n## COMPANY DATA FROM PEOPLE DATA LABS\n\n${formatPDLForPrompt(company)}`;
-          }
+        const [company, websiteSnippet] = await Promise.all([
+          PDL_API_KEY && domain ? pdlEnrich(domain, PDL_API_KEY) : Promise.resolve(null),
+          scrapeWebsiteSnippet(brandUrl),
+        ]);
+        if (company) {
+          enrichContext += `\n\n## COMPANY DATA FROM PEOPLE DATA LABS\n\n${formatPDLForPrompt(company)}`;
+        }
+        if (websiteSnippet) {
+          enrichContext += `\n\nWebsite copy: ${websiteSnippet}`;
         }
       }
 
@@ -615,6 +689,88 @@ Return only the JSON object.`;
 
       return new Response(
         JSON.stringify({ contacts }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // ── SCRAPE PRODUCTS MODE ──────────────────────────────────────────────────
+    if (mode === "scrape_products") {
+      const { website, brandName, niche } = body;
+
+      if (!website) {
+        return new Response(
+          JSON.stringify({ products: [] }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const fullUrl = website.startsWith("http") ? website : `https://${website}`;
+
+      // Fetch homepage + try one product/collection page in parallel
+      const candidateUrls = [
+        fullUrl,
+        `${fullUrl.replace(/\/$/, "")}/collections/all`,
+        `${fullUrl.replace(/\/$/, "")}/products`,
+        `${fullUrl.replace(/\/$/, "")}/shop`,
+      ];
+
+      const htmlChunks: string[] = [];
+      const fetchResults = await Promise.allSettled(
+        candidateUrls.slice(0, 2).map(url =>
+          fetch(url, {
+            signal: AbortSignal.timeout(7000),
+            headers: { "User-Agent": "Mozilla/5.0 (compatible; CloutKart/1.0)" },
+          }).then(r => r.ok ? r.text() : "")
+        )
+      );
+      for (const r of fetchResults) {
+        if (r.status === "fulfilled" && r.value) {
+          const stripped = r.value
+            .replace(/<script[\s\S]*?<\/script>/gi, " ")
+            .replace(/<style[\s\S]*?<\/style>/gi, " ")
+            .replace(/<[^>]+>/g, " ")
+            .replace(/\s+/g, " ")
+            .trim()
+            .slice(0, 1800);
+          htmlChunks.push(stripped);
+        }
+      }
+
+      if (htmlChunks.length === 0) {
+        return new Response(
+          JSON.stringify({ products: [] }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const extractRes = await groq.chat.completions.create({
+        model: MODEL,
+        messages: [
+          {
+            role: "system",
+            content: "You extract specific product names from website text. Return ONLY a JSON object with a 'products' key containing an array of product name strings. Example: {\"products\":[\"Ashwagandha KSM-66 500mg\",\"Pure Shilajit Resin\",\"Chyawanprash 500g\"]}. If none found, return {\"products\":[]}.",
+          },
+          {
+            role: "user",
+            content: `Brand: ${brandName ?? "Unknown"} | Niche: ${niche ?? "Unknown"}\n\nWebsite text:\n${htmlChunks.join("\n\n---\n\n")}`,
+          },
+        ],
+        max_tokens: 250,
+        temperature: 0.1,
+        response_format: { type: "json_object" },
+      });
+
+      const raw = extractRes.choices?.[0]?.message?.content?.trim() ?? "{}";
+      let products: string[] = [];
+      try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed.products)) products = parsed.products;
+        else if (Array.isArray(parsed.items)) products = parsed.items;
+        else if (Array.isArray(parsed)) products = parsed;
+      } catch { /* ignore */ }
+
+      return new Response(
+        JSON.stringify({ products: products.filter(p => typeof p === "string" && p.trim()).slice(0, 6) }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
