@@ -451,7 +451,7 @@ export default function ScrollStory() {
             zIndex: 10,
             background: '#080808',
             opacity: show ? 1 : 0,
-            pointerEvents: show ? 'auto' : 'none',
+            pointerEvents: 'none',
             transition: 'opacity 0.15s ease',
             overflow: 'hidden',
           }}>
