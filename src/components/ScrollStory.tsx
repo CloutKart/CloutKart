@@ -276,6 +276,7 @@ export default function ScrollStory() {
   const [active, setActive] = useState(0);
   const [localProg, setLocalProg] = useState(1);
   const rafRef = useRef<number>(0);
+  const touchStartX = useRef<number>(0);
 
   useEffect(() => {
     setLocalProg(0);
@@ -320,7 +321,7 @@ export default function ScrollStory() {
             How It Works
           </div>
           <h2 className="font-heading font-bold text-white leading-tight tracking-tight"
-            style={{ fontSize: 'clamp(1.6rem, 3.5vw, 2.8rem)' }}>
+            style={{ fontSize: 'clamp(1.25rem, 4vw, 2.8rem)' }}>
             From brief to{' '}
             <span className="gradient-text">converting creative</span>
             {' '}in four steps
@@ -383,23 +384,33 @@ export default function ScrollStory() {
           <div className="relative">
             <div className="absolute -inset-6 rounded-3xl pointer-events-none"
               style={{ background: 'radial-gradient(ellipse at center, rgba(168,85,247,0.05) 0%, transparent 70%)' }} />
-            <div className="overflow-hidden">
-              <div
-                style={{
-                  display: 'flex',
-                  transform: `translateX(-${active * 100}%)`,
-                  transition: 'transform 0.42s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
-                  willChange: 'transform',
-                }}
-              >
-                {scenes.map((scene, i) => (
-                  <div key={i} style={{ minWidth: '100%', flexShrink: 0 }}>
-                    <div className="flex items-center justify-center py-2">
-                      {scene}
-                    </div>
+            {/* Slides use absolute positioning so translateX(100%) reliably equals container width */}
+            <div
+              className="relative overflow-hidden"
+              onTouchStart={(e) => { touchStartX.current = e.touches[0].clientX; }}
+              onTouchEnd={(e) => {
+                const delta = touchStartX.current - e.changedTouches[0].clientX;
+                if (Math.abs(delta) > 48) goTo(active + (delta > 0 ? 1 : -1));
+              }}
+            >
+              {scenes.map((scene, i) => (
+                <div
+                  key={i}
+                  className="w-full"
+                  style={{
+                    position: i === active ? 'relative' : 'absolute',
+                    top: 0,
+                    left: 0,
+                    transform: `translateX(${(i - active) * 100}%)`,
+                    transition: 'transform 0.42s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+                    willChange: 'transform',
+                  }}
+                >
+                  <div className="flex items-center justify-center py-2">
+                    {scene}
                   </div>
-                ))}
-              </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
