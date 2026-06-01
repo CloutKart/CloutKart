@@ -419,9 +419,33 @@ Deno.serve(async (req: Request) => {
       if (GOOGLE_PLACES_API_KEY && niche) {
         const queries = buildSearchQueries(niche, targetMode ?? "local", city ?? "");
         realBusinesses = await googlePlacesSearch(queries, GOOGLE_PLACES_API_KEY, 5);
+
+        // For growth-mode businesses with a website, enrich with PDL in parallel
+        let pdlMap: Record<string, PDLCompany> = {};
+        if (PDL_API_KEY && targetMode === "growth" && realBusinesses.length > 0) {
+          const enrichResults = await Promise.allSettled(
+            realBusinesses.map(async (b) => {
+              if (!b.site) return null;
+              const domain = b.site.replace(/^https?:\/\/(www\.)?/, "").split("/")[0];
+              const data = await pdlEnrich(domain, PDL_API_KEY);
+              return data ? { domain, data } : null;
+            })
+          );
+          for (const r of enrichResults) {
+            if (r.status === "fulfilled" && r.value) {
+              pdlMap[r.value.domain] = r.value.data;
+            }
+          }
+        }
+
         if (realBusinesses.length > 0) {
           realBusinessContext = `\n\n## REAL BUSINESSES FROM GOOGLE MAPS (score these actual businesses)\n\n${
-            realBusinesses.map((b, i) => formatBusinessForPrompt(b, i)).join("\n\n")
+            realBusinesses.map((b, i) => {
+              const domain = b.site?.replace(/^https?:\/\/(www\.)?/, "").split("/")[0] ?? "";
+              const pdl = pdlMap[domain];
+              const pdlSection = pdl ? `\nPDL Data: ${formatPDLForPrompt(pdl)}` : "";
+              return formatBusinessForPrompt(b, i) + pdlSection;
+            }).join("\n\n")
           }`;
         }
       }
