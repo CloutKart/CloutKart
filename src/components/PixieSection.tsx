@@ -12,9 +12,9 @@ function DemoMock() {
         <span className="ml-2 text-[10px] text-white/20 font-mono">clout-kart.com/dashboard</span>
       </div>
 
-      <div className="grid grid-cols-2 gap-0">
-        {/* ── LEFT: Brief form ── */}
-        <div className="p-4 border-r border-white/[0.06]">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-0">
+        {/* ── LEFT: Brief form (hidden on mobile — vision panel is the centrepiece) ── */}
+        <div className="hidden sm:block p-4 border-r border-white/[0.06]">
           <div className="text-[10px] font-bold text-white/50 uppercase tracking-widest mb-3 font-mono">New Creative Brief</div>
           {[
             { label: 'Brand Name', value: 'Brewora' },
@@ -51,7 +51,7 @@ function DemoMock() {
               <Sparkles size={10} style={{ color: '#A855F7' }} />
               <span className="text-[11px] font-bold text-white font-heading">Our vision</span>
             </div>
-            <span className="flex items-center gap-1 text-[8px] font-semibold px-2 py-0.5 rounded-full"
+            <span className="hidden sm:flex items-center gap-1 text-[8px] font-semibold px-2 py-0.5 rounded-full"
               style={{ background: 'rgba(168,85,247,0.1)', border: '1px solid rgba(168,85,247,0.2)', color: '#C084FC' }}>
               <Sparkles size={7} />
               Pixie · AI Creative Intelligence
