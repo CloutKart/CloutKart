@@ -2279,7 +2279,7 @@ export default function Admin() {
                         )}
                         {discoverSource === 'ai_archetypes' && (
                           <span className="text-[9px] font-bold px-2 py-0.5 rounded-full" style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)', color: '#818CF8' }}>
-                            AI archetypes · add GOOGLE_PLACES_API_KEY for real contacts
+                            AI archetypes
                           </span>
                         )}
                       </div>
