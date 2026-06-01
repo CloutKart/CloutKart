@@ -39,21 +39,6 @@ interface ApprovedVision {
   whatWeWillCreate: string[];
 }
 
-interface PixieVisionResult {
-  creativeVibe: { label: string; description: string };
-  whyItFits: string;
-  hook: string;
-  visualDirection: string;
-  productColors?: Array<{ name: string; hex: string }>;
-  vibeColors?: Array<{ name: string; hex: string }>;
-  vibeColorRationale?: string;
-}
-
-interface PixieProduct {
-  name: string;
-  imageUrl?: string | null;
-}
-
 interface CreativeRequest {
   id: string;
   user_id: string;
@@ -485,12 +470,11 @@ const DiscoverLeadCard = memo(function DiscoverLeadCard({
 });
 
 // ── KanbanCard — single lead card in the Mission Log Kanban board ─────────────
-const KanbanCard = memo(function KanbanCard({ lead, onStatusUpdate, onNotesUpdate, onViewContacts, onPixieVision, onDelete }: {
+const KanbanCard = memo(function KanbanCard({ lead, onStatusUpdate, onNotesUpdate, onViewContacts, onDelete }: {
   lead: Lead;
   onStatusUpdate: (id: string, status: string) => void;
   onNotesUpdate: (id: string, notes: string) => void;
   onViewContacts: (lead: Lead) => void;
-  onPixieVision: (lead: Lead) => void;
   onDelete: (id: string) => void;
 }) {
   const scoreColor = lead.score !== null ? (lead.score >= 8 ? '#10B981' : lead.score >= 5 ? '#F59E0B' : '#F87171') : '#6B7280';
@@ -523,11 +507,6 @@ const KanbanCard = memo(function KanbanCard({ lead, onStatusUpdate, onNotesUpdat
             className="w-6 h-6 rounded-lg flex items-center justify-center"
             style={{ background: 'rgba(99,102,241,0.1)', color: '#818CF8' }}>
             <Users size={11} />
-          </button>
-          <button onClick={() => onPixieVision(lead)} title="Pixie Vision"
-            className="w-6 h-6 rounded-lg flex items-center justify-center"
-            style={{ background: 'rgba(168,85,247,0.1)', color: '#C084FC' }}>
-            <Sparkles size={11} />
           </button>
           <a
             href={`https://www.facebook.com/ads/library/?ad_type=all&country=ALL&q=${encodeURIComponent(lead.brand_name)}&search_type=keyword_unordered`}
@@ -698,367 +677,6 @@ function VisionModal({ vision, brandName, onClose }: { vision: ApprovedVision; b
                 </div>
               ))}
             </div>
-          </div>
-        </div>
-      </div>
-    </div>,
-    document.body
-  );
-}
-
-// ─── Typewriter ─────────────────────────────────────────────────────────────
-function Typewriter({ text, speed = 18, onDone }: { text: string; speed?: number; onDone?: () => void }) {
-  const [n, setN] = useState(0);
-  const firedRef = useRef(false);
-  useEffect(() => {
-    if (!text) { onDone?.(); return; }
-    setN(0);
-    firedRef.current = false;
-    let i = 0;
-    const id = setInterval(() => {
-      i++;
-      setN(i);
-      if (i >= text.length && !firedRef.current) {
-        firedRef.current = true;
-        clearInterval(id);
-        onDone?.();
-      }
-    }, speed);
-    return () => clearInterval(id);
-  }, [text]);
-  return (
-    <>
-      {text.slice(0, n)}
-      {n < text.length && (
-        <span className="inline-block w-px h-[0.85em] bg-white/40 animate-pulse ml-0.5 align-text-bottom" />
-      )}
-    </>
-  );
-}
-
-// ─── Pixie Vision Modal ──────────────────────────────────────────────────────
-function PixieVisionModal({
-  lead,
-  products,
-  loadingProducts,
-  website,
-  onFetchProducts,
-  selectedProduct,
-  onSelectProduct,
-  vision,
-  generatingVision,
-  error,
-  onGenerate,
-  onRegenerate,
-  onClose,
-}: {
-  lead: { brand_name: string; score: number | null; niche: string | null; notes: string | null };
-  products: PixieProduct[];
-  loadingProducts: boolean;
-  website: string;
-  onFetchProducts: (url: string) => void;
-  selectedProduct: string | null;
-  onSelectProduct: (p: string) => void;
-  vision: PixieVisionResult | null;
-  generatingVision: boolean;
-  error: string;
-  onGenerate: () => void;
-  onRegenerate: () => void;
-  onClose: () => void;
-}) {
-  const scoreColor = lead.score !== null ? (lead.score >= 8 ? '#10B981' : lead.score >= 5 ? '#F59E0B' : '#F87171') : '#6B7280';
-  const sectionLabel = "text-[10px] font-bold text-[#6B7280] uppercase tracking-[0.12em] mb-2 block";
-  const [urlInput, setUrlInput] = useState(website);
-  const [animKey, setAnimKey] = useState(0);
-  const [phase, setPhase] = useState(0);
-  const advance = useCallback(() => setPhase(p => p + 1), []);
-
-  // Reset animation when a new vision arrives
-  useEffect(() => {
-    if (vision) { setPhase(0); setAnimKey(k => k + 1); }
-  }, [vision]);
-
-  // Color story fades in after Visual Direction (phase 4); auto-advance
-  useEffect(() => {
-    if (phase === 4) { const t = setTimeout(advance, 600); return () => clearTimeout(t); }
-  }, [phase]);
-
-  const show = (n: number) => phase >= n;
-
-  const selectedImg = products.find(p => p.name === selectedProduct)?.imageUrl;
-
-  return createPortal(
-    <div className="fixed inset-0 z-[200] flex items-center justify-center px-4" onClick={onClose}>
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
-      <div
-        className="relative w-full max-w-2xl rounded-3xl overflow-hidden flex flex-col"
-        style={{ background: 'rgba(12,8,24,0.98)', border: '1px solid rgba(168,85,247,0.25)', maxHeight: '90vh' }}
-        onClick={e => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="px-6 py-4 flex items-center justify-between border-b flex-shrink-0"
-          style={{ borderColor: 'rgba(168,85,247,0.15)' }}>
-          <div className="flex items-center gap-2">
-            <Sparkles size={15} className="text-[#C084FC]" />
-            <div>
-              <h3 className="font-heading font-bold text-white text-base leading-tight">Pixie Vision</h3>
-              <p className="text-[#9CA3AF] text-xs">
-                {lead.brand_name}{selectedProduct ? ` — ${selectedProduct}` : ''}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            {vision && (
-              <span className="flex items-center gap-1.5 text-[10px] font-semibold px-2.5 py-1 rounded-full"
-                style={{ background: 'rgba(168,85,247,0.1)', border: '1px solid rgba(168,85,247,0.2)', color: '#C084FC' }}>
-                <Sparkles size={9} /> Outreach preview
-              </span>
-            )}
-            <button onClick={onClose}
-              className="w-8 h-8 rounded-lg flex items-center justify-center text-[#6B7280] hover:text-white"
-              style={{ border: '1px solid rgba(255,255,255,0.08)' }}>
-              <X size={14} />
-            </button>
-          </div>
-        </div>
-
-        {/* Body */}
-        <div className="flex overflow-hidden flex-1 min-h-0">
-          {/* Left — brand card + product picker */}
-          <div className="w-56 flex-shrink-0 border-r flex flex-col overflow-y-auto"
-            style={{ borderColor: 'rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.015)' }}>
-            <div className="p-4 space-y-3">
-              {/* Mini brand card */}
-              <div>
-                <div className="flex items-start justify-between gap-1">
-                  <p className="text-white text-sm font-semibold leading-tight">{lead.brand_name}</p>
-                  {lead.score !== null && (
-                    <span className="font-mono text-sm font-bold flex-shrink-0" style={{ color: scoreColor }}>{lead.score}</span>
-                  )}
-                </div>
-                {lead.niche && <p className="text-[#6B7280] text-[11px] mt-0.5">{lead.niche}</p>}
-                {lead.notes && <p className="text-[#9CA3AF] text-[11px] mt-2 leading-relaxed line-clamp-3">{lead.notes}</p>}
-              </div>
-
-              <div className="h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />
-
-              {/* Website URL input */}
-              <div>
-                <span className={sectionLabel}>Website</span>
-                <div className="flex items-center gap-1 rounded-lg overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
-                  <input
-                    value={urlInput}
-                    onChange={e => setUrlInput(e.target.value)}
-                    onKeyDown={e => { if (e.key === 'Enter' && urlInput.trim()) onFetchProducts(urlInput.trim()); }}
-                    placeholder="brand.com"
-                    className="flex-1 min-w-0 bg-transparent text-[11px] text-white placeholder-[#4B5563] focus:outline-none px-2 py-1.5"
-                  />
-                  <button
-                    onClick={() => urlInput.trim() && onFetchProducts(urlInput.trim())}
-                    disabled={loadingProducts || !urlInput.trim()}
-                    className="px-2 py-1.5 text-[10px] font-semibold border-l disabled:opacity-40 transition-all flex-shrink-0"
-                    style={{ borderColor: 'rgba(255,255,255,0.1)', color: '#818CF8' }}
-                  >
-                    {loadingProducts ? <Loader size={10} className="animate-spin" /> : 'Fetch'}
-                  </button>
-                </div>
-              </div>
-
-              {/* Product picker */}
-              <div>
-                <span className={sectionLabel}>Top Products</span>
-                {loadingProducts ? (
-                  <div className="flex items-center gap-2 text-[#6B7280] text-xs">
-                    <Loader size={11} className="animate-spin" /> Scanning…
-                  </div>
-                ) : products.length === 0 ? (
-                  <p className="text-[#6B7280] text-[11px] leading-relaxed">No products found. Paste the website URL above and click Fetch.</p>
-                ) : (
-                  <div className="space-y-1.5">
-                    {products.map(p => (
-                      <button
-                        key={p.name}
-                        onClick={() => onSelectProduct(p.name)}
-                        className="w-full text-left rounded-lg text-xs transition-all flex items-center gap-2 overflow-hidden"
-                        style={{
-                          background: selectedProduct === p.name ? 'rgba(168,85,247,0.15)' : 'rgba(255,255,255,0.03)',
-                          border: `1px solid ${selectedProduct === p.name ? 'rgba(168,85,247,0.4)' : 'rgba(255,255,255,0.07)'}`,
-                          color: selectedProduct === p.name ? '#C084FC' : '#D1D5DB',
-                        }}
-                      >
-                        {p.imageUrl ? (
-                          <img src={p.imageUrl} alt="" className="w-9 h-9 object-cover flex-shrink-0 rounded-l-lg" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-                        ) : (
-                          <div className="w-9 h-9 flex-shrink-0 rounded-l-lg flex items-center justify-center" style={{ background: 'rgba(168,85,247,0.08)' }}>
-                            <Sparkles size={10} className="text-[#6B7280]" />
-                          </div>
-                        )}
-                        <span className="py-1.5 pr-2 leading-snug">{p.name}</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Generate button pinned to bottom */}
-            <div className="p-4 pt-0 mt-auto">
-              {!vision ? (
-                <button
-                  onClick={onGenerate}
-                  disabled={generatingVision || !selectedProduct}
-                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all disabled:opacity-40"
-                  style={{ background: 'rgba(168,85,247,0.15)', border: '1px solid rgba(168,85,247,0.35)', color: '#C084FC' }}
-                >
-                  {generatingVision ? <><Loader size={13} className="animate-spin" /> Generating…</> : <><Sparkles size={13} /> Generate vision</>}
-                </button>
-              ) : (
-                <button
-                  onClick={onRegenerate}
-                  disabled={generatingVision}
-                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all disabled:opacity-40"
-                  style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: '#9CA3AF' }}
-                >
-                  {generatingVision ? <><Loader size={13} className="animate-spin" /> Regenerating…</> : <><RefreshCw size={13} /> Regenerate</>}
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Right — vision output */}
-          <div className="flex-1 overflow-y-auto p-6">
-            {generatingVision && !vision && (
-              <div className="h-full flex flex-col items-center justify-center gap-3 text-[#6B7280]">
-                <Sparkles size={22} className="text-[#C084FC] animate-pulse" />
-                <p className="text-sm">Crafting your vision…</p>
-              </div>
-            )}
-
-            {!vision && !generatingVision && (
-              <div className="h-full flex flex-col items-center justify-center gap-2 text-[#4B5563]">
-                {error ? (
-                  <>
-                    <AlertCircle size={22} className="text-[#F87171]" />
-                    <p className="text-sm text-center text-[#F87171] max-w-[200px]">{error}</p>
-                  </>
-                ) : (
-                  <>
-                    {selectedImg ? (
-                      <img src={selectedImg} alt={selectedProduct ?? ''} className="w-20 h-20 rounded-xl object-cover mb-1 opacity-60" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-                    ) : (
-                      <Sparkles size={22} />
-                    )}
-                    <p className="text-sm text-center">{selectedProduct ? <>Selected: <span className="text-[#C084FC]">{selectedProduct}</span><br />Click Generate vision</> : <>Select a product and click<br />Generate vision</>}</p>
-                  </>
-                )}
-              </div>
-            )}
-
-            {vision && (
-              <div className="space-y-5">
-                {/* Creative Vibe — phase 0 */}
-                {show(0) && (
-                  <div>
-                    <span className={sectionLabel}>Creative Vibe</span>
-                    <div className="flex items-start gap-3">
-                      <span className="flex-shrink-0 px-3 py-1 rounded-full text-xs font-semibold"
-                        style={{ background: 'rgba(168,85,247,0.1)', border: '1px solid rgba(168,85,247,0.3)', color: '#C084FC' }}>
-                        {vision.creativeVibe.label}
-                      </span>
-                      <p className="text-[#D1D5DB] text-sm leading-relaxed">
-                        <Typewriter key={`vibe-${animKey}`} text={vision.creativeVibe.description} onDone={advance} />
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {/* Why It Fits — phase 1 */}
-                {show(1) && vision.whyItFits && (
-                  <>
-                    <div className="h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />
-                    <div>
-                      <span className={sectionLabel}>Why It Fits</span>
-                      <p className="text-[#D1D5DB] text-sm leading-relaxed">
-                        <Typewriter key={`fit-${animKey}`} text={vision.whyItFits} onDone={advance} />
-                      </p>
-                    </div>
-                  </>
-                )}
-
-                {/* Hook — phase 2 */}
-                {show(2) && (
-                  <>
-                    <div className="h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />
-                    <div>
-                      <span className={sectionLabel}>Hook</span>
-                      <div className="rounded-xl px-4 py-3" style={{ background: 'rgba(168,85,247,0.06)', borderLeft: '3px solid rgba(168,85,247,0.5)' }}>
-                        <p className="text-white font-semibold text-base leading-snug">
-                          <Typewriter key={`hook-${animKey}`} text={vision.hook} speed={35} onDone={advance} />
-                        </p>
-                      </div>
-                    </div>
-                  </>
-                )}
-
-                {/* Visual Direction — phase 3 */}
-                {show(3) && (
-                  <>
-                    <div className="h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />
-                    <div>
-                      <span className={sectionLabel}>Visual Direction</span>
-                      <p className="text-[#D1D5DB] text-sm leading-relaxed">
-                        <Typewriter key={`vd-${animKey}`} text={vision.visualDirection} onDone={advance} />
-                      </p>
-                    </div>
-                  </>
-                )}
-
-                {/* Color Story — phase 5 (after timeout from phase 4) */}
-                {show(5) && ((vision.vibeColors ?? []).length > 0 || (vision.productColors ?? []).length > 0) && (
-                  <>
-                    <div className="h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />
-                    <div>
-                      <span className={sectionLabel}>Color Story</span>
-                      <div className="space-y-3">
-                        {(vision.vibeColors ?? []).length > 0 && (
-                          <div>
-                            <p className="text-[#6B7280] text-[10px] uppercase tracking-widest mb-2">Vibe</p>
-                            <div className="flex gap-3 flex-wrap">
-                              {(vision.vibeColors ?? []).map((c, i) => (
-                                <div key={i} className="flex items-center gap-2">
-                                  <div className="w-7 h-7 rounded-full border border-white/15 flex-shrink-0" style={{ background: c.hex }} />
-                                  <div>
-                                    <p className="text-[#E5E7EB] text-xs font-medium leading-none">{c.name}</p>
-                                    <p className="text-[#6B7280] text-[10px] font-mono mt-0.5">{c.hex}</p>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                            {vision.vibeColorRationale && <p className="text-[#6B7280] text-[11px] mt-2 italic">{vision.vibeColorRationale}</p>}
-                          </div>
-                        )}
-                        {(vision.productColors ?? []).length > 0 && (
-                          <div>
-                            <p className="text-[#6B7280] text-[10px] uppercase tracking-widest mb-2">Product</p>
-                            <div className="flex gap-3 flex-wrap">
-                              {(vision.productColors ?? []).map((c, i) => (
-                                <div key={i} className="flex items-center gap-2">
-                                  <div className="w-7 h-7 rounded-full border border-white/15 flex-shrink-0" style={{ background: c.hex }} />
-                                  <div>
-                                    <p className="text-[#E5E7EB] text-xs font-medium leading-none">{c.name}</p>
-                                    <p className="text-[#6B7280] text-[10px] font-mono mt-0.5">{c.hex}</p>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </>
-                )}
-              </div>
-            )}
           </div>
         </div>
       </div>
@@ -1512,16 +1130,6 @@ export default function Admin() {
   const [savingContact, setSavingContact] = useState(false);
   const [deletingContactId, setDeletingContactId] = useState<string | null>(null);
 
-  // Pixie Vision state
-  const [pixieLead, setPixieLead] = useState<Lead | null>(null);
-  const [pixieProducts, setPixieProducts] = useState<PixieProduct[]>([]);
-  const [pixieLoadingProducts, setPixieLoadingProducts] = useState(false);
-  const [pixieWebsite, setPixieWebsite] = useState('');
-  const [pixieSelectedProduct, setPixieSelectedProduct] = useState<string | null>(null);
-  const [pixieVision, setPixieVision] = useState<PixieVisionResult | null>(null);
-  const [pixieGenerating, setPixieGenerating] = useState(false);
-  const [pixieError, setPixieError] = useState('');
-
   const handleSignOut = async () => { await signOut(); navigate('/'); };
 
   useEffect(() => { loadOverview(); loadAdminProfile(); }, []);
@@ -1819,66 +1427,6 @@ export default function Admin() {
     const csv = rows.map(r => r.map(c => `"${c}"`).join(',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'users.csv'; a.click();
-  }
-
-  // ── Pixie Vision functions ────────────────────────────────────────────────
-  function detectWebsiteFromLead(lead: Lead): string | null {
-    const ci = lead.contact_info ?? '';
-    if (ci.startsWith('http') || ci.includes('.com') || ci.includes('.in') || ci.includes('.co')) return ci;
-    return null;
-  }
-
-  async function fetchPixieProducts(website: string, lead: Lead) {
-    if (!website.trim()) return;
-    setPixieWebsite(website);
-    setPixieLoadingProducts(true);
-    setPixieProducts([]);
-    setPixieSelectedProduct(null);
-    try {
-      const { data } = await supabase.functions.invoke('lead-agent', {
-        body: { mode: 'scrape_products', website: website.trim(), brandName: lead.brand_name, niche: lead.niche ?? '' },
-      });
-      const products: PixieProduct[] = (data?.products ?? []).map((p: unknown) =>
-        typeof p === 'string' ? { name: p } : (p as PixieProduct)
-      );
-      setPixieProducts(products);
-      if (products.length > 0) setPixieSelectedProduct(products[0].name);
-    } catch { /* ignore */ }
-    setPixieLoadingProducts(false);
-  }
-
-  async function openPixieVision(lead: Lead) {
-    setPixieLead(lead);
-    setPixieVision(null);
-    setPixieSelectedProduct(null);
-    setPixieProducts([]);
-    const website = detectWebsiteFromLead(lead);
-    setPixieWebsite(website ?? '');
-    if (website) fetchPixieProducts(website, lead);
-  }
-
-  async function generatePixieVision() {
-    if (!pixieLead || !pixieSelectedProduct) return;
-    setPixieGenerating(true);
-    setPixieVision(null);
-    setPixieError('');
-    try {
-      const { data, error } = await supabase.functions.invoke('generate-creative-vision', {
-        body: {
-          brandName: pixieLead.brand_name,
-          niche: pixieLead.niche ?? 'D2C Brand',
-          adFormat: 'Instagram Feed Static',
-          description: `Product: ${pixieSelectedProduct}. ${pixieLead.notes ?? ''}`.trim(),
-          referenceUrl: pixieWebsite || undefined,
-        },
-      });
-      if (error) throw new Error(error.message);
-      if (data?.error) throw new Error(data.error);
-      setPixieVision(data as PixieVisionResult);
-    } catch (e) {
-      setPixieError((e as Error).message || 'Generation failed. Try again.');
-    }
-    setPixieGenerating(false);
   }
 
   // ── Lead Agent functions ────────────────────────────────────────────────────
@@ -3012,7 +2560,6 @@ export default function Admin() {
                                         onStatusUpdate={updateLeadStatus}
                                         onNotesUpdate={updateLeadNotes}
                                         onViewContacts={openContactsModal}
-                                        onPixieVision={openPixieVision}
                                         onDelete={deleteLead}
                                       />
                                     </div>
@@ -3298,24 +2845,6 @@ export default function Admin() {
               document.body
             )}
 
-            {/* ── Pixie Vision Modal ────────────────────────────────────────── */}
-            {pixieLead && (
-              <PixieVisionModal
-                lead={pixieLead}
-                products={pixieProducts}
-                loadingProducts={pixieLoadingProducts}
-                website={pixieWebsite}
-                onFetchProducts={url => fetchPixieProducts(url, pixieLead)}
-                selectedProduct={pixieSelectedProduct}
-                onSelectProduct={setPixieSelectedProduct}
-                vision={pixieVision}
-                generatingVision={pixieGenerating}
-                error={pixieError}
-                onGenerate={generatePixieVision}
-                onRegenerate={generatePixieVision}
-                onClose={() => { setPixieLead(null); setPixieVision(null); setPixieProducts([]); setPixieSelectedProduct(null); setPixieWebsite(''); setPixieError(''); }}
-              />
-            )}
           </div>
         )}
 
