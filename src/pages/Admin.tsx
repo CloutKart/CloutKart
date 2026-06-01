@@ -509,7 +509,7 @@ const KanbanCard = memo(function KanbanCard({ lead, onStatusUpdate, onNotesUpdat
             <Users size={11} />
           </button>
           <a
-            href={`https://www.facebook.com/ads/library/?q=${encodeURIComponent(lead.brand_name)}&search_type=keyword_unordered`}
+            href={`https://www.facebook.com/ads/library/?ad_type=all&country=ALL&q=${encodeURIComponent(lead.brand_name)}&search_type=keyword_unordered`}
             target="_blank" rel="noopener noreferrer"
             title="Check Meta Ad Library"
             className="w-6 h-6 rounded-lg flex items-center justify-center"
