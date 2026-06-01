@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Sparkles, CheckCircle, ShoppingCart, TrendingUp } from 'lucide-react';
+import { Sparkles, CheckCircle, ShoppingCart, TrendingUp, ChevronLeft, ChevronRight } from 'lucide-react';
 
 // ─── Scene components ─────────────────────────────────────────────────────────
 
@@ -142,25 +142,16 @@ function AdScene({ localProg }: { localProg: number }) {
 
   return (
     <div className="flex items-center justify-center gap-6">
-      {/* Phone frame */}
-      <div
-        className="relative flex-shrink-0"
-        style={{ width: 200, ...vis(0) }}
-      >
-        <div
-          className="rounded-[28px] overflow-hidden"
-          style={{ background: '#0f0f0f', border: '2px solid rgba(255,255,255,0.12)', boxShadow: '0 40px 80px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.04) inset' }}
-        >
-          {/* Instagram chrome */}
+      <div className="relative flex-shrink-0" style={{ width: 200, ...vis(0) }}>
+        <div className="rounded-[28px] overflow-hidden"
+          style={{ background: '#0f0f0f', border: '2px solid rgba(255,255,255,0.12)', boxShadow: '0 40px 80px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.04) inset' }}>
           <div className="px-3 py-2 flex items-center gap-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
             <div className="w-5 h-5 rounded-full" style={{ background: 'linear-gradient(135deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888)' }} />
             <span className="text-[9px] font-bold text-white/70">brewora</span>
             <span className="ml-auto text-[8px] text-white/30 font-mono">Sponsored</span>
           </div>
-          {/* Product image */}
           <div className="relative" style={{ height: 200 }}>
             <div className="absolute inset-0" style={{ background: 'linear-gradient(145deg, #3a1a08 0%, #7a3510 40%, #1a0a02 100%)' }} />
-            {/* Product can representation */}
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="relative">
                 <div className="rounded-full flex items-center justify-center" style={{ width: 90, height: 90, background: 'linear-gradient(135deg, #9B5B1A, #C4772A, #7A3510)', boxShadow: '0 8px 32px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.15)' }}>
@@ -173,26 +164,22 @@ function AdScene({ localProg }: { localProg: number }) {
                 <div className="absolute -inset-2 rounded-full" style={{ background: 'radial-gradient(ellipse, rgba(155,91,26,0.3), transparent 70%)' }} />
               </div>
             </div>
-            {/* Hook overlay */}
             <div className="absolute bottom-0 left-0 right-0 px-3 pb-3 pt-8" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.85), transparent)', ...vis(0.4) }}>
               <div className="text-[13px] font-bold text-white font-heading leading-tight">Tan lines are so<br />last season</div>
             </div>
           </div>
-          {/* Caption area */}
           <div className="px-3 py-2.5" style={vis(0.6)}>
             <p className="text-[9px] text-white/55 leading-relaxed mb-2">
               <span className="text-white/80 font-semibold">brewora</span> Your tan doesn't have to be permanent. Our coffee scrub buffs it out in 4 washes — tested, proven, loved by 1M+ Indians.
             </p>
             <span className="text-[9px] font-bold" style={{ color: '#A855F7' }}>Shop Now →</span>
           </div>
-          {/* Bottom chrome */}
           <div className="h-6 flex items-center justify-center gap-1" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
             <div className="w-12 h-1 rounded-full bg-white/20" />
           </div>
         </div>
       </div>
 
-      {/* Metrics panel */}
       <div className="space-y-3" style={vis(0.5)}>
         {[
           { label: 'CTR', val: '8.4%', bar: 0.84, color: '#A855F7' },
@@ -223,7 +210,6 @@ function CartScene({ localProg }: { localProg: number }) {
 
   return (
     <div className="w-full max-w-sm space-y-4">
-      {/* Cart */}
       <div className="rounded-2xl overflow-hidden" style={{ background: 'rgba(10,10,10,0.9)', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 32px 80px rgba(0,0,0,0.6)' }}>
         <div className="flex items-center gap-2.5 px-5 py-3.5" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
           <ShoppingCart size={14} style={{ color: '#10B981' }} />
@@ -254,7 +240,6 @@ function CartScene({ localProg }: { localProg: number }) {
         </div>
       </div>
 
-      {/* ROAS counter */}
       <div className="grid grid-cols-2 gap-3">
         <div className="rounded-2xl p-4" style={{ background: 'rgba(10,10,10,0.9)', border: '1px solid rgba(168,85,247,0.2)' }}>
           <div className="flex items-center gap-1.5 mb-1">
@@ -276,7 +261,7 @@ function CartScene({ localProg }: { localProg: number }) {
   );
 }
 
-// ─── Main component ────────────────────────────────────────────────────────────
+// ─── Phase data ────────────────────────────────────────────────────────────────
 
 const phases = [
   { num: '01', title: 'Write the brief', sub: 'Tell us your brand, niche, and what you want to say. Pixie reads every word.' },
@@ -285,39 +270,35 @@ const phases = [
   { num: '04', title: 'Cart. Convert. Scale.', sub: 'The right message at the right moment. ROAS climbs. Spend scales. Run it again.' },
 ];
 
+// ─── Main component ────────────────────────────────────────────────────────────
+
 export default function ScrollStory() {
-  const driverRef = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(0);
-  const [progress, setProgress] = useState(0);
-  const [localProg, setLocalProg] = useState(0);
-  const [show, setShow] = useState(false);
+  const [localProg, setLocalProg] = useState(1);
+  const rafRef = useRef<number>(0);
 
   useEffect(() => {
-    const onScroll = () => {
-      if (!driverRef.current) return;
-      const rect = driverRef.current.getBoundingClientRect();
-      const scrollable = driverRef.current.offsetHeight - window.innerHeight;
-      if (scrollable <= 0) return;
+    setLocalProg(0);
+    let start: number | null = null;
+    const slideDelay = 420;
+    const duration = 1100;
 
-      // Show fixed panel only while driver is actively scrolling through viewport.
-      // Use a 4px buffer so the panel releases before elements below become interactive.
-      setShow(rect.top <= 0 && rect.bottom > window.innerHeight + 4);
-
-      const pct = Math.max(0, Math.min(1, -rect.top / scrollable));
-      setProgress(pct);
-
-      const phasePct = Math.min(pct / 0.97, 1);
-      const phaseIdx = Math.min(phases.length - 1, Math.floor(phasePct * phases.length));
-      const phaseStart = phaseIdx / phases.length;
-      const phaseEnd = (phaseIdx + 1) / phases.length;
-      const lp = Math.max(0, Math.min(1, (phasePct - phaseStart) / (phaseEnd - phaseStart)));
-      setActive(phaseIdx);
-      setLocalProg(lp);
+    const tick = (ts: number) => {
+      if (!start) start = ts;
+      const elapsed = ts - start - slideDelay;
+      const prog = Math.max(0, Math.min(elapsed / duration, 1));
+      setLocalProg(prog);
+      if (prog < 1) rafRef.current = requestAnimationFrame(tick);
     };
-    window.addEventListener('scroll', onScroll, { passive: true });
-    onScroll();
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
+
+    rafRef.current = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafRef.current);
+  }, [active]);
+
+  function goTo(idx: number) {
+    if (idx < 0 || idx >= phases.length) return;
+    setActive(idx);
+  }
 
   const scenes = [
     <BriefScene localProg={localProg} />,
@@ -326,187 +307,159 @@ export default function ScrollStory() {
     <CartScene localProg={localProg} />,
   ];
 
-  const bgOffset = progress * -50;
-  const midOffset = progress * -25;
-  const fgOffset = progress * 18;
-
-  // ── Panel content (shared between fixed overlay and mobile fallback) ──
-  const PanelContent = () => (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full h-full flex flex-col justify-center">
-      <div className="text-center mb-8 md:mb-12">
-        <div className="eyebrow-pill inline-flex mb-4">
-          <span className="w-1 h-1 rounded-full bg-brand-purple" />
-          How It Works
-        </div>
-        <h2 className="font-heading font-bold text-white leading-tight tracking-tight"
-          style={{ fontSize: 'clamp(1.6rem, 3.5vw, 2.8rem)' }}>
-          From brief to{' '}
-          <span className="gradient-text">converting creative</span>
-          {' '}in four steps
-        </h2>
-      </div>
-
-      <div className="grid lg:grid-cols-[320px_1fr] gap-8 lg:gap-14 items-center">
-        {/* Left: phase tracker */}
-        <div className="hidden lg:block space-y-1">
-          {phases.map((p, i) => {
-            const isActive = i === active;
-            const isPast = i < active;
-            return (
-              <div key={p.num}
-                className="flex items-start gap-4 p-3.5 rounded-xl transition-all duration-300"
-                style={{
-                  background: isActive ? 'rgba(168,85,247,0.07)' : 'transparent',
-                  border: isActive ? '1px solid rgba(168,85,247,0.2)' : '1px solid transparent',
-                }}
-              >
-                <div className="flex flex-col items-center gap-1 flex-shrink-0 mt-0.5">
-                  <div className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold font-mono transition-all duration-300"
-                    style={{
-                      background: isActive ? 'linear-gradient(135deg,#A855F7,#6366F1)' : isPast ? 'rgba(168,85,247,0.15)' : 'rgba(255,255,255,0.04)',
-                      border: isActive ? 'none' : isPast ? '1px solid rgba(168,85,247,0.3)' : '1px solid rgba(255,255,255,0.07)',
-                      color: isActive ? '#fff' : isPast ? '#A855F7' : 'rgba(255,255,255,0.2)',
-                    }}>
-                    {isPast ? '✓' : p.num}
-                  </div>
-                  {i < phases.length - 1 && (
-                    <div className="w-px h-4 transition-all duration-300"
-                      style={{ background: isPast ? 'rgba(168,85,247,0.4)' : 'rgba(255,255,255,0.06)' }} />
-                  )}
-                </div>
-                <div>
-                  <div className="font-heading font-bold text-sm leading-snug mb-0.5 transition-colors duration-300"
-                    style={{ color: isActive ? '#fff' : isPast ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.18)' }}>
-                    {p.title}
-                  </div>
-                  <p className="text-[11px] leading-relaxed transition-colors duration-300 hidden xl:block"
-                    style={{ color: isActive ? 'rgba(255,255,255,0.45)' : 'rgba(255,255,255,0.1)' }}>
-                    {p.sub}
-                  </p>
-                </div>
-              </div>
-            );
-          })}
-          <div className="mt-4 ml-8">
-            <div className="h-px bg-white/[0.06] rounded-full overflow-hidden">
-              <div className="h-full rounded-full transition-all duration-150"
-                style={{ width: `${Math.min(progress / 0.97, 1) * 100}%`, background: 'linear-gradient(90deg,#A855F7,#3B82F6,#06B6D4)' }} />
-            </div>
-          </div>
-        </div>
-
-        {/* Mobile phase label */}
-        <div className="lg:hidden text-center mb-2">
-          <div className="text-[10px] font-mono text-white/30 uppercase tracking-widest mb-1">Phase {phases[active].num}</div>
-          <div className="font-heading font-bold text-white text-base">{phases[active].title}</div>
-        </div>
-
-        {/* Right: scene */}
-        <div className="flex items-center justify-center"
-          style={{ transform: `translateY(${midOffset * 0.4}px)`, transition: 'transform 0.08s linear' }}>
-          <div className="relative w-full">
-            <div className="absolute -inset-8 rounded-3xl pointer-events-none"
-              style={{ background: 'radial-gradient(ellipse at center, rgba(168,85,247,0.05) 0%, transparent 70%)', transform: `translateY(${fgOffset * 0.4}px)`, transition: 'transform 0.08s linear' }} />
-            <div className="flex items-center justify-center">
-              {scenes.map((scene, i) => (
-                <div key={i} className="transition-all duration-450"
-                  style={{
-                    position: i === active ? 'relative' : 'absolute',
-                    opacity: i === active ? 1 : 0,
-                    transform: i === active ? 'scale(1) translateY(0)' : i < active ? 'scale(0.95) translateY(-14px)' : 'scale(0.97) translateY(14px)',
-                    pointerEvents: i === active ? 'auto' : 'none',
-                    zIndex: i === active ? 1 : 0,
-                    width: '100%',
-                  }}>
-                  {scene}
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Mobile dots */}
-      <div className="flex items-center justify-center gap-2 mt-6 lg:hidden">
-        {phases.map((_, i) => (
-          <div key={i} className="rounded-full transition-all duration-400"
-            style={{ width: i === active ? 18 : 4, height: 4, background: i <= active ? 'linear-gradient(90deg,#A855F7,#06B6D4)' : 'rgba(255,255,255,0.1)' }} />
-        ))}
-      </div>
-    </div>
-  );
+  const progress = active / (phases.length - 1);
 
   return (
-    <>
-      {/* ── Desktop scroll story (hidden on mobile) ── */}
-      <section id="story" className="hidden md:block" style={{ background: 'transparent', position: 'relative' }}>
-        {/* ── Scroll driver: provides scroll distance, occupies page space ── */}
-        <div ref={driverRef} style={{ height: '220vh' }}>
+    <section id="story" className="py-20 md:py-28 relative" style={{ background: 'transparent' }}>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
-          {/* ── Fixed panel: visible only while driver is in active scroll zone ── */}
-          <div style={{
-            position: 'fixed',
-            top: 0, left: 0, right: 0,
-            height: '100vh',
-            zIndex: 10,
-            background: '#080808',
-            opacity: show ? 1 : 0,
-            pointerEvents: 'none',
-            transition: 'opacity 0.15s ease',
-            overflow: 'hidden',
-          }}>
-            {/* Parallax background glow */}
-            <div className="absolute inset-0 pointer-events-none"
-              style={{ transform: `translateY(${bgOffset}px)`, transition: 'transform 0.08s linear' }}>
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] rounded-full"
-                style={{ background: 'radial-gradient(ellipse, rgba(168,85,247,0.07) 0%, transparent 70%)' }} />
-              <div className="absolute top-1/3 left-1/4 w-[300px] h-[300px] rounded-full"
-                style={{ background: 'radial-gradient(circle, rgba(59,130,246,0.04) 0%, transparent 70%)' }} />
-            </div>
-
-            {/* Mid dots */}
-            <div className="absolute inset-0 pointer-events-none"
-              style={{ transform: `translateY(${midOffset}px)`, transition: 'transform 0.08s linear' }}>
-              {[[15, 20], [80, 70], [10, 75], [85, 25], [50, 85]].map(([x, y], i) => (
-                <div key={i} className="absolute rounded-full"
-                  style={{ left: `${x}%`, top: `${y}%`, width: 3, height: 3, background: `rgba(168,85,247,${0.1 + i * 0.04})` }} />
-              ))}
-            </div>
-
-            <PanelContent />
-          </div>
-        </div>
-      </section>
-
-      {/* ── Mobile static fallback (visible only on mobile) ── */}
-      <section className="md:hidden py-20 px-5" style={{ background: 'transparent', position: 'relative' }}>
-        <div className="text-center mb-10">
+        {/* Header */}
+        <div className="text-center mb-10 md:mb-14">
           <div className="eyebrow-pill inline-flex mb-4">
             <span className="w-1 h-1 rounded-full bg-brand-purple" />
             How It Works
           </div>
-          <h2 className="font-heading font-bold text-white leading-tight tracking-tight" style={{ fontSize: 'clamp(1.6rem, 6vw, 2rem)' }}>
+          <h2 className="font-heading font-bold text-white leading-tight tracking-tight"
+            style={{ fontSize: 'clamp(1.6rem, 3.5vw, 2.8rem)' }}>
             From brief to{' '}
             <span className="gradient-text">converting creative</span>
             {' '}in four steps
           </h2>
         </div>
-        <div className="space-y-4 max-w-sm mx-auto">
-          {phases.map((p, i) => (
-            <div key={p.num} className="flex items-start gap-4 p-4 rounded-2xl"
-              style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
-              <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-[11px] font-bold font-mono mt-0.5"
-                style={{ background: 'linear-gradient(135deg,#A855F7,#6366F1)', color: '#fff' }}>
-                {String(i + 1).padStart(2, '0')}
-              </div>
-              <div>
-                <div className="font-heading font-bold text-white text-sm mb-1">{p.title}</div>
-                <p className="text-[12px] text-white/40 leading-relaxed">{p.sub}</p>
+
+        <div className="grid lg:grid-cols-[300px_1fr] gap-8 lg:gap-14 items-center">
+
+          {/* Left: clickable phase list — desktop only */}
+          <div className="hidden lg:flex flex-col gap-1">
+            {phases.map((p, i) => {
+              const isActive = i === active;
+              const isPast = i < active;
+              return (
+                <button key={p.num}
+                  onClick={() => goTo(i)}
+                  className="flex items-start gap-4 p-3.5 rounded-xl transition-all duration-300 text-left w-full"
+                  style={{
+                    background: isActive ? 'rgba(168,85,247,0.07)' : 'transparent',
+                    border: isActive ? '1px solid rgba(168,85,247,0.2)' : '1px solid transparent',
+                  }}
+                >
+                  <div className="flex flex-col items-center gap-1 flex-shrink-0 mt-0.5">
+                    <div className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold font-mono transition-all duration-300"
+                      style={{
+                        background: isActive ? 'linear-gradient(135deg,#A855F7,#6366F1)' : isPast ? 'rgba(168,85,247,0.15)' : 'rgba(255,255,255,0.04)',
+                        border: isActive ? 'none' : isPast ? '1px solid rgba(168,85,247,0.3)' : '1px solid rgba(255,255,255,0.07)',
+                        color: isActive ? '#fff' : isPast ? '#A855F7' : 'rgba(255,255,255,0.2)',
+                      }}>
+                      {isPast ? '✓' : p.num}
+                    </div>
+                    {i < phases.length - 1 && (
+                      <div className="w-px h-4 transition-all duration-300"
+                        style={{ background: isPast ? 'rgba(168,85,247,0.4)' : 'rgba(255,255,255,0.06)' }} />
+                    )}
+                  </div>
+                  <div>
+                    <div className="font-heading font-bold text-sm leading-snug mb-0.5 transition-colors duration-300"
+                      style={{ color: isActive ? '#fff' : isPast ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.18)' }}>
+                      {p.title}
+                    </div>
+                    <p className="text-[11px] leading-relaxed transition-colors duration-300 hidden xl:block"
+                      style={{ color: isActive ? 'rgba(255,255,255,0.45)' : 'rgba(255,255,255,0.1)' }}>
+                      {p.sub}
+                    </p>
+                  </div>
+                </button>
+              );
+            })}
+            {/* Progress bar */}
+            <div className="mt-3 ml-8">
+              <div className="h-px bg-white/[0.06] rounded-full overflow-hidden">
+                <div className="h-full rounded-full transition-all duration-500"
+                  style={{ width: `${progress * 100}%`, background: 'linear-gradient(90deg,#A855F7,#3B82F6,#06B6D4)' }} />
               </div>
             </div>
-          ))}
+          </div>
+
+          {/* Right: horizontal scene carousel */}
+          <div className="relative">
+            <div className="absolute -inset-6 rounded-3xl pointer-events-none"
+              style={{ background: 'radial-gradient(ellipse at center, rgba(168,85,247,0.05) 0%, transparent 70%)' }} />
+            <div className="overflow-hidden">
+              <div
+                style={{
+                  display: 'flex',
+                  transform: `translateX(-${active * 100}%)`,
+                  transition: 'transform 0.42s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+                  willChange: 'transform',
+                }}
+              >
+                {scenes.map((scene, i) => (
+                  <div key={i} style={{ minWidth: '100%', flexShrink: 0 }}>
+                    <div className="flex items-center justify-center py-2">
+                      {scene}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
-      </section>
-    </>
+
+        {/* Bottom nav — shared mobile + desktop */}
+        <div className="flex items-center justify-between mt-8 lg:mt-6 lg:pl-[316px]">
+          {/* Mobile phase label */}
+          <div className="lg:hidden">
+            <div className="text-[9px] font-mono text-white/25 uppercase tracking-widest">Phase {phases[active].num}</div>
+            <div className="font-heading font-bold text-white text-sm">{phases[active].title}</div>
+          </div>
+          {/* Desktop spacer */}
+          <div className="hidden lg:block" />
+
+          {/* Dots + arrows */}
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => goTo(active - 1)}
+              disabled={active === 0}
+              className="w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200"
+              style={{
+                background: 'rgba(255,255,255,0.05)',
+                border: '1px solid rgba(255,255,255,0.1)',
+                opacity: active === 0 ? 0.3 : 1,
+              }}
+            >
+              <ChevronLeft size={16} className="text-white" />
+            </button>
+
+            <div className="flex items-center gap-2">
+              {phases.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => goTo(i)}
+                  className="rounded-full transition-all duration-300"
+                  style={{
+                    width: i === active ? 20 : 6,
+                    height: 6,
+                    background: i <= active ? 'linear-gradient(90deg,#A855F7,#06B6D4)' : 'rgba(255,255,255,0.1)',
+                  }}
+                />
+              ))}
+            </div>
+
+            <button
+              onClick={() => goTo(active + 1)}
+              disabled={active === phases.length - 1}
+              className="w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200"
+              style={{
+                background: 'rgba(255,255,255,0.05)',
+                border: '1px solid rgba(255,255,255,0.1)',
+                opacity: active === phases.length - 1 ? 0.3 : 1,
+              }}
+            >
+              <ChevronRight size={16} className="text-white" />
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </section>
   );
 }
