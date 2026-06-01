@@ -6,7 +6,7 @@ import {
   Plus, ArrowRight, Search, Upload, Loader,
   Eye, EyeOff, Trash2, RefreshCw, ChevronLeft, X, CheckCircle, Clock,
   AlertCircle, IndianRupee, Sparkles, Edit2, Check, MessageSquare,
-  Send, Star, TrendingUp, Target, Copy, ChevronDown
+  Send, Star, TrendingUp, Target, Copy, ChevronDown, ExternalLink
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -493,6 +493,14 @@ const KanbanCard = memo(function KanbanCard({ lead, onStatusUpdate, onNotesUpdat
             style={{ background: 'rgba(99,102,241,0.1)', color: '#818CF8' }}>
             <Users size={11} />
           </button>
+          <a
+            href={`https://www.facebook.com/ads/library/?q=${encodeURIComponent(lead.brand_name)}&search_type=keyword_unordered`}
+            target="_blank" rel="noopener noreferrer"
+            title="Check Meta Ad Library"
+            className="w-6 h-6 rounded-lg flex items-center justify-center"
+            style={{ background: 'rgba(24,119,242,0.1)', color: '#60A5FA' }}>
+            <ExternalLink size={11} />
+          </a>
           <button onClick={() => onDelete(lead.id)} title="Delete"
             className="w-6 h-6 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
             style={{ background: 'rgba(239,68,68,0.08)', color: '#F87171' }}>
