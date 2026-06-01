@@ -1,7 +1,24 @@
 import { useEffect, useRef } from 'react';
 import { Sparkles, CheckCircle, ArrowRight } from 'lucide-react';
 
+const PALETTE = [
+  { name: 'Mocha Morning', hex: '#964800' },
+  { name: 'Coconut Cream', hex: '#F5F5DC' },
+  { name: 'Fresh Brew',    hex: '#432B1A' },
+];
+
+function hexToRgb(hex: string) {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `${r},${g},${b}`;
+}
+
 function DemoMock() {
+  const [c0, c1, c2] = PALETTE.map(c => hexToRgb(c.hex));
+  const visionBg = `linear-gradient(145deg, rgba(${c0},0.13) 0%, rgba(${c1},0.03) 35%, rgba(${c2},0.09) 55%, rgba(255,255,255,0.015) 100%)`;
+  const visionBorder = `rgba(${c0},0.30)`;
+
   return (
     <div className="w-full rounded-2xl overflow-hidden border border-white/[0.08] shadow-2xl" style={{ background: '#111111' }}>
       {/* top bar */}
@@ -43,8 +60,8 @@ function DemoMock() {
           </button>
         </div>
 
-        {/* ── RIGHT: Vision panel ── */}
-        <div className="flex flex-col" style={{ background: 'rgba(255,255,255,0.015)' }}>
+        {/* ── RIGHT: Vision panel — background tinted from the extracted product palette ── */}
+        <div className="flex flex-col" style={{ background: visionBg, borderLeft: `1px solid ${visionBorder}` }}>
           {/* header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.06]">
             <div className="flex items-center gap-1.5">
@@ -76,11 +93,7 @@ function DemoMock() {
           <div className="px-4 py-2.5 border-b border-white/[0.05]">
             <div className="text-[8px] font-semibold text-white/30 uppercase tracking-widest mb-1.5 font-mono">Color Story</div>
             <div className="grid grid-cols-3 gap-1.5">
-              {[
-                { name: 'Mocha Morning', hex: '#964800' },
-                { name: 'Coconut Cream', hex: '#F5F5DC' },
-                { name: 'Fresh Brew', hex: '#432B1A' },
-              ].map(c => (
+              {PALETTE.map(c => (
                 <div key={c.name} className="rounded-lg px-2 py-1.5"
                   style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
                   <div className="flex items-center gap-1.5 mb-1">
