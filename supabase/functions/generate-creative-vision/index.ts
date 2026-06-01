@@ -301,7 +301,7 @@ Use at least one of these extracted specifics in the hook so it is provably non-
         { role: "system", content: SYSTEM_PROMPT },
         { role: "user", content: userContent as Parameters<typeof groq.chat.completions.create>[0]["messages"][0]["content"] },
       ],
-      max_tokens: 1200,
+      max_tokens: 1800,
       temperature: 0.75,
     });
 

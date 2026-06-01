@@ -747,6 +747,7 @@ function PixieVisionModal({
   onSelectProduct,
   vision,
   generatingVision,
+  error,
   onGenerate,
   onRegenerate,
   onClose,
@@ -760,6 +761,7 @@ function PixieVisionModal({
   onSelectProduct: (p: string) => void;
   vision: PixieVisionResult | null;
   generatingVision: boolean;
+  error: string;
   onGenerate: () => void;
   onRegenerate: () => void;
   onClose: () => void;
@@ -934,12 +936,21 @@ function PixieVisionModal({
 
             {!vision && !generatingVision && (
               <div className="h-full flex flex-col items-center justify-center gap-2 text-[#4B5563]">
-                {selectedImg ? (
-                  <img src={selectedImg} alt={selectedProduct ?? ''} className="w-20 h-20 rounded-xl object-cover mb-1 opacity-60" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                {error ? (
+                  <>
+                    <AlertCircle size={22} className="text-[#F87171]" />
+                    <p className="text-sm text-center text-[#F87171] max-w-[200px]">{error}</p>
+                  </>
                 ) : (
-                  <Sparkles size={22} />
+                  <>
+                    {selectedImg ? (
+                      <img src={selectedImg} alt={selectedProduct ?? ''} className="w-20 h-20 rounded-xl object-cover mb-1 opacity-60" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                    ) : (
+                      <Sparkles size={22} />
+                    )}
+                    <p className="text-sm text-center">{selectedProduct ? <>Selected: <span className="text-[#C084FC]">{selectedProduct}</span><br />Click Generate vision</> : <>Select a product and click<br />Generate vision</>}</p>
+                  </>
                 )}
-                <p className="text-sm text-center">{selectedProduct ? <>Selected: <span className="text-[#C084FC]">{selectedProduct}</span><br />Click Generate vision</> : <>Select a product and click<br />Generate vision</>}</p>
               </div>
             )}
 
@@ -1509,6 +1520,7 @@ export default function Admin() {
   const [pixieSelectedProduct, setPixieSelectedProduct] = useState<string | null>(null);
   const [pixieVision, setPixieVision] = useState<PixieVisionResult | null>(null);
   const [pixieGenerating, setPixieGenerating] = useState(false);
+  const [pixieError, setPixieError] = useState('');
 
   const handleSignOut = async () => { await signOut(); navigate('/'); };
 
@@ -1849,7 +1861,7 @@ export default function Admin() {
     if (!pixieLead || !pixieSelectedProduct) return;
     setPixieGenerating(true);
     setPixieVision(null);
-    const selectedImg = pixieProducts.find(p => p.name === pixieSelectedProduct)?.imageUrl;
+    setPixieError('');
     try {
       const { data, error } = await supabase.functions.invoke('generate-creative-vision', {
         body: {
@@ -1857,12 +1869,15 @@ export default function Admin() {
           niche: pixieLead.niche ?? 'D2C Brand',
           adFormat: 'Instagram Feed Static',
           description: `Product: ${pixieSelectedProduct}. ${pixieLead.notes ?? ''}`.trim(),
-          referenceUrl: selectedImg ?? (pixieWebsite || undefined),
+          referenceUrl: pixieWebsite || undefined,
         },
       });
       if (error) throw new Error(error.message);
+      if (data?.error) throw new Error(data.error);
       setPixieVision(data as PixieVisionResult);
-    } catch { /* ignore */ }
+    } catch (e) {
+      setPixieError((e as Error).message || 'Generation failed. Try again.');
+    }
     setPixieGenerating(false);
   }
 
@@ -3295,9 +3310,10 @@ export default function Admin() {
                 onSelectProduct={setPixieSelectedProduct}
                 vision={pixieVision}
                 generatingVision={pixieGenerating}
+                error={pixieError}
                 onGenerate={generatePixieVision}
                 onRegenerate={generatePixieVision}
-                onClose={() => { setPixieLead(null); setPixieVision(null); setPixieProducts([]); setPixieSelectedProduct(null); setPixieWebsite(''); }}
+                onClose={() => { setPixieLead(null); setPixieVision(null); setPixieProducts([]); setPixieSelectedProduct(null); setPixieWebsite(''); setPixieError(''); }}
               />
             )}
           </div>
