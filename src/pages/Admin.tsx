@@ -227,6 +227,18 @@ const CustomSelect = memo(function CustomSelect({ value, onChange, options, plac
   );
 });
 
+// Assassin's Creed Brotherhood emblem — hood tip + swept wings + triangular inner opening
+function AssassinIcon({ size = 16, style, className }: { size?: number | string; style?: React.CSSProperties; className?: string }) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="currentColor" style={style} className={className}>
+      <path fillRule="evenodd" clipRule="evenodd" d="
+        M12 1.5 L13.8 5.5 L22 8 L16.2 11.2 L14.2 22.5 L12 20.8 L9.8 22.5 L7.8 11.2 L2 8 L10.2 5.5 Z
+        M12 7 L10.6 11 L13.4 11 Z
+      " />
+    </svg>
+  );
+}
+
 const ScoreBar = memo(function ScoreBar({ value, max = 10 }: { value: number; max?: number }) {
   const pct = Math.min((value / max) * 100, 100);
   const color = pct >= 80 ? '#10B981' : pct >= 50 ? '#F59E0B' : '#F87171';
@@ -1666,7 +1678,7 @@ export default function Admin() {
     { id: 'users',      icon: Users,           label: 'Users'             },
     { id: 'cloutclub',  icon: Sparkles,        label: 'Clout Club'        },
     { id: 'messages',   icon: MessageSquare,   label: 'Messages'          },
-    { id: 'leads',      icon: Target,          label: 'Ezio'              },
+    { id: 'leads',      icon: AssassinIcon,    label: 'Ezio'              },
     { id: 'portfolio',  icon: Image,           label: 'Portfolio'         },
     { id: 'settings',   icon: Settings,        label: 'Settings'          },
   ];
