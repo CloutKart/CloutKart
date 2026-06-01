@@ -381,8 +381,23 @@ const DiscoverLeadCard = memo(function DiscoverLeadCard({
           </div>
           {lead.whereToFindThem && (
             <div>
-              <p className="text-[10px] font-bold text-[#6B7280] uppercase tracking-widest mb-1">Where to Find Them</p>
-              <p className="text-[#D1D5DB] text-xs leading-relaxed">{lead.whereToFindThem}</p>
+              <p className="text-[10px] font-bold text-[#6B7280] uppercase tracking-widest mb-2">Where to Find Them</p>
+              <div className="flex flex-wrap gap-1.5">
+                {lead.whereToFindThem.split(/\s+/).map((token, i) =>
+                  token.startsWith('#') ? (
+                    <a key={i}
+                      href={`https://www.instagram.com/explore/tags/${token.slice(1)}/`}
+                      target="_blank" rel="noopener noreferrer"
+                      className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium transition-colors"
+                      style={{ background: 'rgba(168,85,247,0.1)', color: '#C084FC', border: '1px solid rgba(168,85,247,0.2)' }}
+                      onMouseEnter={e => (e.currentTarget.style.background = 'rgba(168,85,247,0.2)')}
+                      onMouseLeave={e => (e.currentTarget.style.background = 'rgba(168,85,247,0.1)')}
+                    >{token}</a>
+                  ) : token ? (
+                    <span key={i} className="text-[#9CA3AF] text-[11px]">{token}</span>
+                  ) : null
+                )}
+              </div>
             </div>
           )}
         </div>
@@ -2196,7 +2211,9 @@ export default function Admin() {
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                   {/* Niche */}
                   <div>
-                    <label className="block text-[10px] font-bold text-[#6B7280] uppercase tracking-widest mb-1.5">Target Niche</label>
+                    <label className="block text-[10px] font-bold text-[#6B7280] uppercase tracking-widest mb-1.5">
+                      Target Niche <span className="text-[#F59E0B] font-normal normal-case tracking-normal">* required for Google Places</span>
+                    </label>
                     <input value={discoverForm.niche} onChange={e => setDiscoverForm(f => ({ ...f, niche: e.target.value }))}
                       placeholder="e.g. Skincare, Food, Fashion"
                       className="w-full rounded-xl px-3 py-2.5 text-sm text-white placeholder-[#6B7280] bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(99,102,241,0.5)] focus:outline-none" />
