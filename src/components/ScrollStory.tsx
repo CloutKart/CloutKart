@@ -299,8 +299,9 @@ export default function ScrollStory() {
       const scrollable = driverRef.current.offsetHeight - window.innerHeight;
       if (scrollable <= 0) return;
 
-      // Show fixed panel only while driver is actively scrolling through viewport
-      setShow(rect.top <= 0 && rect.bottom >= window.innerHeight);
+      // Show fixed panel only while driver is actively scrolling through viewport.
+      // Use a 4px buffer so the panel releases before elements below become interactive.
+      setShow(rect.top <= 0 && rect.bottom > window.innerHeight + 4);
 
       const pct = Math.max(0, Math.min(1, -rect.top / scrollable));
       setProgress(pct);
@@ -436,46 +437,76 @@ export default function ScrollStory() {
   );
 
   return (
-    <section id="story" style={{ background: 'transparent', position: 'relative' }}>
-      {/* ── Scroll driver: provides scroll distance, occupies page space ── */}
-      <div ref={driverRef} style={{ height: '220vh' }}>
+    <>
+      {/* ── Desktop scroll story (hidden on mobile) ── */}
+      <section id="story" className="hidden md:block" style={{ background: 'transparent', position: 'relative' }}>
+        {/* ── Scroll driver: provides scroll distance, occupies page space ── */}
+        <div ref={driverRef} style={{ height: '220vh' }}>
 
-        {/* ── Fixed panel: visible only while driver is in active scroll zone ── */}
-        <div style={{
-          position: 'fixed',
-          top: 0, left: 0, right: 0,
-          height: '100vh',
-          zIndex: 10,
-          background: '#080808',
-          opacity: show ? 1 : 0,
-          pointerEvents: show ? 'auto' : 'none',
-          transition: 'opacity 0.15s ease',
-          overflow: 'hidden',
-        }}>
-          {/* Parallax background glow */}
-          <div className="absolute inset-0 pointer-events-none"
-            style={{ transform: `translateY(${bgOffset}px)`, transition: 'transform 0.08s linear' }}>
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] rounded-full"
-              style={{ background: 'radial-gradient(ellipse, rgba(168,85,247,0.07) 0%, transparent 70%)' }} />
-            <div className="absolute top-1/3 left-1/4 w-[300px] h-[300px] rounded-full"
-              style={{ background: 'radial-gradient(circle, rgba(59,130,246,0.04) 0%, transparent 70%)' }} />
+          {/* ── Fixed panel: visible only while driver is in active scroll zone ── */}
+          <div style={{
+            position: 'fixed',
+            top: 0, left: 0, right: 0,
+            height: '100vh',
+            zIndex: 10,
+            background: '#080808',
+            opacity: show ? 1 : 0,
+            pointerEvents: show ? 'auto' : 'none',
+            transition: 'opacity 0.15s ease',
+            overflow: 'hidden',
+          }}>
+            {/* Parallax background glow */}
+            <div className="absolute inset-0 pointer-events-none"
+              style={{ transform: `translateY(${bgOffset}px)`, transition: 'transform 0.08s linear' }}>
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] rounded-full"
+                style={{ background: 'radial-gradient(ellipse, rgba(168,85,247,0.07) 0%, transparent 70%)' }} />
+              <div className="absolute top-1/3 left-1/4 w-[300px] h-[300px] rounded-full"
+                style={{ background: 'radial-gradient(circle, rgba(59,130,246,0.04) 0%, transparent 70%)' }} />
+            </div>
+
+            {/* Mid dots */}
+            <div className="absolute inset-0 pointer-events-none"
+              style={{ transform: `translateY(${midOffset}px)`, transition: 'transform 0.08s linear' }}>
+              {[[15, 20], [80, 70], [10, 75], [85, 25], [50, 85]].map(([x, y], i) => (
+                <div key={i} className="absolute rounded-full"
+                  style={{ left: `${x}%`, top: `${y}%`, width: 3, height: 3, background: `rgba(168,85,247,${0.1 + i * 0.04})` }} />
+              ))}
+            </div>
+
+            <PanelContent />
           </div>
-
-          {/* Mid dots */}
-          <div className="absolute inset-0 pointer-events-none"
-            style={{ transform: `translateY(${midOffset}px)`, transition: 'transform 0.08s linear' }}>
-            {[[15, 20], [80, 70], [10, 75], [85, 25], [50, 85]].map(([x, y], i) => (
-              <div key={i} className="absolute rounded-full"
-                style={{ left: `${x}%`, top: `${y}%`, width: 3, height: 3, background: `rgba(168,85,247,${0.1 + i * 0.04})` }} />
-            ))}
-          </div>
-
-          <PanelContent />
         </div>
+      </section>
 
-        {/* ── Placeholder height so layout doesn't collapse when panel is fixed ── */}
-        {/* (the driver div already provides this — nothing extra needed) */}
-      </div>
-    </section>
+      {/* ── Mobile static fallback (visible only on mobile) ── */}
+      <section className="md:hidden py-20 px-5" style={{ background: 'transparent', position: 'relative' }}>
+        <div className="text-center mb-10">
+          <div className="eyebrow-pill inline-flex mb-4">
+            <span className="w-1 h-1 rounded-full bg-brand-purple" />
+            How It Works
+          </div>
+          <h2 className="font-heading font-bold text-white leading-tight tracking-tight" style={{ fontSize: 'clamp(1.6rem, 6vw, 2rem)' }}>
+            From brief to{' '}
+            <span className="gradient-text">converting creative</span>
+            {' '}in four steps
+          </h2>
+        </div>
+        <div className="space-y-4 max-w-sm mx-auto">
+          {phases.map((p, i) => (
+            <div key={p.num} className="flex items-start gap-4 p-4 rounded-2xl"
+              style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
+              <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-[11px] font-bold font-mono mt-0.5"
+                style={{ background: 'linear-gradient(135deg,#A855F7,#6366F1)', color: '#fff' }}>
+                {String(i + 1).padStart(2, '0')}
+              </div>
+              <div>
+                <div className="font-heading font-bold text-white text-sm mb-1">{p.title}</div>
+                <p className="text-[12px] text-white/40 leading-relaxed">{p.sub}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+    </>
   );
 }
