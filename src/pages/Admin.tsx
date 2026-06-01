@@ -245,15 +245,25 @@ const LeadStatusDropdown = memo(function LeadStatusDropdown({ lead, onUpdate }: 
   onUpdate: (id: string, status: string) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const [pos, setPos] = useState({ top: 0, left: 0 });
+  const [pos, setPos] = useState({ top: 0, left: 0, flipUp: false });
   const btnRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const sc = leadStatusColors[lead.status] ?? leadStatusColors.prospect;
 
+  // Approximate menu height: 5 options × 32px + 8px padding
+  const MENU_H = 168;
+
   useEffect(() => {
     if (!open) return;
     const rect = btnRef.current?.getBoundingClientRect();
-    if (rect) setPos({ top: rect.bottom + 4, left: rect.left });
+    if (rect) {
+      const flipUp = window.innerHeight - rect.bottom < MENU_H + 8;
+      setPos({
+        top: flipUp ? rect.top - MENU_H - 4 : rect.bottom + 4,
+        left: rect.left,
+        flipUp,
+      });
+    }
     const handler = (e: MouseEvent) => {
       if (!btnRef.current?.contains(e.target as Node) && !menuRef.current?.contains(e.target as Node)) setOpen(false);
     };
@@ -266,7 +276,7 @@ const LeadStatusDropdown = memo(function LeadStatusDropdown({ lead, onUpdate }: 
       <button ref={btnRef} onClick={() => setOpen(o => !o)}
         className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold whitespace-nowrap"
         style={{ background: sc.bg, border: `1px solid ${sc.border}`, color: sc.text }}>
-        {sc.label} <ChevronDown size={9} />
+        {sc.label} <ChevronDown size={9} style={{ transform: pos.flipUp && open ? 'rotate(180deg)' : undefined }} />
       </button>
       {open && createPortal(
         <div ref={menuRef} className="fixed z-[220] rounded-xl p-1 min-w-[130px] shadow-xl"
