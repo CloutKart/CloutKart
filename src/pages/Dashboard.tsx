@@ -427,9 +427,33 @@ function VisionPanel({ vision, onChange, onApprove, submitting, submitError, ani
   const editableText = "w-full bg-transparent text-[#D1D5DB] resize-none focus:outline-none leading-relaxed text-sm";
   const editableInput = "w-full bg-transparent text-white focus:outline-none text-sm leading-relaxed";
 
+  // Derive palette tint from extracted product colors
+  const productColors = vision.productColors ?? vision.colorStory ?? [];
+  const pc0 = productColors[0];
+  const pc2 = productColors[2] ?? productColors[1] ?? pc0;
+  const paletteOverlay = pc0 && pc2
+    ? (() => {
+        const [r0, g0, b0] = hexToRgb(pc0.hex);
+        const [r1, g1, b1] = hexToRgb(pc2.hex);
+        return `linear-gradient(145deg, rgba(${r0},${g0},${b0},0.14) 0%, rgba(${r1},${g1},${b1},0.08) 60%, transparent 100%)`;
+      })()
+    : null;
+  const paletteBorderColor = pc0 && show(2)
+    ? (() => { const [r, g, b] = hexToRgb(pc0.hex); return `rgba(${r},${g},${b},0.40)`; })()
+    : 'rgba(255,255,255,0.1)';
+
   return (
-    <div className="rounded-2xl overflow-hidden flex flex-col"
-      style={{ background: 'rgba(14,10,26,0.97)', border: '1px solid rgba(255,255,255,0.1)' }}>
+    <div className="rounded-2xl overflow-hidden flex flex-col relative"
+      style={{ background: 'rgba(14,10,26,0.97)', border: `1px solid ${paletteBorderColor}`, transition: 'border-color 0.7s ease' }}>
+
+      {/* Palette tint — absolute overlay that fades in when product colors are extracted */}
+      {paletteOverlay && (
+        <div aria-hidden className="absolute inset-0 pointer-events-none"
+          style={{ background: paletteOverlay, opacity: show(2) ? 1 : 0, transition: 'opacity 0.7s ease' }} />
+      )}
+
+      {/* Content sits above the overlay */}
+      <div className="relative z-10 flex flex-col flex-1 overflow-hidden">
 
       {/* Header */}
       <div className="px-5 py-3.5 flex items-center justify-between border-b"
@@ -622,6 +646,8 @@ function VisionPanel({ vision, onChange, onApprove, submitting, submitError, ani
             : <>Approve vision</>}
         </button>
       </div>
+
+      </div>{/* end content layer */}
     </div>
   );
 }
