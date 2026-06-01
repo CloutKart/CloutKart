@@ -10,6 +10,7 @@ import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { NotificationBell } from '../components/NotificationBell';
 import { usePushNotifications } from '../hooks/usePushNotifications';
+import { useTheme } from '../context/ThemeContext';
 
 type Tab = 'overview' | 'creative' | 'gallery' | 'plan' | 'messages' | 'settings';
 const FREE_CREATIVE_LIMIT = 3;
@@ -137,7 +138,7 @@ function RazorpayButton({ amountPaise, userEmail, userName, userId }: RazorpayBu
         description: 'Clout Club Subscription',
         image: '/logo.png',
         prefill: { name: userName, email: userEmail },
-        theme: { color: '#A855F7' },
+        theme: { color: 'rgb(var(--p))' },
         handler: async (response: { razorpay_payment_id: string; razorpay_order_id: string; razorpay_signature: string }) => {
           try {
             // Step 2: Verify HMAC signature server-side and record payment
@@ -184,7 +185,7 @@ function RazorpayButton({ amountPaise, userEmail, userName, userId }: RazorpayBu
         onClick={handlePay}
         disabled={loading || !RAZORPAY_KEY}
         className="btn-primary text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-        style={{ background: 'linear-gradient(135deg, rgba(168,85,247,0.7), rgba(59,130,246,0.65), rgba(6,182,212,0.6))' }}
+        style={{ background: 'linear-gradient(135deg, rgba(var(--p),0.7), rgba(59,130,246,0.65), rgba(6,182,212,0.6))' }}
       >
         {loading ? <Loader size={14} className="animate-spin" /> : <IndianRupee size={14} />}
         Pay ₹{(amountPaise / 100).toLocaleString('en-IN')}/mo
@@ -208,7 +209,7 @@ function MessageBubble({ msg, creativeRequests }: { msg: Message; creativeReques
       <div className={`max-w-[80%] ${fromAdmin ? 'items-start' : 'items-end'} flex flex-col gap-1`}>
         {creative && (
           <p className="text-[10px] font-semibold uppercase tracking-wider px-1"
-            style={{ color: '#C084FC' }}>
+            style={{ color: 'rgb(var(--p-text))' }}>
             Re: {creative.brand_name} — {creative.ad_format}
           </p>
         )}
@@ -216,7 +217,7 @@ function MessageBubble({ msg, creativeRequests }: { msg: Message; creativeReques
           className="px-4 py-2.5 rounded-2xl text-sm leading-relaxed"
           style={fromAdmin
             ? { background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.2)', color: '#E2E8F0', borderBottomLeftRadius: 6 }
-            : { background: 'linear-gradient(135deg, rgba(168,85,247,0.25), rgba(59,130,246,0.2))', border: '1px solid rgba(168,85,247,0.3)', color: '#F3E8FF', borderBottomRightRadius: 6 }
+            : { background: 'linear-gradient(135deg, rgba(var(--p),0.25), rgba(59,130,246,0.2))', border: '1px solid rgba(var(--p),0.3)', color: '#F3E8FF', borderBottomRightRadius: 6 }
           }
         >
           {msg.content}
@@ -371,6 +372,8 @@ function VisionPanel({ vision, onChange, onApprove, submitting, submitError, ani
   const prodColorRefs: React.RefObject<HTMLInputElement>[] = [prodColorRef0, prodColorRef1, prodColorRef2];
   const vibeColorRefs: React.RefObject<HTMLInputElement>[] = [vibeColorRef0, vibeColorRef1, vibeColorRef2];
 
+  const { setThemeSeed, resetTheme } = useTheme();
+
   // ── Animation state ──────────────────────────────────────────────────────────
   // phase 0-6: animating sections in sequence; phase 7+: all visible + editable
   const [phase, setPhase] = useState(0);
@@ -382,6 +385,16 @@ function VisionPanel({ vision, onChange, onApprove, submitting, submitError, ani
     setPhase(0);
     setTimeout(() => scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' }), 30);
   }, [animKey]);
+
+  // Shift global theme to product's primary color when colors are extracted
+  useEffect(() => {
+    if (phase < 2) return;
+    const seed = vision.productColors?.[0]?.hex ?? vision.colorStory?.[0]?.hex;
+    if (seed && /^#[0-9a-fA-F]{6}$/.test(seed)) setThemeSeed(seed);
+  }, [phase, vision.productColors?.[0]?.hex]);
+
+  // Reset theme when VisionPanel unmounts
+  useEffect(() => () => { resetTheme(); }, []);
 
   // Advance color phases via timeout (CSS animation handles the visual, timeout triggers next phase)
   useEffect(() => {
@@ -459,11 +472,11 @@ function VisionPanel({ vision, onChange, onApprove, submitting, submitError, ani
       <div className="px-5 py-3.5 flex items-center justify-between border-b"
         style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
         <div className="flex items-center gap-2">
-          <Sparkles size={14} className="text-[#C084FC]" />
+          <Sparkles size={14} className="text-[rgb(var(--p-text))]" />
           <h3 className="font-heading font-semibold text-white text-sm">Our vision</h3>
         </div>
         <span className="flex items-center gap-1.5 text-[10px] font-semibold px-2.5 py-1 rounded-full"
-          style={{ background: 'rgba(168,85,247,0.1)', border: '1px solid rgba(168,85,247,0.2)', color: '#C084FC' }}>
+          style={{ background: 'rgba(var(--p),0.1)', border: '1px solid rgba(var(--p),0.2)', color: 'rgb(var(--p-text))' }}>
           <Sparkles size={10} />
           Pixie · AI Creative Intelligence
         </span>
@@ -475,10 +488,10 @@ function VisionPanel({ vision, onChange, onApprove, submitting, submitError, ani
           <span className={sectionLabel}>Creative Vibe</span>
           <div className="flex items-start gap-3">
             <div className="flex-shrink-0 rounded-full px-3 py-1"
-              style={{ background: 'rgba(168,85,247,0.12)', border: '1px solid rgba(168,85,247,0.25)' }}>
+              style={{ background: 'rgba(var(--p),0.12)', border: '1px solid rgba(var(--p),0.25)' }}>
               {typing(0)
-                ? <span className="text-xs font-semibold text-[#C084FC]"><Typewriter text={vision.creativeVibe.label} speed={40} /></span>
-                : <input value={vision.creativeVibe.label} onChange={e => onChange({ ...vision, creativeVibe: { ...vision.creativeVibe, label: e.target.value } })} className="bg-transparent focus:outline-none text-xs font-semibold text-[#C084FC]" style={{ minWidth: 50, maxWidth: 130 }} />
+                ? <span className="text-xs font-semibold text-[rgb(var(--p-text))]"><Typewriter text={vision.creativeVibe.label} speed={40} /></span>
+                : <input value={vision.creativeVibe.label} onChange={e => onChange({ ...vision, creativeVibe: { ...vision.creativeVibe, label: e.target.value } })} className="bg-transparent focus:outline-none text-xs font-semibold text-[rgb(var(--p-text))]" style={{ minWidth: 50, maxWidth: 130 }} />
               }
             </div>
             {typing(0)
@@ -540,14 +553,14 @@ function VisionPanel({ vision, onChange, onApprove, submitting, submitError, ani
           <div className="flex items-center justify-between mb-3">
             <span className={sectionLabel} style={{ marginBottom: 0 }}>Vibe Colors</span>
             <span className="text-[9px] font-semibold px-2 py-0.5 rounded-full"
-              style={{ background: 'rgba(168,85,247,0.1)', border: '1px solid rgba(168,85,247,0.2)', color: '#C084FC' }}>
+              style={{ background: 'rgba(var(--p),0.1)', border: '1px solid rgba(var(--p),0.2)', color: 'rgb(var(--p-text))' }}>
               Campaign Atmosphere
             </span>
           </div>
           <div className="grid grid-cols-3 gap-2 mb-3">
             {(vision.vibeColors ?? []).slice(0, 3).map((color, idx) => (
               <div key={idx} className="rounded-xl px-3 py-3 flex flex-col gap-1.5 animate-swatch-pop"
-                style={{ background: 'rgba(168,85,247,0.04)', border: '1px solid rgba(168,85,247,0.12)', animationDelay: `${idx * 130}ms` }}>
+                style={{ background: 'rgba(var(--p),0.04)', border: '1px solid rgba(var(--p),0.12)', animationDelay: `${idx * 130}ms` }}>
                 <div className="flex items-center gap-2">
                   <div className="relative w-5 h-5 flex-shrink-0">
                     <div className="w-5 h-5 rounded-full border border-white/20 hover:scale-110 transition-transform"
@@ -640,7 +653,7 @@ function VisionPanel({ vision, onChange, onApprove, submitting, submitError, ani
           onClick={onApprove}
           disabled={submitting}
           className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-          style={{ background: 'linear-gradient(135deg,#A855F7,#6366F1)', color: '#fff' }}>
+          style={{ background: 'linear-gradient(135deg,rgb(var(--p)),#6366F1)', color: '#fff' }}>
           {submitting
             ? <><Loader size={13} className="animate-spin" />Sending…</>
             : <>Approve vision</>}
@@ -655,6 +668,7 @@ function VisionPanel({ vision, onChange, onApprove, submitting, submitError, ani
 export default function Dashboard() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const { resetTheme } = useTheme();
   usePushNotifications(user?.id ?? null, false);
   const [tab, setTab] = useState<Tab>('overview');
   const [creativeRequests, setCreativeRequests] = useState<CreativeRequest[]>([]);
@@ -685,6 +699,9 @@ export default function Dashboard() {
   const [sendingFeedback, setSendingFeedback] = useState(false);
   const [feedbackError, setFeedbackError] = useState('');
   const chatEndRef = useRef<HTMLDivElement>(null);
+
+  // Reset theme when no vision is active
+  useEffect(() => { if (!vision) resetTheme(); }, [vision]);
 
   const loadProfile = useCallback(async () => {
     if (!user) return;
@@ -975,15 +992,15 @@ export default function Dashboard() {
   const isVideoUrl = (url: string) => /\.(mp4|mov|webm|avi|m4v|mkv|ogv)(\?.*)?$/i.test(url);
   const unreadCount = messages.filter(m => m.is_from_admin && !m.is_read).length;
 
-  const inputClass = "w-full rounded-xl px-4 py-3.5 text-sm text-white placeholder-[#6B7280] focus:outline-none transition-all duration-200 font-medium bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(168,85,247,0.5)] focus:bg-white/[0.07]";
+  const inputClass = "w-full rounded-xl px-4 py-3.5 text-sm text-white placeholder-[#6B7280] focus:outline-none transition-all duration-200 font-medium bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(var(--p),0.5)] focus:bg-white/[0.07]";
   const labelClass = "block text-[11px] font-semibold text-[#9CA3AF] mb-2 uppercase tracking-[0.08em] font-heading";
 
   // CC-aware sidebar style
   const sidebarBg = isCloutClub
-    ? 'linear-gradient(180deg, rgba(22,8,45,0.98) 0%, rgba(12,5,25,0.98) 60%, rgba(10,10,12,0.98) 100%)'
+    ? `linear-gradient(180deg, rgba(var(--p-sur),0.98) 0%, rgba(var(--p-sur),0.80) 60%, rgba(10,10,12,0.98) 100%)`
     : 'rgba(10,10,10,0.95)';
   const mainBg = isCloutClub
-    ? { background: '#080810', backgroundImage: 'radial-gradient(ellipse 80% 40% at 50% 0%, rgba(168,85,247,0.07) 0%, transparent 70%), radial-gradient(circle, rgba(255,255,255,0.03) 1px, transparent 1px)', backgroundSize: '100% 100%, 28px 28px' }
+    ? { background: '#080810', backgroundImage: 'radial-gradient(ellipse 80% 40% at 50% 0%, rgba(var(--p),0.07) 0%, transparent 70%), radial-gradient(circle, rgba(255,255,255,0.03) 1px, transparent 1px)', backgroundSize: '100% 100%, 28px 28px' }
     : { background: '#080808', backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.04) 1px, transparent 1px)', backgroundSize: '28px 28px' };
 
   const navItems: { id: Tab; icon: React.ElementType; label: string; ccOnly?: boolean }[] = [
@@ -1004,9 +1021,9 @@ export default function Dashboard() {
           <Link to="/"><img src="/logo.png" alt="CloutKart" className="h-8 w-auto object-contain opacity-80" /></Link>
           {isCloutClub && (
             <div className="mt-3 flex items-center gap-1.5">
-              <Sparkles size={10} className="text-[#A855F7]" />
+              <Sparkles size={10} className="text-brand-purple" />
               <span className="text-[10px] font-bold uppercase tracking-widest"
-                style={{ background: 'linear-gradient(135deg,#A855F7,#C084FC,#818CF8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                style={{ background: 'linear-gradient(135deg,rgb(var(--p)),rgb(var(--p-text)),#818CF8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
                 Clout Club
               </span>
             </div>
@@ -1022,14 +1039,14 @@ export default function Dashboard() {
               <button key={id} onClick={() => setTab(id)}
                 className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 text-left"
                 style={{
-                  background: active ? (isCloutClub ? 'rgba(168,85,247,0.1)' : 'rgba(168,85,247,0.08)') : 'transparent',
-                  borderLeft: active ? `2px solid ${isCloutClub ? '#C084FC' : '#A855F7'}` : '2px solid transparent',
+                  background: active ? (isCloutClub ? 'rgba(var(--p),0.1)' : 'rgba(var(--p),0.08)') : 'transparent',
+                  borderLeft: active ? `2px solid ${isCloutClub ? 'rgb(var(--p-text))' : 'rgb(var(--p))'}` : '2px solid transparent',
                 }}>
                 <div className="relative">
-                  <Icon size={16} style={{ color: isLocked ? '#6B7280' : active ? (isCloutClub ? '#C084FC' : '#A855F7') : '#9CA3AF' }} />
+                  <Icon size={16} style={{ color: isLocked ? '#6B7280' : active ? (isCloutClub ? 'rgb(var(--p-text))' : 'rgb(var(--p))') : '#9CA3AF' }} />
                   {isMsg && !isLocked && unreadCount > 0 && (
                     <span className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 rounded-full text-[8px] font-bold flex items-center justify-center"
-                      style={{ background: '#A855F7', color: '#fff' }}>{unreadCount}</span>
+                      style={{ background: 'rgb(var(--p))', color: '#fff' }}>{unreadCount}</span>
                   )}
                   {isLocked && (
                     <Lock size={9} className="absolute -top-1 -right-1 text-[#6B7280]" />
@@ -1038,7 +1055,7 @@ export default function Dashboard() {
                 <span style={isLocked
                   ? { color: '#6B7280' }
                   : active
-                    ? { background: isCloutClub ? 'linear-gradient(135deg,#C084FC,#818CF8)' : 'linear-gradient(135deg,#A855F7,#3B82F6,#06B6D4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }
+                    ? { background: isCloutClub ? 'linear-gradient(135deg,rgb(var(--p-text)),#818CF8)' : 'linear-gradient(135deg,rgb(var(--p)),#3B82F6,#06B6D4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }
                     : { color: '#D1D5DB' }}>
                   {label}
                 </span>
@@ -1050,13 +1067,13 @@ export default function Dashboard() {
         {/* CC member badge */}
         {isCloutClub && (
           <div className="mx-4 mb-4 rounded-xl p-3 relative overflow-hidden"
-            style={{ background: 'linear-gradient(135deg, rgba(168,85,247,0.15), rgba(99,102,241,0.1))', border: '1px solid rgba(168,85,247,0.3)' }}>
+            style={{ background: 'linear-gradient(135deg, rgba(var(--p),0.15), rgba(99,102,241,0.1))', border: '1px solid rgba(var(--p),0.3)' }}>
             <div className="absolute top-0 right-0 w-12 h-12 rounded-full opacity-20"
-              style={{ background: 'radial-gradient(circle, #A855F7, transparent)', transform: 'translate(30%, -30%)' }} />
+              style={{ background: 'radial-gradient(circle, rgb(var(--p)), transparent)', transform: 'translate(30%, -30%)' }} />
             <div className="flex items-center gap-2 mb-1">
-              <Star size={11} className="text-[#C084FC]" fill="#C084FC" />
+              <Star size={11} className="text-[rgb(var(--p-text))]" style={{ color: 'rgb(var(--p-text))' }} />
               <span className="text-[10px] font-bold uppercase tracking-wider"
-                style={{ background: 'linear-gradient(135deg,#C084FC,#818CF8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                style={{ background: 'linear-gradient(135deg,rgb(var(--p-text)),#818CF8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
                 Clout Club
               </span>
             </div>
@@ -1083,7 +1100,7 @@ export default function Dashboard() {
             {navItems.map(({ id, icon: Icon, label }) => (
               <button key={id} onClick={() => setTab(id)}
                 className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium whitespace-nowrap flex-shrink-0 transition-all"
-                style={{ background: tab === id ? 'rgba(168,85,247,0.12)' : 'rgba(255,255,255,0.04)', border: tab === id ? '1px solid rgba(168,85,247,0.3)' : '1px solid rgba(255,255,255,0.08)', color: tab === id ? '#A855F7' : '#9CA3AF' }}>
+                style={{ background: tab === id ? 'rgba(var(--p),0.12)' : 'rgba(255,255,255,0.04)', border: tab === id ? '1px solid rgba(var(--p),0.3)' : '1px solid rgba(255,255,255,0.08)', color: tab === id ? 'rgb(var(--p))' : '#9CA3AF' }}>
                 <Icon size={13} />{label}
               </button>
             ))}
@@ -1137,33 +1154,33 @@ export default function Dashboard() {
             {/* Welcome card — CC variant */}
             {isCloutClub ? (
               <div className="rounded-2xl p-6 relative overflow-hidden"
-                style={{ background: 'linear-gradient(135deg, rgba(22,8,45,0.9), rgba(15,5,30,0.9))', border: '1px solid rgba(168,85,247,0.35)' }}>
+                style={{ background: 'linear-gradient(135deg, rgba(22,8,45,0.9), rgba(15,5,30,0.9))', border: '1px solid rgba(var(--p),0.35)' }}>
                 <div className="absolute inset-0 pointer-events-none">
                   <div className="absolute top-0 right-0 w-40 h-40 opacity-20"
-                    style={{ background: 'radial-gradient(circle, #A855F7, transparent)', transform: 'translate(30%, -30%)' }} />
+                    style={{ background: 'radial-gradient(circle, rgb(var(--p)), transparent)', transform: 'translate(30%, -30%)' }} />
                   <div className="absolute bottom-0 left-0 w-24 h-24 opacity-10"
                     style={{ background: 'radial-gradient(circle, #3B82F6, transparent)', transform: 'translate(-30%, 30%)' }} />
                 </div>
                 <div className="relative flex items-start justify-between">
                   <div>
                     <div className="flex items-center gap-2 mb-2">
-                      <Sparkles size={14} className="text-[#C084FC]" />
+                      <Sparkles size={14} className="text-[rgb(var(--p-text))]" />
                       <span className="text-xs font-bold uppercase tracking-widest"
-                        style={{ background: 'linear-gradient(135deg,#C084FC,#818CF8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                        style={{ background: 'linear-gradient(135deg,rgb(var(--p-text)),#818CF8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
                         Clout Club Member
                       </span>
                     </div>
                     <h2 className="font-heading font-bold text-white text-2xl mb-1">Welcome back, {userName}</h2>
-                    <p className="text-[#C4B5FD] text-sm opacity-80">Your campaigns are in motion.</p>
+                    <p className="text-[rgb(var(--p-text))] text-sm opacity-80">Your campaigns are in motion.</p>
                   </div>
                   <div className="flex-shrink-0 w-12 h-12 rounded-2xl flex items-center justify-center"
-                    style={{ background: 'rgba(168,85,247,0.2)', border: '1px solid rgba(168,85,247,0.4)' }}>
-                    <Zap size={20} className="text-[#C084FC]" />
+                    style={{ background: 'rgba(var(--p),0.2)', border: '1px solid rgba(var(--p),0.4)' }}>
+                    <Zap size={20} className="text-[rgb(var(--p-text))]" />
                   </div>
                 </div>
               </div>
             ) : (
-              <div className="glass-card rounded-2xl p-6" style={{ borderLeft: '3px solid #A855F7' }}>
+              <div className="glass-card rounded-2xl p-6" style={{ borderLeft: '3px solid rgb(var(--p))' }}>
                 <div className="flex items-start justify-between">
                   <div>
                     <h2 className="font-heading font-bold text-white text-xl mb-1">Welcome back, {userName}</h2>
@@ -1203,11 +1220,11 @@ export default function Dashboard() {
             {/* CC active campaigns summary */}
             {isCloutClub && creativeRequests.length > 0 && (
               <div className="rounded-2xl p-5"
-                style={{ background: 'rgba(168,85,247,0.06)', border: '1px solid rgba(168,85,247,0.2)' }}>
+                style={{ background: 'rgba(var(--p),0.06)', border: '1px solid rgba(var(--p),0.2)' }}>
                 <div className="flex items-center justify-between mb-3">
-                  <p className="text-[#C4B5FD] text-xs font-semibold uppercase tracking-widest">Active Creatives</p>
+                  <p className="text-[rgb(var(--p-text))] text-xs font-semibold uppercase tracking-widest">Active Creatives</p>
                   <span className="text-xs font-mono font-bold"
-                    style={{ background: 'linear-gradient(135deg,#A855F7,#3B82F6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                    style={{ background: 'linear-gradient(135deg,rgb(var(--p)),#3B82F6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
                     {creativeRequests.length} total
                   </span>
                 </div>
@@ -1233,7 +1250,7 @@ export default function Dashboard() {
                 { label: 'Member Since', value: memberSince, color: null },
               ]).map(s => (
                 <div key={s.label} className="glass-card rounded-2xl p-5"
-                  style={isCloutClub ? { border: '1px solid rgba(168,85,247,0.18)', background: 'rgba(168,85,247,0.04)' } : {}}>
+                  style={isCloutClub ? { border: '1px solid rgba(var(--p),0.18)', background: 'rgba(var(--p),0.04)' } : {}}>
                   <p className="text-[#9CA3AF] text-xs font-medium mb-2">{s.label}</p>
                   <p className={`font-mono font-bold text-lg ${s.color ? '' : 'gradient-text'}`} style={s.color ? { color: s.color } : {}}>{s.value}</p>
                 </div>
@@ -1247,8 +1264,8 @@ export default function Dashboard() {
                   <p className="text-[#9CA3AF] text-xs mt-0.5">Recurring ad production, priority turnaround</p>
                 </div>
                 <button onClick={() => setTab('plan')} className="flex items-center gap-1 text-sm font-semibold"
-                  style={{ background: 'linear-gradient(135deg,#A855F7,#3B82F6,#06B6D4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                  View Plans <ChevronRight size={14} style={{ color: '#A855F7' }} />
+                  style={{ background: 'linear-gradient(135deg,rgb(var(--p)),#3B82F6,#06B6D4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                  View Plans <ChevronRight size={14} style={{ color: 'rgb(var(--p))' }} />
                 </button>
               </div>
             )}
@@ -1259,12 +1276,12 @@ export default function Dashboard() {
         {tab === 'creative' && (
           <div className="space-y-6">
             <h2 className="font-heading font-bold text-white text-2xl">{isCloutClub ? 'My Creatives' : 'My Creative'}</h2>
-            {loadingRequest && <div className="glass-card rounded-2xl p-10 flex items-center justify-center"><Loader size={20} className="animate-spin text-[#A855F7]" /></div>}
+            {loadingRequest && <div className="glass-card rounded-2xl p-10 flex items-center justify-center"><Loader size={20} className="animate-spin text-brand-purple" /></div>}
 
             {/* Free users: empty state */}
             {!loadingRequest && !isCloutClub && freeCreativeCount === 0 && !showForm && (
               <div className="glass-card rounded-2xl p-10 flex flex-col items-center text-center">
-                <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4" style={{ background: 'rgba(168,85,247,0.1)', border: '1px solid rgba(168,85,247,0.2)' }}><Image size={24} className="text-[#A855F7]" /></div>
+                <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4" style={{ background: 'rgba(var(--p),0.1)', border: '1px solid rgba(var(--p),0.2)' }}><Image size={24} className="text-brand-purple" /></div>
                 <h3 className="font-heading font-semibold text-white text-lg mb-2">Claim your 3 free creatives</h3>
                 <p className="text-[#9CA3AF] text-sm mb-6 max-w-sm">Submit up to 3 free creative briefs. Each one takes 2 minutes and delivers in 48 hours.</p>
                 <button onClick={() => setShowForm(true)} className="btn-primary text-sm">Claim Creative 1 of 3<ArrowRight size={14} /></button>
@@ -1274,13 +1291,13 @@ export default function Dashboard() {
             {/* CC members: empty state */}
             {!loadingRequest && isCloutClub && creativeRequests.length === 0 && !showForm && (
               <div className="rounded-2xl p-10 flex flex-col items-center text-center"
-                style={{ background: 'rgba(168,85,247,0.05)', border: '1px solid rgba(168,85,247,0.2)' }}>
+                style={{ background: 'rgba(var(--p),0.05)', border: '1px solid rgba(var(--p),0.2)' }}>
                 <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4"
-                  style={{ background: 'rgba(168,85,247,0.12)', border: '1px solid rgba(168,85,247,0.3)' }}>
-                  <Sparkles size={24} className="text-[#C084FC]" />
+                  style={{ background: 'rgba(var(--p),0.12)', border: '1px solid rgba(var(--p),0.3)' }}>
+                  <Sparkles size={24} className="text-[rgb(var(--p-text))]" />
                 </div>
                 <h3 className="font-heading font-semibold text-white text-lg mb-2">Start your first campaign</h3>
-                <p className="text-[#C4B5FD] text-sm mb-6 max-w-sm opacity-80">Submit your creative brief and the team will get started on your campaign.</p>
+                <p className="text-[rgb(var(--p-text))] text-sm mb-6 max-w-sm opacity-80">Submit your creative brief and the team will get started on your campaign.</p>
                 <button onClick={() => setShowForm(true)} className="btn-primary text-sm">New Creative Brief <ArrowRight size={14} /></button>
               </div>
             )}
@@ -1405,7 +1422,7 @@ export default function Dashboard() {
               const primaryIsVideo = isVideoUrl(primaryUrl);
               return (
                 <div key={request.id} className="glass-card rounded-2xl p-6 sm:p-8"
-                  style={isCloutClub ? { border: '1px solid rgba(168,85,247,0.15)' } : {}}>
+                  style={isCloutClub ? { border: '1px solid rgba(var(--p),0.15)' } : {}}>
                   <div className="flex items-start justify-between mb-4 sm:mb-8">
                     <div>
                       <p className="text-[#6B7280] text-xs font-semibold uppercase tracking-widest mb-1">Creative {index + 1}</p>
@@ -1426,17 +1443,17 @@ export default function Dashboard() {
                           <div key={step} className="flex items-start gap-4 pb-6 last:pb-0">
                             <div className="flex flex-col items-center flex-shrink-0">
                               <div className="w-8 h-8 rounded-full flex items-center justify-center transition-all"
-                                style={{ background: done ? 'linear-gradient(135deg,#A855F7,#3B82F6)' : 'rgba(255,255,255,0.05)', border: done ? 'none' : '1px solid rgba(255,255,255,0.1)' }}>
+                                style={{ background: done ? 'linear-gradient(135deg,rgb(var(--p)),#3B82F6)' : 'rgba(255,255,255,0.05)', border: done ? 'none' : '1px solid rgba(255,255,255,0.1)' }}>
                                 {done ? <CheckCircle size={14} className="text-white" /> : <Clock size={14} className="text-[#6B7280]" />}
                               </div>
-                              {i < timelineSteps.length - 1 && <div className="w-px flex-1 mt-1" style={{ height: 24, background: done ? 'linear-gradient(#A855F7,#3B82F6)' : 'rgba(255,255,255,0.06)' }} />}
+                              {i < timelineSteps.length - 1 && <div className="w-px flex-1 mt-1" style={{ height: 24, background: done ? 'linear-gradient(rgb(var(--p)),#3B82F6)' : 'rgba(255,255,255,0.06)' }} />}
                             </div>
                             <div className="pt-1">
                               <p className={`font-heading font-semibold text-sm ${active ? '' : done ? 'text-white' : 'text-[#6B7280]'}`}
-                                style={active ? { background: 'linear-gradient(135deg,#A855F7,#3B82F6,#06B6D4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' } : {}}>
+                                style={active ? { background: 'linear-gradient(135deg,rgb(var(--p)),#3B82F6,#06B6D4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' } : {}}>
                                 {step}
                               </p>
-                              {active && request.status !== 'completed' && <Loader size={12} className="mt-1 text-[#A855F7] animate-spin" />}
+                              {active && request.status !== 'completed' && <Loader size={12} className="mt-1 text-brand-purple animate-spin" />}
                             </div>
                           </div>
                         );
@@ -1461,7 +1478,7 @@ export default function Dashboard() {
                             </a>
                           ) : (
                             <div className="text-center max-w-xs mx-auto">
-                              <div className="w-14 h-14 rounded-2xl mx-auto mb-4 flex items-center justify-center" style={{ background: 'rgba(168,85,247,0.12)', border: '1px solid rgba(168,85,247,0.24)' }}><Download size={22} className="text-[#A855F7]" /></div>
+                              <div className="w-14 h-14 rounded-2xl mx-auto mb-4 flex items-center justify-center" style={{ background: 'rgba(var(--p),0.12)', border: '1px solid rgba(var(--p),0.24)' }}><Download size={22} className="text-brand-purple" /></div>
                               <p className="text-white font-heading font-semibold text-sm mb-1">File ready</p>
                               <p className="text-[#9CA3AF] text-xs leading-relaxed">Download to view this creative.</p>
                             </div>
@@ -1518,10 +1535,10 @@ export default function Dashboard() {
               <p className="text-[#9CA3AF] text-sm mt-1">Completed creatives uploaded for your account.</p>
             </div>
             {loadingRequest ? (
-              <div className="glass-card rounded-2xl p-10 flex items-center justify-center"><Loader size={20} className="animate-spin text-[#A855F7]" /></div>
+              <div className="glass-card rounded-2xl p-10 flex items-center justify-center"><Loader size={20} className="animate-spin text-brand-purple" /></div>
             ) : galleryCreatives.length === 0 ? (
               <div className="glass-card rounded-2xl p-10 flex flex-col items-center text-center">
-                <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4" style={{ background: 'rgba(168,85,247,0.1)', border: '1px solid rgba(168,85,247,0.2)' }}><Images size={24} className="text-[#A855F7]" /></div>
+                <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4" style={{ background: 'rgba(var(--p),0.1)', border: '1px solid rgba(var(--p),0.2)' }}><Images size={24} className="text-brand-purple" /></div>
                 <h3 className="font-heading font-semibold text-white text-lg mb-2">No uploaded creatives yet</h3>
                 <p className="text-[#9CA3AF] text-sm max-w-sm">Once the team uploads completed creatives for you, they will appear here.</p>
               </div>
@@ -1537,7 +1554,7 @@ export default function Dashboard() {
                   const feedbackMessages = messages.filter(m => m.creative_request_id === request.id);
                   return (
                     <div key={request.id} className="glass-card rounded-2xl overflow-hidden"
-                      style={isCloutClub ? { border: '1px solid rgba(168,85,247,0.15)' } : {}}>
+                      style={isCloutClub ? { border: '1px solid rgba(var(--p),0.15)' } : {}}>
                       {/* Primary preview */}
                       <div className="relative bg-white/[0.04] flex items-center justify-center" style={{ aspectRatio: '1' }}>
                         {primaryIsVideo ? (
@@ -1548,7 +1565,7 @@ export default function Dashboard() {
                           </a>
                         ) : (
                           <div className="text-center p-6">
-                            <Download size={28} className="text-[#A855F7] mx-auto mb-3" />
+                            <Download size={28} className="text-brand-purple mx-auto mb-3" />
                             <p className="text-white font-heading font-semibold text-sm">Download file</p>
                           </div>
                         )}
@@ -1606,9 +1623,9 @@ export default function Dashboard() {
                               title={subscriptionExpired ? 'Renew subscription to leave feedback' : undefined}
                               className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-xl font-medium transition-all"
                               style={{
-                                background: feedbackOpen === request.id ? 'rgba(168,85,247,0.15)' : 'rgba(168,85,247,0.08)',
-                                border: '1px solid rgba(168,85,247,0.25)',
-                                color: subscriptionExpired ? '#6B7280' : '#C084FC',
+                                background: feedbackOpen === request.id ? 'rgba(var(--p),0.15)' : 'rgba(var(--p),0.08)',
+                                border: '1px solid rgba(var(--p),0.25)',
+                                color: subscriptionExpired ? '#6B7280' : 'rgb(var(--p-text))',
                                 cursor: subscriptionExpired ? 'not-allowed' : 'pointer',
                                 opacity: subscriptionExpired ? 0.5 : 1,
                               }}
@@ -1622,14 +1639,14 @@ export default function Dashboard() {
                         {/* Feedback panel */}
                         {isCloutClub && feedbackOpen === request.id && (
                           <div className="mt-3 rounded-xl overflow-hidden"
-                            style={{ background: 'rgba(168,85,247,0.05)', border: '1px solid rgba(168,85,247,0.2)' }}>
+                            style={{ background: 'rgba(var(--p),0.05)', border: '1px solid rgba(var(--p),0.2)' }}>
                             {feedbackMessages.length > 0 && (
                               <div className="p-3 space-y-2 max-h-40 overflow-y-auto">
                                 {feedbackMessages.map(m => (
                                   <div key={m.id} className={`text-xs px-3 py-2 rounded-xl ${m.is_from_admin ? 'text-[#E2E8F0]' : 'text-[#F3E8FF]'}`}
-                                    style={{ background: m.is_from_admin ? 'rgba(99,102,241,0.1)' : 'rgba(168,85,247,0.12)' }}>
+                                    style={{ background: m.is_from_admin ? 'rgba(99,102,241,0.1)' : 'rgba(var(--p),0.12)' }}>
                                     <span className="font-semibold text-[10px] block mb-0.5"
-                                      style={{ color: m.is_from_admin ? '#818CF8' : '#C084FC' }}>
+                                      style={{ color: m.is_from_admin ? '#818CF8' : 'rgb(var(--p-text))' }}>
                                       {m.is_from_admin ? 'CloutKart' : 'You'}
                                     </span>
                                     {m.content}
@@ -1646,14 +1663,14 @@ export default function Dashboard() {
                                 onChange={e => { setFeedbackText(e.target.value); setFeedbackError(''); }}
                                 onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendFeedback(request.id); } }}
                                 placeholder="Leave feedback..."
-                                className="flex-1 rounded-lg px-3 py-2 text-xs text-white placeholder-[#6B7280] focus:outline-none bg-white/[0.05] border border-white/[0.1] focus:border-[rgba(168,85,247,0.4)]"
+                                className="flex-1 rounded-lg px-3 py-2 text-xs text-white placeholder-[#6B7280] focus:outline-none bg-white/[0.05] border border-white/[0.1] focus:border-[rgba(var(--p),0.4)]"
                               />
                               <button
                                 onClick={() => sendFeedback(request.id)}
                                 disabled={sendingFeedback || !feedbackText.trim()}
                                 className="w-8 h-8 rounded-lg flex items-center justify-center disabled:opacity-40"
-                                style={{ background: 'rgba(168,85,247,0.2)', border: '1px solid rgba(168,85,247,0.3)' }}>
-                                {sendingFeedback ? <Loader size={11} className="animate-spin text-[#C084FC]" /> : <Send size={11} className="text-[#C084FC]" />}
+                                style={{ background: 'rgba(var(--p),0.2)', border: '1px solid rgba(var(--p),0.3)' }}>
+                                {sendingFeedback ? <Loader size={11} className="animate-spin text-[rgb(var(--p-text))]" /> : <Send size={11} className="text-[rgb(var(--p-text))]" />}
                               </button>
                             </div>
                           </div>
@@ -1706,7 +1723,7 @@ export default function Dashboard() {
                 </span>
               </div>
               {!isCloutClub && (
-                <div className="mb-5 inline-flex items-center gap-3 rounded-2xl px-4 py-3" style={{ background: 'rgba(168,85,247,0.08)', border: '1px solid rgba(168,85,247,0.18)' }}>
+                <div className="mb-5 inline-flex items-center gap-3 rounded-2xl px-4 py-3" style={{ background: 'rgba(var(--p),0.08)', border: '1px solid rgba(var(--p),0.18)' }}>
                   <span className="font-mono font-bold gradient-text text-xl">{freeCreativesLeft}</span>
                   <div>
                     <p className="text-white text-sm font-semibold">{freeCreativesLeft === 1 ? 'free creative left' : 'free creatives left'}</p>
@@ -1718,8 +1735,8 @@ export default function Dashboard() {
 
             <div className="glass-card rounded-2xl p-6 sm:p-8">
               <div className="flex items-start gap-3 mb-6">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(168,85,247,0.12)', border: '1px solid rgba(168,85,247,0.25)' }}>
-                  <Sparkles size={18} className="text-[#A855F7]" />
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(var(--p),0.12)', border: '1px solid rgba(var(--p),0.25)' }}>
+                  <Sparkles size={18} className="text-brand-purple" />
                 </div>
                 <div>
                   <h3 className="font-heading font-bold text-white text-xl">Clout Club</h3>
@@ -1729,7 +1746,7 @@ export default function Dashboard() {
               <div className="grid sm:grid-cols-2 gap-3 mb-6">
                 {['Monthly creative production', 'Priority turnaround', 'Hook, caption & visual direction', 'Fresh concepts each campaign'].map(f => (
                   <div key={f} className="flex items-start gap-2.5 text-sm text-[#D1D5DB] rounded-xl p-3" style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                    <span className="text-[#A855F7] text-xs mt-0.5 flex-shrink-0">✦</span>
+                    <span className="text-brand-purple text-xs mt-0.5 flex-shrink-0">✦</span>
                     <span>{f}</span>
                   </div>
                 ))}
@@ -1770,10 +1787,10 @@ export default function Dashboard() {
                 </div>
               ) : profile.clout_club_price ? (
                 <div className="space-y-4">
-                  <div className="rounded-2xl p-4" style={{ background: 'rgba(168,85,247,0.06)', border: '1px solid rgba(168,85,247,0.2)' }}>
+                  <div className="rounded-2xl p-4" style={{ background: 'rgba(var(--p),0.06)', border: '1px solid rgba(var(--p),0.2)' }}>
                     <p className="text-[#9CA3AF] text-xs mb-1 uppercase tracking-widest font-semibold">Your custom price</p>
                     <div className="flex items-baseline gap-1">
-                      <span className="font-mono font-bold text-3xl" style={{ background: 'linear-gradient(135deg,#A855F7,#3B82F6,#06B6D4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                      <span className="font-mono font-bold text-3xl" style={{ background: 'linear-gradient(135deg,rgb(var(--p)),#3B82F6,#06B6D4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
                         ₹{(profile.clout_club_price / 100).toLocaleString('en-IN')}
                       </span>
                       <span className="text-[#9CA3AF] text-sm">/month</span>
@@ -1791,8 +1808,8 @@ export default function Dashboard() {
                 <div className="space-y-4">
                   <div className="rounded-2xl p-5" style={{ background: 'rgba(255,255,255,0.03)', border: '1px dashed rgba(255,255,255,0.12)' }}>
                     <div className="flex items-center gap-3 mb-3">
-                      <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'rgba(168,85,247,0.08)', border: '1px solid rgba(168,85,247,0.15)' }}>
-                        <IndianRupee size={15} className="text-[#A855F7]" />
+                      <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'rgba(var(--p),0.08)', border: '1px solid rgba(var(--p),0.15)' }}>
+                        <IndianRupee size={15} className="text-brand-purple" />
                       </div>
                       <div>
                         <p className="text-white font-heading font-semibold text-base">Negotiable</p>
@@ -1838,11 +1855,11 @@ export default function Dashboard() {
               <p className="text-[#9CA3AF] text-sm mt-1">Chat with your CloutKart team. Feedback on specific creatives appears here too.</p>
             </div>
             <div className="flex-1 flex flex-col rounded-2xl overflow-hidden min-h-0"
-              style={{ background: 'rgba(168,85,247,0.04)', border: '1px solid rgba(168,85,247,0.18)' }}>
+              style={{ background: 'rgba(var(--p),0.04)', border: '1px solid rgba(var(--p),0.18)' }}>
               {/* Messages list */}
               <div className="flex-1 overflow-y-auto p-4 space-y-1">
                 {loadingMessages ? (
-                  <div className="flex items-center justify-center h-full"><Loader size={20} className="animate-spin text-[#A855F7]" /></div>
+                  <div className="flex items-center justify-center h-full"><Loader size={20} className="animate-spin text-brand-purple" /></div>
                 ) : messageError && messages.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-full text-center py-12 px-4">
                     <AlertCircle size={20} className="text-red-400 mb-2" />
@@ -1851,8 +1868,8 @@ export default function Dashboard() {
                 ) : messages.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-full text-center py-12">
                     <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-3"
-                      style={{ background: 'rgba(168,85,247,0.1)', border: '1px solid rgba(168,85,247,0.2)' }}>
-                      <MessageCircle size={20} className="text-[#A855F7]" />
+                      style={{ background: 'rgba(var(--p),0.1)', border: '1px solid rgba(var(--p),0.2)' }}>
+                      <MessageCircle size={20} className="text-brand-purple" />
                     </div>
                     <p className="text-white font-heading font-semibold text-sm mb-1">Start a conversation</p>
                     <p className="text-[#9CA3AF] text-xs max-w-xs">Send a message to your CloutKart team. They'll respond within 24 hours.</p>
@@ -1875,13 +1892,13 @@ export default function Dashboard() {
                     onChange={e => { setMessageInput(e.target.value); setMessageError(''); }}
                     onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
                     placeholder="Message your CloutKart team..."
-                    className="flex-1 rounded-xl px-4 py-2.5 text-sm text-white placeholder-[#6B7280] focus:outline-none bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(168,85,247,0.4)]"
+                    className="flex-1 rounded-xl px-4 py-2.5 text-sm text-white placeholder-[#6B7280] focus:outline-none bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(var(--p),0.4)]"
                   />
                   <button
                     onClick={sendMessage}
                     disabled={sendingMessage || !messageInput.trim()}
                     className="w-10 h-10 rounded-xl flex items-center justify-center transition-all disabled:opacity-40"
-                    style={{ background: 'linear-gradient(135deg, rgba(168,85,247,0.5), rgba(99,102,241,0.5))', border: '1px solid rgba(168,85,247,0.4)' }}>
+                    style={{ background: 'linear-gradient(135deg, rgba(var(--p),0.5), rgba(99,102,241,0.5))', border: '1px solid rgba(var(--p),0.4)' }}>
                     {sendingMessage ? <Loader size={14} className="animate-spin text-white" /> : <Send size={14} className="text-white" />}
                   </button>
                 </div>

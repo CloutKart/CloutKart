@@ -10,13 +10,13 @@ export default {
       },
       colors: {
         brand: {
-          purple: '#A855F7',
+          purple: 'rgb(var(--p) / <alpha-value>)',
           blue:   '#3B82F6',
           cyan:   '#06B6D4',
         },
       },
       backgroundImage: {
-        'brand-gradient': 'linear-gradient(135deg, #A855F7, #3B82F6, #06B6D4)',
+        'brand-gradient': 'linear-gradient(135deg, rgb(var(--p)), #3B82F6, #06B6D4)',
         'dot-grid': 'radial-gradient(circle, rgba(255,255,255,0.07) 1px, transparent 1px)',
       },
       backgroundSize: {
