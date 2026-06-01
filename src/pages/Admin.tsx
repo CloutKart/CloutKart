@@ -12,7 +12,6 @@ import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { NotificationBell } from '../components/NotificationBell';
 import { usePushNotifications } from '../hooks/usePushNotifications';
-import { useTheme } from '../context/ThemeContext';
 
 type Tab = 'overview' | 'requests' | 'payments' | 'users' | 'portfolio' | 'cloutclub' | 'messages' | 'settings' | 'leads';
 type RequestFilter = 'all' | 'pending' | 'in_progress' | 'completed';
@@ -173,7 +172,7 @@ const PlanBadge = ({ plan }: { plan: string }) => {
   const isCC = plan === 'clout_club';
   return (
     <span className="text-xs font-semibold px-2 py-0.5 rounded-md capitalize"
-      style={{ background: isCC ? 'rgba(var(--p),0.12)' : 'rgba(99,102,241,0.08)', border: isCC ? '1px solid rgba(var(--p),0.3)' : '1px solid rgba(99,102,241,0.2)', color: isCC ? 'rgb(var(--p-text))' : '#818CF8' }}>
+      style={{ background: isCC ? 'rgba(168,85,247,0.12)' : 'rgba(99,102,241,0.08)', border: isCC ? '1px solid rgba(168,85,247,0.3)' : '1px solid rgba(99,102,241,0.2)', color: isCC ? '#C084FC' : '#818CF8' }}>
       {isCC ? 'Clout Club' : plan}
     </span>
   );
@@ -390,9 +389,9 @@ const DiscoverLeadCard = memo(function DiscoverLeadCard({
                       href={`https://www.instagram.com/explore/tags/${token.slice(1)}/`}
                       target="_blank" rel="noopener noreferrer"
                       className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium transition-colors"
-                      style={{ background: 'rgba(var(--p),0.1)', color: 'rgb(var(--p-text))', border: '1px solid rgba(var(--p),0.2)' }}
-                      onMouseEnter={e => (e.currentTarget.style.background = 'rgba(var(--p),0.2)')}
-                      onMouseLeave={e => (e.currentTarget.style.background = 'rgba(var(--p),0.1)')}
+                      style={{ background: 'rgba(168,85,247,0.1)', color: '#C084FC', border: '1px solid rgba(168,85,247,0.2)' }}
+                      onMouseEnter={e => (e.currentTarget.style.background = 'rgba(168,85,247,0.2)')}
+                      onMouseLeave={e => (e.currentTarget.style.background = 'rgba(168,85,247,0.1)')}
                     >{token}</a>
                   ) : token ? (
                     <span key={i} className="text-[#9CA3AF] text-[11px]">{token}</span>
@@ -557,13 +556,13 @@ function VisionModal({ vision, brandName, onClose }: { vision: ApprovedVision; b
     <div className="fixed inset-0 z-[200] flex items-center justify-center px-4" onClick={onClose}>
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
       <div className="relative w-full max-w-lg rounded-3xl overflow-hidden max-h-[90vh] overflow-y-auto"
-        style={{ background: 'rgba(12,8,24,0.98)', border: '1px solid rgba(var(--p),0.25)' }}
+        style={{ background: 'rgba(12,8,24,0.98)', border: '1px solid rgba(168,85,247,0.25)' }}
         onClick={e => e.stopPropagation()}>
         {/* Header */}
         <div className="sticky top-0 px-6 py-4 flex items-center justify-between border-b z-10"
-          style={{ borderColor: 'rgba(var(--p),0.15)', background: 'rgba(12,8,24,0.98)' }}>
+          style={{ borderColor: 'rgba(168,85,247,0.15)', background: 'rgba(12,8,24,0.98)' }}>
           <div className="flex items-center gap-2">
-            <Sparkles size={15} className="text-[rgb(var(--p-text))]" />
+            <Sparkles size={15} className="text-[#C084FC]" />
             <div>
               <h3 className="font-heading font-bold text-white text-base">Approved Vision</h3>
               <p className="text-[#9CA3AF] text-xs">{brandName}</p>
@@ -571,7 +570,7 @@ function VisionModal({ vision, brandName, onClose }: { vision: ApprovedVision; b
           </div>
           <div className="flex items-center gap-2">
             <span className="flex items-center gap-1.5 text-[10px] font-semibold px-2.5 py-1 rounded-full"
-              style={{ background: 'rgba(var(--p),0.1)', border: '1px solid rgba(var(--p),0.2)', color: 'rgb(var(--p-text))' }}>
+              style={{ background: 'rgba(168,85,247,0.1)', border: '1px solid rgba(168,85,247,0.2)', color: '#C084FC' }}>
               <Sparkles size={9} />
               Pixie · AI Creative Intelligence
             </span>
@@ -586,7 +585,7 @@ function VisionModal({ vision, brandName, onClose }: { vision: ApprovedVision; b
             <span className={sectionLabel}>Creative Vibe</span>
             <div className="flex items-start gap-3">
               <span className="flex-shrink-0 px-3 py-1 rounded-full text-xs font-semibold"
-                style={{ background: 'rgba(var(--p),0.1)', border: '1px solid rgba(var(--p),0.3)', color: 'rgb(var(--p-text))' }}>
+                style={{ background: 'rgba(168,85,247,0.1)', border: '1px solid rgba(168,85,247,0.3)', color: '#C084FC' }}>
                 {vision.creativeVibe.label}
               </span>
               <p className="text-[#D1D5DB] text-sm leading-relaxed">{vision.creativeVibe.description}</p>
@@ -624,7 +623,7 @@ function VisionModal({ vision, brandName, onClose }: { vision: ApprovedVision; b
               <div className="flex items-center gap-2 mb-2">
                 <span className={sectionLabel} style={{ marginBottom: 0 }}>Vibe Colors</span>
                 <span className="text-[9px] font-semibold px-2 py-0.5 rounded-full"
-                  style={{ background: 'rgba(var(--p),0.1)', border: '1px solid rgba(var(--p),0.2)', color: 'rgb(var(--p-text))' }}>
+                  style={{ background: 'rgba(168,85,247,0.1)', border: '1px solid rgba(168,85,247,0.2)', color: '#C084FC' }}>
                   Campaign Atmosphere
                 </span>
               </div>
@@ -652,7 +651,7 @@ function VisionModal({ vision, brandName, onClose }: { vision: ApprovedVision; b
           {/* Hook */}
           <div>
             <span className={sectionLabel}>Hook</span>
-            <div className="rounded-xl px-4 py-3" style={{ background: 'rgba(var(--p),0.06)', border: '1px solid rgba(var(--p),0.12)' }}>
+            <div className="rounded-xl px-4 py-3" style={{ background: 'rgba(168,85,247,0.06)', border: '1px solid rgba(168,85,247,0.12)' }}>
               <p className="text-white font-heading font-bold text-base leading-snug">{vision.hook}</p>
             </div>
           </div>
@@ -961,7 +960,7 @@ function PriceEditor({ userId, currentPrice, onSave }: {
       <span className="text-[#9CA3AF] text-xs">₹</span>
       <input ref={inputRef} type="number" value={value} onChange={e => setValue(e.target.value)}
         onKeyDown={e => { if (e.key === 'Enter') save(); if (e.key === 'Escape') setEditing(false); }}
-        placeholder="amount" className="w-24 rounded-lg px-2.5 py-1.5 text-xs text-white bg-white/[0.06] border border-white/[0.15] focus:border-[rgba(var(--p),0.5)] focus:outline-none" />
+        placeholder="amount" className="w-24 rounded-lg px-2.5 py-1.5 text-xs text-white bg-white/[0.06] border border-white/[0.15] focus:border-[rgba(168,85,247,0.5)] focus:outline-none" />
       <button onClick={save} disabled={saving} className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)' }}>
         {saving ? <Loader size={11} className="animate-spin text-[#10B981]" /> : <Check size={11} className="text-[#10B981]" />}
       </button>
@@ -974,10 +973,10 @@ function PriceEditor({ userId, currentPrice, onSave }: {
   return (
     <button onClick={() => setEditing(true)} className="flex items-center gap-2 group">
       {currentPrice
-        ? <span className="text-sm font-mono font-semibold" style={{ background: 'linear-gradient(135deg,rgb(var(--p)),#3B82F6,#06B6D4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>₹{(currentPrice / 100).toLocaleString('en-IN')}/mo</span>
+        ? <span className="text-sm font-mono font-semibold" style={{ background: 'linear-gradient(135deg,#A855F7,#3B82F6,#06B6D4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>₹{(currentPrice / 100).toLocaleString('en-IN')}/mo</span>
         : <span className="text-xs text-[#6B7280] italic">Set price</span>
       }
-      <Edit2 size={11} className="text-[#6B7280] group-hover:text-brand-purple transition-colors" />
+      <Edit2 size={11} className="text-[#6B7280] group-hover:text-[#A855F7] transition-colors" />
     </button>
   );
 }
@@ -1004,7 +1003,7 @@ function ExpiryEditor({ userId, currentExpiry, onSave }: {
     <div className="flex items-center gap-1.5">
       <input ref={inputRef} type="date" value={value} onChange={e => setValue(e.target.value)}
         onKeyDown={e => { if (e.key === 'Enter') save(); if (e.key === 'Escape') setEditing(false); }}
-        className="rounded-lg px-2 py-1.5 text-xs text-white bg-white/[0.06] border border-white/[0.15] focus:border-[rgba(var(--p),0.5)] focus:outline-none"
+        className="rounded-lg px-2 py-1.5 text-xs text-white bg-white/[0.06] border border-white/[0.15] focus:border-[rgba(168,85,247,0.5)] focus:outline-none"
         style={{ colorScheme: 'dark', width: 120 }} />
       <button onClick={save} disabled={saving} className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)' }}>
         {saving ? <Loader size={11} className="animate-spin text-[#10B981]" /> : <Check size={11} className="text-[#10B981]" />}
@@ -1032,7 +1031,7 @@ function ExpiryEditor({ userId, currentExpiry, onSave }: {
           <span className="text-xs text-[#6B7280] italic">Set date</span>
         )}
       </div>
-      <Edit2 size={11} className="text-[#6B7280] group-hover:text-brand-purple transition-colors flex-shrink-0" />
+      <Edit2 size={11} className="text-[#6B7280] group-hover:text-[#A855F7] transition-colors flex-shrink-0" />
     </button>
   );
 }
@@ -1049,7 +1048,6 @@ const DEFAULT_CONTACT_FORM  = { name: '', role: '', email: '', phone: '', linked
 // ─── Main Admin component ─────────────────────────────────────────────────────
 export default function Admin() {
   const { user, signOut } = useAuth();
-  const { setThemeSeed, resetTheme } = useTheme();
   const navigate = useNavigate();
   usePushNotifications(user?.id ?? null, true);
   const [tab, setTab] = useState<Tab>('overview');
@@ -1135,13 +1133,6 @@ export default function Admin() {
   const handleSignOut = async () => { await signOut(); navigate('/'); };
 
   useEffect(() => { loadOverview(); loadAdminProfile(); }, []);
-
-  // Shift theme to product colors when a VisionModal is opened; reset on close
-  useEffect(() => {
-    const seed = visionRequest?.approved_vision?.productColors?.[0]?.hex
-      ?? visionRequest?.approved_vision?.colorStory?.[0]?.hex;
-    (seed && /^#[0-9a-fA-F]{6}$/.test(seed)) ? setThemeSeed(seed) : resetTheme();
-  }, [visionRequest]);
 
   useEffect(() => {
     if (!thumbnailFile) { setThumbnailPreview(''); return; }
@@ -1743,15 +1734,15 @@ export default function Admin() {
             return (
               <button key={id} onClick={() => setTab(id)}
                 className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-left"
-                style={{ background: active ? (isCC ? 'rgba(var(--p),0.1)' : 'rgba(99,102,241,0.1)') : 'transparent', borderLeft: active ? `2px solid ${isCC ? 'rgb(var(--p))' : '#818CF8'}` : '2px solid transparent' }}>
+                style={{ background: active ? (isCC ? 'rgba(168,85,247,0.1)' : 'rgba(99,102,241,0.1)') : 'transparent', borderLeft: active ? `2px solid ${isCC ? '#A855F7' : '#818CF8'}` : '2px solid transparent' }}>
                 <div className="relative">
-                  <Icon size={16} style={{ color: active ? (isCC ? 'rgb(var(--p))' : '#818CF8') : '#9CA3AF' }} />
+                  <Icon size={16} style={{ color: active ? (isCC ? '#A855F7' : '#818CF8') : '#9CA3AF' }} />
                   {isMsg && totalUnread > 0 && (
                     <span className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 rounded-full text-[8px] font-bold flex items-center justify-center"
                       style={{ background: '#EF4444', color: '#fff' }}>{totalUnread > 9 ? '9+' : totalUnread}</span>
                   )}
                 </div>
-                <span style={active ? { background: isCC ? 'linear-gradient(135deg,rgb(var(--p)),#06B6D4)' : 'linear-gradient(135deg,#818CF8,#3B82F6,#06B6D4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' } : { color: '#D1D5DB' }}>
+                <span style={active ? { background: isCC ? 'linear-gradient(135deg,#A855F7,#06B6D4)' : 'linear-gradient(135deg,#818CF8,#3B82F6,#06B6D4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' } : { color: '#D1D5DB' }}>
                   {label}
                 </span>
               </button>
@@ -1823,7 +1814,7 @@ export default function Admin() {
                 { label: 'Total Users', value: overviewStats.totalUsers.toString(), color: '#818CF8' },
                 { label: 'Requests Today', value: overviewStats.requestsToday.toString(), color: '#06B6D4' },
                 { label: 'Total Revenue', value: formatCurrency(overviewStats.totalRevenue), color: '#10B981' },
-                { label: 'Clout Club Rate', value: `${conversionRate}%`, color: 'rgb(var(--p))' },
+                { label: 'Clout Club Rate', value: `${conversionRate}%`, color: '#A855F7' },
               ].map(s => (
                 <div key={s.label} className="glass-card rounded-2xl p-5 relative overflow-hidden"
                   style={{ border: `1px solid ${s.color}22` }}>
@@ -1863,7 +1854,7 @@ export default function Admin() {
             <div className="glass-card rounded-2xl overflow-hidden">
               {loadingTab ? <div className="flex items-center justify-center p-10"><Loader size={20} className="animate-spin text-[#818CF8]" /></div>
                 : filteredRequests.length === 0 ? <p className="text-[#6B7280] text-sm text-center p-10">No requests found.</p>
-                : <div className="overflow-x-auto"><table className="w-full"><thead><tr>{['User','Brand','Niche','Format','Submitted','Vision','Creative','Status'].map(h=><th key={h} className={thClass}>{h}</th>)}</tr></thead><tbody>{filteredRequests.map(r=>(<tr key={r.id}><td className={tdClass}>{r.profiles?.full_name||'—'}</td><td className={tdClass}>{r.brand_name}</td><td className={tdClass+' text-[#9CA3AF]'}>{r.niche}</td><td className={tdClass+' text-[#9CA3AF]'}>{r.ad_format}</td><td className={tdClass+' text-[#9CA3AF]'}>{formatDate(r.created_at)}</td><td className={tdClass}>{r.approved_vision?<button onClick={()=>setVisionRequest(r)} className="flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full transition-all" style={{background:'rgba(var(--p),0.1)',border:'1px solid rgba(var(--p),0.25)',color:'rgb(var(--p-text))'}}><Eye size={11}/>View</button>:<span className="text-[#6B7280] text-xs">—</span>}</td><td className={tdClass}>{r.creative_url?<span className="flex items-center gap-1 text-xs text-[#10B981]"><CheckCircle size={12}/> Uploaded</span>:<span className="flex items-center gap-1 text-xs text-[#6B7280]"><Clock size={12}/> Pending</span>}</td><td className={tdClass}><StatusDropdown request={r} onUpdate={handleRequestUpdate}/></td></tr>))}</tbody></table></div>}
+                : <div className="overflow-x-auto"><table className="w-full"><thead><tr>{['User','Brand','Niche','Format','Submitted','Vision','Creative','Status'].map(h=><th key={h} className={thClass}>{h}</th>)}</tr></thead><tbody>{filteredRequests.map(r=>(<tr key={r.id}><td className={tdClass}>{r.profiles?.full_name||'—'}</td><td className={tdClass}>{r.brand_name}</td><td className={tdClass+' text-[#9CA3AF]'}>{r.niche}</td><td className={tdClass+' text-[#9CA3AF]'}>{r.ad_format}</td><td className={tdClass+' text-[#9CA3AF]'}>{formatDate(r.created_at)}</td><td className={tdClass}>{r.approved_vision?<button onClick={()=>setVisionRequest(r)} className="flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full transition-all" style={{background:'rgba(168,85,247,0.1)',border:'1px solid rgba(168,85,247,0.25)',color:'#C084FC'}}><Eye size={11}/>View</button>:<span className="text-[#6B7280] text-xs">—</span>}</td><td className={tdClass}>{r.creative_url?<span className="flex items-center gap-1 text-xs text-[#10B981]"><CheckCircle size={12}/> Uploaded</span>:<span className="flex items-center gap-1 text-xs text-[#6B7280]"><Clock size={12}/> Pending</span>}</td><td className={tdClass}><StatusDropdown request={r} onUpdate={handleRequestUpdate}/></td></tr>))}</tbody></table></div>}
               {visionRequest?.approved_vision && <VisionModal vision={visionRequest.approved_vision} brandName={visionRequest.brand_name} onClose={()=>setVisionRequest(null)}/>}
             </div>
           </div>
@@ -1921,9 +1912,9 @@ export default function Admin() {
               </div>
               <button onClick={loadCloutClubUsers} className="flex items-center gap-2 text-xs text-[#9CA3AF] hover:text-white transition-colors"><RefreshCw size={13} /> Refresh</button>
             </div>
-            <div className="glass-card rounded-2xl p-5" style={{ borderLeft: '3px solid rgb(var(--p))' }}>
+            <div className="glass-card rounded-2xl p-5" style={{ borderLeft: '3px solid #A855F7' }}>
               <div className="flex items-start gap-3">
-                <IndianRupee size={16} className="text-brand-purple mt-0.5 flex-shrink-0" />
+                <IndianRupee size={16} className="text-[#A855F7] mt-0.5 flex-shrink-0" />
                 <div>
                   <p className="text-white text-sm font-semibold mb-1">How Clout Club Pricing Works</p>
                   <p className="text-[#9CA3AF] text-xs leading-relaxed">Set a custom monthly price per client (in INR). Once set, the client sees the exact amount with a Razorpay payment button. Until you set a price, they see "Negotiable — contact us".</p>
@@ -1936,11 +1927,11 @@ export default function Admin() {
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
               <div className="glass-card rounded-2xl p-5"><p className="text-[#9CA3AF] text-xs font-medium mb-2">Total Free Users</p><p className="font-mono font-bold text-xl gradient-text">{cloutClubUsers.filter(u => u.plan === 'free').length}</p></div>
-              <div className="glass-card rounded-2xl p-5"><p className="text-[#9CA3AF] text-xs font-medium mb-2">Clout Club Members</p><p className="font-mono font-bold text-xl" style={{ background: 'linear-gradient(135deg,rgb(var(--p)),#06B6D4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{cloutClubUsers.filter(u => u.plan === 'clout_club').length}</p></div>
+              <div className="glass-card rounded-2xl p-5"><p className="text-[#9CA3AF] text-xs font-medium mb-2">Clout Club Members</p><p className="font-mono font-bold text-xl" style={{ background: 'linear-gradient(135deg,#A855F7,#06B6D4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{cloutClubUsers.filter(u => u.plan === 'clout_club').length}</p></div>
               <div className="glass-card rounded-2xl p-5"><p className="text-[#9CA3AF] text-xs font-medium mb-2">Prices Set</p><p className="font-mono font-bold text-xl gradient-text">{cloutClubUsers.filter(u => u.clout_club_price).length}</p></div>
             </div>
             <div className="glass-card rounded-2xl overflow-hidden">
-              {loadingTab ? <div className="flex items-center justify-center p-10"><Loader size={20} className="animate-spin text-brand-purple" /></div>
+              {loadingTab ? <div className="flex items-center justify-center p-10"><Loader size={20} className="animate-spin text-[#A855F7]" /></div>
                 : filteredCCUsers.length === 0 ? <p className="text-[#6B7280] text-sm text-center p-10">No users found.</p>
                 : <div className="overflow-x-auto"><table className="w-full"><thead><tr><th className={thClass}>Client</th><th className={thClass}>Company</th><th className={thClass}>Plan</th><th className={thClass}>Monthly Price</th><th className={thClass}>Expires</th><th className={thClass}>Client View</th><th className={thClass}>Joined</th></tr></thead><tbody>{filteredCCUsers.map(u => (<tr key={u.id}><td className={tdClass}><div className="font-medium">{u.full_name || '—'}</div></td><td className={tdClass + ' text-[#9CA3AF]'}>{u.company_name || '—'}</td><td className={tdClass}><PlanBadge plan={u.plan} /></td><td className={tdClass}><PriceEditor userId={u.id} currentPrice={u.clout_club_price} onSave={handlePriceSaved} /></td><td className={tdClass}><ExpiryEditor userId={u.id} currentExpiry={u.subscription_expires_at ?? null} onSave={handleExpirySaved} /></td><td className={tdClass}>{u.clout_club_price ? <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full" style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)', color: '#10B981' }}><CheckCircle size={11} /> Shows ₹{(u.clout_club_price / 100).toLocaleString('en-IN')}/mo</span> : <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: '#6B7280' }}><Clock size={11} /> Shows "Negotiable"</span>}</td><td className={tdClass + ' text-[#9CA3AF]'}>{formatDate(u.created_at)}</td></tr>))}</tbody></table></div>}
             </div>
@@ -1981,7 +1972,7 @@ export default function Admin() {
                         className="w-full text-left px-4 py-3 flex items-center gap-3 transition-all border-b"
                         style={{ background: selected ? 'rgba(99,102,241,0.1)' : 'transparent', borderColor: 'rgba(255,255,255,0.04)', borderLeft: selected ? '2px solid #818CF8' : '2px solid transparent' }}>
                         <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold"
-                          style={{ background: 'linear-gradient(135deg,rgba(99,102,241,0.3),rgba(var(--p),0.3))', color: '#C4B5FD' }}>
+                          style={{ background: 'linear-gradient(135deg,rgba(99,102,241,0.3),rgba(168,85,247,0.3))', color: '#C4B5FD' }}>
                           {(u.full_name || u.company_name || '?')[0].toUpperCase()}
                         </div>
                         <div className="flex-1 min-w-0">
@@ -2018,7 +2009,7 @@ export default function Admin() {
                           <ChevronLeft size={18} />
                         </button>
                         <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold"
-                          style={{ background: 'linear-gradient(135deg,rgba(99,102,241,0.3),rgba(var(--p),0.3))', color: '#C4B5FD' }}>
+                          style={{ background: 'linear-gradient(135deg,rgba(99,102,241,0.3),rgba(168,85,247,0.3))', color: '#C4B5FD' }}>
                           {(selectedMsgUser.full_name || selectedMsgUser.company_name || '?')[0].toUpperCase()}
                         </div>
                         <div>
@@ -2056,7 +2047,7 @@ export default function Admin() {
                             <div key={msg.id} className={`flex ${fromAdmin ? 'justify-end' : 'justify-start'} mb-3`}>
                               <div className={`max-w-[80%] ${fromAdmin ? 'items-end' : 'items-start'} flex flex-col gap-1`}>
                                 {creative && (
-                                  <p className="text-[10px] font-semibold uppercase tracking-wider px-1 text-[rgb(var(--p-text))]">
+                                  <p className="text-[10px] font-semibold uppercase tracking-wider px-1 text-[#C084FC]">
                                     Feedback: {creative.brand_name} — {creative.ad_format}
                                   </p>
                                 )}
@@ -2069,7 +2060,7 @@ export default function Admin() {
                                 </div>
                                 <p className="text-[10px] text-[#6B7280] px-1">
                                   {fromAdmin ? 'You (CloutKart)' : selectedMsgUser.full_name || 'Client'} · {new Date(msg.created_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
-                                  {msg.type === 'feedback' && <span className="ml-1 text-brand-purple">· feedback</span>}
+                                  {msg.type === 'feedback' && <span className="ml-1 text-[#A855F7]">· feedback</span>}
                                 </p>
                               </div>
                             </div>
@@ -2332,11 +2323,11 @@ export default function Admin() {
             </div>
 
             {/* ── Score a Brand ──────────────────────────────────────── */}
-            <div className="glass-card rounded-2xl overflow-hidden" style={{ border: '1px solid rgba(var(--p),0.15)' }}>
-              <div className="px-6 py-4 border-b flex items-center gap-2" style={{ borderColor: 'rgba(var(--p),0.1)' }}>
-                <Sparkles size={15} className="text-[rgb(var(--p-text))]" />
+            <div className="glass-card rounded-2xl overflow-hidden" style={{ border: '1px solid rgba(168,85,247,0.15)' }}>
+              <div className="px-6 py-4 border-b flex items-center gap-2" style={{ borderColor: 'rgba(168,85,247,0.1)' }}>
+                <Sparkles size={15} className="text-[#C084FC]" />
                 <h3 className="font-heading font-semibold text-white text-base">Qualify a Target</h3>
-                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full ml-auto" style={{ background: 'rgba(var(--p),0.1)', border: '1px solid rgba(var(--p),0.2)', color: 'rgb(var(--p-text))' }}>Ezio · Groq · PDL if URL</span>
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full ml-auto" style={{ background: 'rgba(168,85,247,0.1)', border: '1px solid rgba(168,85,247,0.2)', color: '#C084FC' }}>Ezio · Groq · PDL if URL</span>
               </div>
               <div className="p-6 space-y-4">
                 <div className="grid grid-cols-2 gap-4">
@@ -2344,19 +2335,19 @@ export default function Admin() {
                     <label className="block text-[10px] font-bold text-[#6B7280] uppercase tracking-widest mb-1.5">Brand Name <span className="text-red-400">*</span></label>
                     <input value={scoreForm.brandName} onChange={e => setScoreForm(f => ({ ...f, brandName: e.target.value }))}
                       placeholder="e.g. Minimalist, Mamaearth"
-                      className="w-full rounded-xl px-3 py-2.5 text-sm text-white placeholder-[#6B7280] bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(var(--p),0.5)] focus:outline-none" />
+                      className="w-full rounded-xl px-3 py-2.5 text-sm text-white placeholder-[#6B7280] bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(168,85,247,0.5)] focus:outline-none" />
                   </div>
                   <div>
                     <label className="block text-[10px] font-bold text-[#6B7280] uppercase tracking-widest mb-1.5">Website / Instagram URL</label>
                     <input value={scoreForm.brandUrl} onChange={e => setScoreForm(f => ({ ...f, brandUrl: e.target.value }))}
                       placeholder="https://brand.com"
-                      className="w-full rounded-xl px-3 py-2.5 text-sm text-white placeholder-[#6B7280] bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(var(--p),0.5)] focus:outline-none" />
+                      className="w-full rounded-xl px-3 py-2.5 text-sm text-white placeholder-[#6B7280] bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(168,85,247,0.5)] focus:outline-none" />
                   </div>
                   <div>
                     <label className="block text-[10px] font-bold text-[#6B7280] uppercase tracking-widest mb-1.5">Niche</label>
                     <input value={scoreForm.niche} onChange={e => setScoreForm(f => ({ ...f, niche: e.target.value }))}
                       placeholder="e.g. Skincare"
-                      className="w-full rounded-xl px-3 py-2.5 text-sm text-white placeholder-[#6B7280] bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(var(--p),0.5)] focus:outline-none" />
+                      className="w-full rounded-xl px-3 py-2.5 text-sm text-white placeholder-[#6B7280] bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(168,85,247,0.5)] focus:outline-none" />
                   </div>
                   <div>
                     <label className="block text-[10px] font-bold text-[#6B7280] uppercase tracking-widest mb-1.5">Outreach Platform</label>
@@ -2366,7 +2357,7 @@ export default function Admin() {
 
                 <button onClick={scoreBrand} disabled={scoring || !scoreForm.brandName.trim()}
                   className="flex items-center gap-2 px-6 py-3 rounded-2xl text-sm font-semibold transition-all disabled:opacity-50"
-                  style={{ background: 'linear-gradient(135deg,rgba(var(--p),0.8),rgba(99,102,241,0.8))', color: '#fff' }}>
+                  style={{ background: 'linear-gradient(135deg,rgba(168,85,247,0.8),rgba(99,102,241,0.8))', color: '#fff' }}>
                   {scoring ? <><Loader size={14} className="animate-spin" /> Qualifying…</> : <><Sparkles size={14} /> Qualify This Target</>}
                 </button>
 
@@ -2382,7 +2373,7 @@ export default function Admin() {
                   const scoreColor = sr.compositeScore >= 8 ? '#10B981' : sr.compositeScore >= 5 ? '#F59E0B' : '#F87171';
                   const outreachId = `outreach-${sr.name}`;
                   return (
-                    <div className="rounded-2xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(var(--p),0.15)' }}>
+                    <div className="rounded-2xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(168,85,247,0.15)' }}>
                       <div className="px-5 py-4 flex items-start justify-between gap-4 border-b" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
                         <div>
                           <p className="text-white font-heading font-bold text-base">{sr.name}</p>
@@ -2395,7 +2386,7 @@ export default function Admin() {
                           </div>
                           <button onClick={() => openAddLeadFromResult(sr)}
                             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold"
-                            style={{ background: 'rgba(var(--p),0.1)', border: '1px solid rgba(var(--p),0.25)', color: 'rgb(var(--p-text))' }}>
+                            style={{ background: 'rgba(168,85,247,0.1)', border: '1px solid rgba(168,85,247,0.25)', color: '#C084FC' }}>
                             <Plus size={11} /> Save
                           </button>
                         </div>
@@ -2456,9 +2447,9 @@ export default function Admin() {
                           )}
                         </div>
                         {sr.outreachMessage && (
-                          <div className="rounded-xl p-4 space-y-2" style={{ background: 'rgba(var(--p),0.06)', border: '1px solid rgba(var(--p),0.15)' }}>
+                          <div className="rounded-xl p-4 space-y-2" style={{ background: 'rgba(168,85,247,0.06)', border: '1px solid rgba(168,85,247,0.15)' }}>
                             <div className="flex items-center justify-between">
-                              <p className="text-[10px] font-bold text-[rgb(var(--p-text))] uppercase tracking-widest">Suggested Outreach Message</p>
+                              <p className="text-[10px] font-bold text-[#C084FC] uppercase tracking-widest">Suggested Outreach Message</p>
                               <button onClick={() => copyText(sr.outreachMessage!, outreachId)}
                                 className="flex items-center gap-1 text-[10px] font-semibold px-2 py-1 rounded-lg transition-all"
                                 style={{ background: copiedId === outreachId ? 'rgba(16,185,129,0.1)' : 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: copiedId === outreachId ? '#10B981' : '#9CA3AF' }}>
@@ -2775,7 +2766,7 @@ export default function Admin() {
                               <div className="flex items-start justify-between gap-3">
                                 <div className="flex items-center gap-3">
                                   <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 text-sm font-bold"
-                                    style={{ background: 'linear-gradient(135deg,rgba(99,102,241,0.25),rgba(var(--p),0.25))', color: '#C4B5FD' }}>
+                                    style={{ background: 'linear-gradient(135deg,rgba(99,102,241,0.25),rgba(168,85,247,0.25))', color: '#C4B5FD' }}>
                                     {contact.name[0].toUpperCase()}
                                   </div>
                                   <div>
