@@ -66,7 +66,7 @@ export default function Navbar({ onSignupOpen }: Props) {
       <div className="scroll-progress-bar" style={{ width: `${scrollProgress}%` }} />
 
       <nav
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
+        className={`site-nav fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
           scrolled ? 'border-b border-white/[0.08] shadow-2xl shadow-black/60' : ''
         }`}
         style={{

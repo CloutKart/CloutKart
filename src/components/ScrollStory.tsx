@@ -12,7 +12,7 @@ function BriefScene({ localProg }: { localProg: number }) {
   return (
     <div
       className="w-full max-w-md rounded-2xl overflow-hidden"
-      style={{ background: 'rgba(10,10,10,0.9)', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 32px 80px rgba(0,0,0,0.6)' }}
+      style={{ background: 'rgba(10,10,10,0.9)', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}
     >
       <div className="px-5 py-3.5 flex items-center gap-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
         <div className="text-[11px] font-bold text-white/50 font-mono uppercase tracking-widest">New Creative Brief</div>
@@ -74,7 +74,7 @@ function VisionScene({ localProg }: { localProg: number }) {
   return (
     <div
       className="w-full max-w-md rounded-2xl overflow-hidden"
-      style={{ background: 'rgba(10,10,10,0.9)', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 32px 80px rgba(0,0,0,0.6)' }}
+      style={{ background: 'rgba(10,10,10,0.9)', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}
     >
       <div style={vis(sections[0].delay)}>
         <div className="flex items-center justify-between px-5 py-3.5" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
@@ -141,10 +141,10 @@ function AdScene({ localProg }: { localProg: number }) {
   const vis = (d: number) => ({ opacity: localProg > d ? 1 : 0, transform: localProg > d ? 'translateY(0) scale(1)' : 'translateY(12px) scale(0.97)', transition: 'opacity 0.5s ease, transform 0.5s ease' });
 
   return (
-    <div className="flex items-center justify-center gap-6">
-      <div className="relative flex-shrink-0" style={{ width: 200, ...vis(0) }}>
+    <div className="flex flex-col sm:flex-row items-center justify-center gap-5">
+      <div className="relative flex-shrink-0" style={{ width: 180, ...vis(0) }}>
         <div className="rounded-[28px] overflow-hidden"
-          style={{ background: '#0f0f0f', border: '2px solid rgba(255,255,255,0.12)', boxShadow: '0 40px 80px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.04) inset' }}>
+          style={{ background: '#0f0f0f', border: '2px solid rgba(255,255,255,0.12)', boxShadow: '0 8px 32px rgba(0,0,0,0.7)' }}>
           <div className="px-3 py-2 flex items-center gap-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
             <div className="w-5 h-5 rounded-full" style={{ background: 'linear-gradient(135deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888)' }} />
             <span className="text-[9px] font-bold text-white/70">brewora</span>
@@ -180,13 +180,13 @@ function AdScene({ localProg }: { localProg: number }) {
         </div>
       </div>
 
-      <div className="space-y-3" style={vis(0.5)}>
+      <div className="flex sm:flex-col gap-4 sm:gap-3" style={vis(0.5)}>
         {[
           { label: 'CTR', val: '8.4%', bar: 0.84, color: '#A855F7' },
           { label: 'ROAS', val: '10.2×', bar: 0.92, color: '#3B82F6' },
           { label: 'CVR', val: '4.1%', bar: 0.6, color: '#06B6D4' },
         ].map(m => (
-          <div key={m.label} className="w-36">
+          <div key={m.label} className="w-28 sm:w-36">
             <div className="flex items-center justify-between mb-1">
               <span className="text-[10px] text-white/30 font-mono">{m.label}</span>
               <span className="text-[11px] font-bold font-mono text-white">{m.val}</span>
@@ -210,7 +210,7 @@ function CartScene({ localProg }: { localProg: number }) {
 
   return (
     <div className="w-full max-w-sm space-y-4">
-      <div className="rounded-2xl overflow-hidden" style={{ background: 'rgba(10,10,10,0.9)', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 32px 80px rgba(0,0,0,0.6)' }}>
+      <div className="rounded-2xl overflow-hidden" style={{ background: 'rgba(10,10,10,0.9)', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
         <div className="flex items-center gap-2.5 px-5 py-3.5" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
           <ShoppingCart size={14} style={{ color: '#10B981' }} />
           <span className="text-[12px] font-bold text-white font-heading">Cart</span>
