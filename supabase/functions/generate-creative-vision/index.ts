@@ -303,13 +303,19 @@ Use at least one of these extracted specifics in the hook so it is provably non-
       ],
       max_tokens: 1800,
       temperature: 0.75,
+      // Vision model may not support response_format — only enforce JSON mode for text model
+      ...(hasImages ? {} : { response_format: { type: "json_object" as const } }),
     });
 
     const raw = res.choices?.[0]?.message?.content?.trim();
     if (!raw) throw new Error("Empty response from Groq");
 
-    // Strip any accidental markdown fences
-    const cleaned = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/i, "").trim();
+    // Extract JSON robustly: skip any leading template tokens / markdown, find first { last }
+    const jsonStart = raw.indexOf("{");
+    const jsonEnd = raw.lastIndexOf("}");
+    const cleaned = jsonStart >= 0 && jsonEnd > jsonStart
+      ? raw.slice(jsonStart, jsonEnd + 1)
+      : raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/i, "").trim();
 
     let vision;
     try {
