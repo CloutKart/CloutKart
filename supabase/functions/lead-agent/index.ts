@@ -414,11 +414,14 @@ Deno.serve(async (req: Request) => {
       const discoverSystem = targetMode === "growth" ? DISCOVER_GROWTH_SYSTEM : DISCOVER_LOCAL_SYSTEM;
 
       // Try Google Places first for real businesses — fall back to archetypes if unavailable
+      console.log(`[Ezio] Places key present: ${!!GOOGLE_PLACES_API_KEY} | niche: "${niche}" | city: "${city ?? ""}" | mode: ${targetMode ?? "local"}`);
       let realBusinessContext = "";
       let realBusinesses: OutscraperBusiness[] = [];
       if (GOOGLE_PLACES_API_KEY && niche) {
         const queries = buildSearchQueries(niche, targetMode ?? "local", city ?? "");
+        console.log(`[Ezio] Running Places search with queries:`, queries);
         realBusinesses = await googlePlacesSearch(queries, GOOGLE_PLACES_API_KEY, 5);
+        console.log(`[Ezio] Places returned ${realBusinesses.length} businesses`);
 
         // For growth-mode businesses with a website, enrich with PDL in parallel
         let pdlMap: Record<string, PDLCompany> = {};
