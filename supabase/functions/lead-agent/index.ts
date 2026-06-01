@@ -705,18 +705,12 @@ Return only the JSON object.`;
       }
 
       const fullUrl = website.startsWith("http") ? website : `https://${website}`;
+      const baseOrigin = (() => { try { return new URL(fullUrl).origin; } catch { return ""; } })();
 
-      // Fetch homepage + try one product/collection page in parallel
-      const candidateUrls = [
-        fullUrl,
-        `${fullUrl.replace(/\/$/, "")}/collections/all`,
-        `${fullUrl.replace(/\/$/, "")}/products`,
-        `${fullUrl.replace(/\/$/, "")}/shop`,
-      ];
-
-      const htmlChunks: string[] = [];
+      // Fetch homepage + collections/all in parallel
+      const rawHtmlPages: string[] = [];
       const fetchResults = await Promise.allSettled(
-        candidateUrls.slice(0, 2).map(url =>
+        [fullUrl, `${fullUrl.replace(/\/$/, "")}/collections/all`].map(url =>
           fetch(url, {
             signal: AbortSignal.timeout(7000),
             headers: { "User-Agent": "Mozilla/5.0 (compatible; CloutKart/1.0)" },
@@ -724,53 +718,77 @@ Return only the JSON object.`;
         )
       );
       for (const r of fetchResults) {
-        if (r.status === "fulfilled" && r.value) {
-          const stripped = r.value
-            .replace(/<script[\s\S]*?<\/script>/gi, " ")
-            .replace(/<style[\s\S]*?<\/style>/gi, " ")
-            .replace(/<[^>]+>/g, " ")
-            .replace(/\s+/g, " ")
-            .trim()
-            .slice(0, 1800);
-          htmlChunks.push(stripped);
-        }
+        if (r.status === "fulfilled" && r.value) rawHtmlPages.push(r.value);
       }
 
-      if (htmlChunks.length === 0) {
+      if (rawHtmlPages.length === 0) {
         return new Response(
           JSON.stringify({ products: [] }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 
+      // Extract image URLs before stripping tags
+      const imgRegex = /<img[^>]+(?:data-src|src)=["']([^"']+)["'][^>]*>/gi;
+      const seenImgs = new Set<string>();
+      const imgUrls: string[] = [];
+      for (const html of rawHtmlPages) {
+        let m: RegExpExecArray | null;
+        imgRegex.lastIndex = 0;
+        while ((m = imgRegex.exec(html)) !== null && imgUrls.length < 20) {
+          const src = m[1];
+          if (src.startsWith("data:") || src.endsWith(".svg") || src.length < 8) continue;
+          const abs = src.startsWith("http") ? src : src.startsWith("//") ? `https:${src}` : `${baseOrigin}${src.startsWith("/") ? "" : "/"}${src}`;
+          if (!seenImgs.has(abs)) { seenImgs.add(abs); imgUrls.push(abs); }
+        }
+      }
+
+      // Strip HTML for text extraction
+      const htmlChunks = rawHtmlPages.map(html =>
+        html
+          .replace(/<script[\s\S]*?<\/script>/gi, " ")
+          .replace(/<style[\s\S]*?<\/style>/gi, " ")
+          .replace(/<[^>]+>/g, " ")
+          .replace(/\s+/g, " ")
+          .trim()
+          .slice(0, 1800)
+      );
+
+      const imgListText = imgUrls.length > 0
+        ? `\n\nAvailable image URLs (try to match each product to the most likely image URL):\n${imgUrls.map((u, i) => `${i + 1}. ${u}`).join("\n")}`
+        : "";
+
       const extractRes = await groq.chat.completions.create({
         model: MODEL,
         messages: [
           {
             role: "system",
-            content: "You extract specific product names from website text. Return ONLY a JSON object with a 'products' key containing an array of product name strings. Example: {\"products\":[\"Ashwagandha KSM-66 500mg\",\"Pure Shilajit Resin\",\"Chyawanprash 500g\"]}. If none found, return {\"products\":[]}.",
+            content: `You extract product names and their image URLs from website content. Return ONLY a JSON object with a "products" key containing an array of objects with "name" (string) and "imageUrl" (string or null). Example: {"products":[{"name":"Ashwagandha KSM-66 500mg","imageUrl":"https://cdn.../ashwagandha.jpg"},{"name":"Pure Shilajit Resin","imageUrl":null}]}. If no products found, return {"products":[]}.`,
           },
           {
             role: "user",
-            content: `Brand: ${brandName ?? "Unknown"} | Niche: ${niche ?? "Unknown"}\n\nWebsite text:\n${htmlChunks.join("\n\n---\n\n")}`,
+            content: `Brand: ${brandName ?? "Unknown"} | Niche: ${niche ?? "Unknown"}\n\nWebsite text:\n${htmlChunks.join("\n\n---\n\n")}${imgListText}`,
           },
         ],
-        max_tokens: 250,
+        max_tokens: 400,
         temperature: 0.1,
         response_format: { type: "json_object" },
       });
 
       const raw = extractRes.choices?.[0]?.message?.content?.trim() ?? "{}";
-      let products: string[] = [];
+      type ProductItem = { name: string; imageUrl?: string | null };
+      let products: ProductItem[] = [];
       try {
         const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed.products)) products = parsed.products;
-        else if (Array.isArray(parsed.items)) products = parsed.items;
-        else if (Array.isArray(parsed)) products = parsed;
+        const arr = Array.isArray(parsed.products) ? parsed.products : Array.isArray(parsed) ? parsed : [];
+        products = arr
+          .filter((p: unknown) => p && typeof (p as ProductItem).name === "string" && (p as ProductItem).name.trim())
+          .map((p: ProductItem) => ({ name: p.name.trim(), imageUrl: typeof p.imageUrl === "string" ? p.imageUrl : null }))
+          .slice(0, 6);
       } catch { /* ignore */ }
 
       return new Response(
-        JSON.stringify({ products: products.filter(p => typeof p === "string" && p.trim()).slice(0, 6) }),
+        JSON.stringify({ products }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
