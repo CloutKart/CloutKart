@@ -186,7 +186,7 @@ Deno.serve(async (req: Request) => {
     const formData = new FormData();
     formData.append("prompt", prompt);
     formData.append("negative_prompt", NEGATIVE_PROMPT);
-    formData.append("aspect_ratio", "4:3");
+    formData.append("aspect_ratio", "3:2");
     formData.append("output_format", "jpeg");
 
     const stabilityRes = await fetch(STABILITY_API_URL, {
