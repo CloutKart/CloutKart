@@ -912,7 +912,7 @@ export default function Dashboard() {
       setVisionKey(k => k + 1);
       // Kick off image generation in parallel — non-blocking
       setVisionImage(null);
-      generateVisionImage(visionData, form.brandName, form.niche);
+      generateVisionImage(visionData, form.brandName, form.niche, refImages);
     } catch (err: unknown) {
       setVisionError(err instanceof Error ? err.message : 'Failed to generate vision. Please try again.');
     } finally {
@@ -920,11 +920,16 @@ export default function Dashboard() {
     }
   };
 
-  const generateVisionImage = async (visionData: VisionData, brandName: string, niche: string) => {
+  const generateVisionImage = async (visionData: VisionData, brandName: string, niche: string, productImages: RefImage[] = []) => {
     setGeneratingVisionImage(true);
     try {
       const { data, error } = await supabase.functions.invoke('generate-vision-image', {
-        body: { vision: visionData, brandName, niche },
+        body: {
+          vision: visionData,
+          brandName,
+          niche,
+          referenceImages: productImages.slice(0, 1).map(({ base64, mimeType }) => ({ base64, mimeType })),
+        },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);

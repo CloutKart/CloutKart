@@ -8,7 +8,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
 };
 
-const STABILITY_API_URL = "https://api.stability.ai/v2beta/stable-image/generate/core";
+const STABILITY_CORE_URL = "https://api.stability.ai/v2beta/stable-image/generate/core";
+const STABILITY_SD3_URL  = "https://api.stability.ai/v2beta/stable-image/generate/sd3";
 
 interface ColorEntry {
   name: string;
@@ -135,11 +136,13 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const { vision, brandName, niche } = await req.json() as {
+    const { vision, brandName, niche, referenceImages } = await req.json() as {
       vision: VisionData;
       brandName: string;
       niche: string;
+      referenceImages?: Array<{ base64: string; mimeType: string }>;
     };
+    const hasRefImage = Array.isArray(referenceImages) && referenceImages.length > 0;
 
     if (!vision || !brandName) {
       return new Response(
@@ -180,16 +183,34 @@ Deno.serve(async (req: Request) => {
 
     // Build the Stability AI prompt
     const prompt = buildStabilityPrompt(vision, brandName, niche, ragChunks);
-    console.log("[generate-vision-image] Stability prompt length:", prompt.length);
+    console.log(`[generate-vision-image] mode=${hasRefImage ? "sd3-img2img" : "core-txt2img"} prompt_len=${prompt.length}`);
 
-    // Call Stability AI Core
     const formData = new FormData();
     formData.append("prompt", prompt);
     formData.append("negative_prompt", NEGATIVE_PROMPT);
-    formData.append("aspect_ratio", "3:2");
     formData.append("output_format", "jpeg");
 
-    const stabilityRes = await fetch(STABILITY_API_URL, {
+    let apiUrl: string;
+
+    if (hasRefImage) {
+      // SD3 image-to-image — anchors generation to the actual product photo
+      const ref = referenceImages![0];
+      const binaryStr = atob(ref.base64);
+      const bytes = new Uint8Array(binaryStr.length);
+      for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
+      const imageBlob = new Blob([bytes], { type: ref.mimeType });
+      formData.append("image", imageBlob, "product.jpg");
+      formData.append("mode", "image-to-image");
+      formData.append("strength", "0.70");   // 0=copy, 1=ignore; 0.7 keeps product shape, applies creative direction
+      formData.append("model", "sd3-large-turbo");
+      apiUrl = STABILITY_SD3_URL;
+    } else {
+      // Core text-to-image — no reference photo provided
+      formData.append("aspect_ratio", "3:2");
+      apiUrl = STABILITY_CORE_URL;
+    }
+
+    const stabilityRes = await fetch(apiUrl, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${STABILITY_API_KEY}`,
