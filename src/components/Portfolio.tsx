@@ -273,7 +273,7 @@ export default function Portfolio() {
   useEffect(() => {
     supabase
       .from('portfolio_sections')
-      .select('id, title, thumbnail_url, portfolio_images(count)')
+      .select('id, title, thumbnail_url, instagram_handle, instagram_link, portfolio_images(count)')
       .eq('is_visible', true)
       .order('display_order', { ascending: true })
       .limit(6)
