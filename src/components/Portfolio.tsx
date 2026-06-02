@@ -6,6 +6,8 @@ interface PortfolioSection {
   id: string;
   title: string;
   thumbnail_url: string;
+  instagram_handle: string;
+  instagram_link: string;
   image_count: number;
 }
 
@@ -97,16 +99,37 @@ function InstagramCard({
     >
       {/* Post header */}
       <div className="flex items-center justify-between px-4 py-3">
-        <div className="flex items-center gap-3">
-          <div
-            className={`w-9 h-9 rounded-full bg-gradient-to-br ${AVATAR_GRADIENTS[index % AVATAR_GRADIENTS.length]} flex-shrink-0 ring-2 ring-white/10`}
-          />
-          <div>
-            <p className="text-white text-[13px] font-semibold leading-none">{section.title}</p>
-            <p className="text-white/40 text-[11px] mt-0.5 leading-none">@cloutkart</p>
+        {section.instagram_link ? (
+          <a
+            href={section.instagram_link}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-3 group min-w-0"
+          >
+            <div
+              className={`w-9 h-9 rounded-full bg-gradient-to-br ${AVATAR_GRADIENTS[index % AVATAR_GRADIENTS.length]} flex-shrink-0 ring-2 ring-white/10 transition-transform duration-150 group-hover:scale-105`}
+            />
+            <div className="min-w-0">
+              <p className="text-white text-[13px] font-semibold leading-none truncate group-hover:text-white/80 transition-colors">{section.title}</p>
+              <p className="text-white/40 text-[11px] mt-0.5 leading-none group-hover:text-[#818CF8] transition-colors">
+                {section.instagram_handle || '@cloutkart'}
+              </p>
+            </div>
+          </a>
+        ) : (
+          <div className="flex items-center gap-3 min-w-0">
+            <div
+              className={`w-9 h-9 rounded-full bg-gradient-to-br ${AVATAR_GRADIENTS[index % AVATAR_GRADIENTS.length]} flex-shrink-0 ring-2 ring-white/10`}
+            />
+            <div className="min-w-0">
+              <p className="text-white text-[13px] font-semibold leading-none truncate">{section.title}</p>
+              <p className="text-white/40 text-[11px] mt-0.5 leading-none">
+                {section.instagram_handle || '@cloutkart'}
+              </p>
+            </div>
           </div>
-        </div>
-        <button className="text-white/40 hover:text-white/70 transition-colors p-1">
+        )}
+        <button className="text-white/40 hover:text-white/70 transition-colors p-1 flex-shrink-0">
           <MoreHorizontal size={18} />
         </button>
       </div>
@@ -256,10 +279,12 @@ export default function Portfolio() {
       .limit(6)
       .then(({ data }) => {
         if (data) {
-          setSections(data.map((s: { id: string; title: string; thumbnail_url: string; portfolio_images: { count: number }[] }) => ({
+          setSections(data.map((s: { id: string; title: string; thumbnail_url: string; instagram_handle: string; instagram_link: string; portfolio_images: { count: number }[] }) => ({
             id: s.id,
             title: s.title,
             thumbnail_url: s.thumbnail_url,
+            instagram_handle: s.instagram_handle ?? '',
+            instagram_link: s.instagram_link ?? '',
             image_count: s.portfolio_images?.[0]?.count ?? 0,
           })));
         }

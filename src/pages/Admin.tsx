@@ -71,6 +71,8 @@ interface PortfolioSection {
   id: string;
   title: string;
   thumbnail_url: string;
+  instagram_handle: string;
+  instagram_link: string;
   display_order: number;
   is_visible: boolean;
   created_at: string;
@@ -1056,10 +1058,17 @@ export default function Admin() {
 
   const [showAddSection, setShowAddSection] = useState(false);
   const [newSectionName, setNewSectionName] = useState('');
+  const [newSectionHandle, setNewSectionHandle] = useState('');
+  const [newSectionLink, setNewSectionLink] = useState('');
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [thumbnailPreview, setThumbnailPreview] = useState('');
   const [addingSection, setAddingSection] = useState(false);
   const sectionFileRef = useRef<HTMLInputElement>(null);
+
+  const [igEditId, setIgEditId] = useState<string | null>(null);
+  const [igEditHandle, setIgEditHandle] = useState('');
+  const [igEditLink, setIgEditLink] = useState('');
+  const [savingIg, setSavingIg] = useState(false);
 
   const [managingSection, setManagingSection] = useState<PortfolioSection | null>(null);
   const [sectionImages, setSectionImages] = useState<PortfolioImage[]>([]);
@@ -1266,8 +1275,8 @@ export default function Admin() {
   async function loadPortfolio() {
     setLoadingTab(true);
     const { data: sections } = await supabase.from('portfolio_sections').select('*, portfolio_images(count)').order('display_order', { ascending: true });
-    const mapped = (sections ?? []).map((s: { id: string; title: string; thumbnail_url: string; display_order: number; is_visible: boolean; created_at: string; portfolio_images: { count: number }[] }) => ({
-      id: s.id, title: s.title, thumbnail_url: s.thumbnail_url, display_order: s.display_order, is_visible: s.is_visible, created_at: s.created_at, image_count: s.portfolio_images?.[0]?.count ?? 0,
+    const mapped = (sections ?? []).map((s: { id: string; title: string; thumbnail_url: string; instagram_handle: string; instagram_link: string; display_order: number; is_visible: boolean; created_at: string; portfolio_images: { count: number }[] }) => ({
+      id: s.id, title: s.title, thumbnail_url: s.thumbnail_url, instagram_handle: s.instagram_handle ?? '', instagram_link: s.instagram_link ?? '', display_order: s.display_order, is_visible: s.is_visible, created_at: s.created_at, image_count: s.portfolio_images?.[0]?.count ?? 0,
     }));
     setPortfolioSections(mapped);
     setLoadingTab(false);
@@ -1408,9 +1417,23 @@ export default function Admin() {
       const { error: uploadError } = await supabase.storage.from('portfolio').upload(path, thumbnailFile);
       if (!uploadError) { const { data: urlData } = supabase.storage.from('portfolio').getPublicUrl(path); thumbnail_url = urlData.publicUrl; }
     }
-    const { data } = await supabase.from('portfolio_sections').insert({ title: newSectionName.trim(), thumbnail_url, display_order: portfolioSections.length }).select().single();
-    if (data) setPortfolioSections(prev => [...prev, { ...data, image_count: 0 }]);
-    setNewSectionName(''); setThumbnailFile(null); setShowAddSection(false); setAddingSection(false);
+    const { data } = await supabase.from('portfolio_sections').insert({
+      title: newSectionName.trim(),
+      thumbnail_url,
+      instagram_handle: newSectionHandle.trim(),
+      instagram_link: newSectionLink.trim(),
+      display_order: portfolioSections.length,
+    }).select().single();
+    if (data) setPortfolioSections(prev => [...prev, { ...data, instagram_handle: data.instagram_handle ?? '', instagram_link: data.instagram_link ?? '', image_count: 0 }]);
+    setNewSectionName(''); setNewSectionHandle(''); setNewSectionLink(''); setThumbnailFile(null); setShowAddSection(false); setAddingSection(false);
+  }
+
+  async function saveInstagramInfo(id: string, handle: string, link: string) {
+    setSavingIg(true);
+    await supabase.from('portfolio_sections').update({ instagram_handle: handle.trim(), instagram_link: link.trim() }).eq('id', id);
+    setPortfolioSections(prev => prev.map(s => s.id === id ? { ...s, instagram_handle: handle.trim(), instagram_link: link.trim() } : s));
+    setSavingIg(false);
+    setIgEditId(null);
   }
 
   function handlePriceSaved(userId: string, price: number | null) {
@@ -2152,10 +2175,59 @@ export default function Admin() {
                         </button>
                       </div>
                       <div className="p-4">
-                        <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center justify-between mb-2">
                           <h3 className="font-heading font-semibold text-white text-sm">{sec.title}</h3>
                           <span className="text-xs text-[#9CA3AF] font-mono">{sec.image_count} imgs</span>
                         </div>
+
+                        {/* Instagram info — inline editor */}
+                        {igEditId === sec.id ? (
+                          <div className="space-y-1.5 mb-2">
+                            <input
+                              autoFocus
+                              value={igEditHandle}
+                              onChange={e => setIgEditHandle(e.target.value)}
+                              placeholder="@handle"
+                              className="w-full rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-[#6B7280] bg-white/[0.05] border border-white/[0.12] focus:border-[rgba(99,102,241,0.5)] focus:outline-none"
+                            />
+                            <input
+                              value={igEditLink}
+                              onChange={e => setIgEditLink(e.target.value)}
+                              placeholder="https://instagram.com/yourbrand"
+                              className="w-full rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-[#6B7280] bg-white/[0.05] border border-white/[0.12] focus:border-[rgba(99,102,241,0.5)] focus:outline-none"
+                            />
+                            <div className="flex gap-1.5">
+                              <button
+                                onClick={() => saveInstagramInfo(sec.id, igEditHandle, igEditLink)}
+                                disabled={savingIg}
+                                className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all"
+                                style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)', color: '#10B981' }}
+                              >
+                                {savingIg ? <Loader size={10} className="animate-spin" /> : <Check size={10} />} Save
+                              </button>
+                              <button
+                                onClick={() => setIgEditId(null)}
+                                className="px-2.5 py-1 rounded-lg text-[11px] text-[#6B7280] hover:text-white transition-colors"
+                                style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => { setIgEditId(sec.id); setIgEditHandle(sec.instagram_handle); setIgEditLink(sec.instagram_link); }}
+                            className="group flex items-center gap-1.5 mb-2 w-full"
+                          >
+                            {sec.instagram_handle ? (
+                              <span className="text-[12px] font-semibold" style={{ color: '#818CF8' }}>{sec.instagram_handle}</span>
+                            ) : (
+                              <span className="text-[11px] text-[#4B5563] italic">Add Instagram handle…</span>
+                            )}
+                            <Edit2 size={10} className="text-[#4B5563] group-hover:text-[#818CF8] transition-colors flex-shrink-0" />
+                          </button>
+                        )}
+
                         {!sec.is_visible && <p className="text-[10px] text-[#F59E0B] mb-2 font-semibold uppercase tracking-wider">Hidden from public</p>}
                         <div className="flex gap-2 mt-3">
                           <button onClick={() => deleteSection(sec.id)} className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}><Trash2 size={14} className="text-red-400" /></button>
@@ -2863,17 +2935,27 @@ export default function Admin() {
       {/* Add Section Modal */}
       {showAddSection && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4"
-          onClick={() => { setShowAddSection(false); setThumbnailFile(null); if (sectionFileRef.current) sectionFileRef.current.value = ''; }}>
+          onClick={() => { setShowAddSection(false); setThumbnailFile(null); setNewSectionHandle(''); setNewSectionLink(''); if (sectionFileRef.current) sectionFileRef.current.value = ''; }}>
           <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
           <div className="relative w-full max-w-md glass-card rounded-3xl p-8" style={{ background: 'rgba(12,12,12,0.98)' }} onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-6">
               <h3 className="font-heading font-bold text-white text-xl">Add New Section</h3>
-              <button onClick={() => { setShowAddSection(false); setThumbnailFile(null); }} className="w-8 h-8 rounded-lg flex items-center justify-center text-[#6B7280] hover:text-white" style={{ border: '1px solid rgba(255,255,255,0.08)' }}><X size={14} /></button>
+              <button onClick={() => { setShowAddSection(false); setThumbnailFile(null); setNewSectionHandle(''); setNewSectionLink(''); }} className="w-8 h-8 rounded-lg flex items-center justify-center text-[#6B7280] hover:text-white" style={{ border: '1px solid rgba(255,255,255,0.08)' }}><X size={14} /></button>
             </div>
             <div className="space-y-4">
               <div>
                 <label className="block text-[11px] font-semibold text-[#9CA3AF] mb-2 uppercase tracking-[0.08em]">Section Name</label>
                 <input type="text" value={newSectionName} onChange={e => setNewSectionName(e.target.value)} placeholder="e.g. E-Commerce Ads" className={inputClass} />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-semibold text-[#9CA3AF] mb-2 uppercase tracking-[0.08em]">Instagram Handle</label>
+                  <input type="text" value={newSectionHandle} onChange={e => setNewSectionHandle(e.target.value)} placeholder="@yourbrand" className={inputClass} />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-[#9CA3AF] mb-2 uppercase tracking-[0.08em]">Instagram Link</label>
+                  <input type="url" value={newSectionLink} onChange={e => setNewSectionLink(e.target.value)} placeholder="https://instagram.com/…" className={inputClass} />
+                </div>
               </div>
               <div className="border-2 border-dashed border-white/[0.10] rounded-2xl overflow-hidden cursor-pointer hover:border-white/20 transition-colors" onClick={() => sectionFileRef.current?.click()}>
                 {thumbnailPreview
