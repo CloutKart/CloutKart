@@ -354,13 +354,15 @@ function Typewriter({ text, speed = 20, onDone }: { text: string; speed?: number
   );
 }
 
-function VisionPanel({ vision, onChange, onApprove, submitting, submitError, animKey }: {
+function VisionPanel({ vision, onChange, onApprove, submitting, submitError, animKey, visionImage, generatingVisionImage }: {
   vision: VisionData;
   onChange: (v: VisionData) => void;
   onApprove: () => void;
   submitting: boolean;
   submitError: string;
   animKey: number;
+  visionImage?: string | null;
+  generatingVisionImage?: boolean;
 }) {
   const prodColorRef0 = useRef<HTMLInputElement>(null);
   const prodColorRef1 = useRef<HTMLInputElement>(null);
@@ -470,6 +472,34 @@ function VisionPanel({ vision, onChange, onApprove, submitting, submitError, ani
       </div>
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto">
+
+        {/* MOOD IMAGE — above the vision content */}
+        {(visionImage || generatingVisionImage) && (
+          <div className="relative overflow-hidden border-b" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
+            {generatingVisionImage && !visionImage ? (
+              <div className="w-full flex items-center justify-center gap-2.5 py-12"
+                style={{ background: 'linear-gradient(135deg, rgba(168,85,247,0.06) 0%, rgba(99,102,241,0.04) 50%, rgba(6,182,212,0.04) 100%)' }}>
+                <Sparkles size={13} className="text-[#A855F7] animate-spin" />
+                <span className="text-[11px] text-[#9CA3AF] font-medium">Generating mood image…</span>
+              </div>
+            ) : visionImage ? (
+              <img
+                src={`data:image/jpeg;base64,${visionImage}`}
+                alt="Campaign mood image"
+                className="w-full object-cover"
+                style={{ maxHeight: 220, display: 'block' }}
+              />
+            ) : null}
+            <div className="absolute top-2 left-2 pointer-events-none">
+              <span className="flex items-center gap-1 text-[9px] font-semibold px-2 py-0.5 rounded-full"
+                style={{ background: 'rgba(0,0,0,0.65)', border: '1px solid rgba(168,85,247,0.35)', color: '#C084FC' }}>
+                <Sparkles size={8} />
+                AI Mood Image · Stability AI
+              </span>
+            </div>
+          </div>
+        )}
+
         {/* CREATIVE VIBE */}
         {show(0) && <div className="px-5 py-4 animate-vision-section">
           <span className={sectionLabel}>Creative Vibe</span>
@@ -667,6 +697,8 @@ export default function Dashboard() {
   const [visionKey, setVisionKey] = useState(0);
   const [generatingVision, setGeneratingVision] = useState(false);
   const [visionError, setVisionError] = useState('');
+  const [visionImage, setVisionImage] = useState<string | null>(null);
+  const [generatingVisionImage, setGeneratingVisionImage] = useState(false);
   const [refImages, setRefImages] = useState<RefImage[]>([]);
   const refImageRef = useRef<HTMLInputElement>(null);
   const [profile, setProfile] = useState<UserProfile>({ full_name: null, company_name: null, phone: null, plan: 'free', clout_club_price: null, subscription_expires_at: null });
@@ -875,12 +907,32 @@ export default function Dashboard() {
           return String(item);
         });
       }
-      setVision(data as VisionData);
+      const visionData = data as VisionData;
+      setVision(visionData);
       setVisionKey(k => k + 1);
+      // Kick off image generation in parallel — non-blocking
+      setVisionImage(null);
+      generateVisionImage(visionData, form.brandName, form.niche);
     } catch (err: unknown) {
       setVisionError(err instanceof Error ? err.message : 'Failed to generate vision. Please try again.');
     } finally {
       setGeneratingVision(false);
+    }
+  };
+
+  const generateVisionImage = async (visionData: VisionData, brandName: string, niche: string) => {
+    setGeneratingVisionImage(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-vision-image', {
+        body: { vision: visionData, brandName, niche },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      if (data?.imageBase64) setVisionImage(data.imageBase64 as string);
+    } catch (err: unknown) {
+      console.warn('[VisionImage] Generation failed:', err instanceof Error ? err.message : err);
+    } finally {
+      setGeneratingVisionImage(false);
     }
   };
 
@@ -1351,7 +1403,7 @@ export default function Dashboard() {
                           ? <KartLoader />
                           : <><Sparkles size={14} />{vision ? 'Regenerate Vision' : 'See Our Vision'}</>}
                       </button>
-                      <button type="button" onClick={() => { setShowForm(false); setVision(null); setVisionError(''); setRefImages([]); }} className="btn-secondary text-sm">Cancel</button>
+                      <button type="button" onClick={() => { setShowForm(false); setVision(null); setVisionError(''); setRefImages([]); setVisionImage(null); }} className="btn-secondary text-sm">Cancel</button>
                     </div>
                   </form>
                 </div>
@@ -1365,6 +1417,8 @@ export default function Dashboard() {
                     submitting={submitting}
                     submitError={submitError}
                     animKey={visionKey}
+                    visionImage={visionImage}
+                    generatingVisionImage={generatingVisionImage}
                   />
                 )}
               </div>

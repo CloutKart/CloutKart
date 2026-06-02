@@ -1,6 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-// @ts-ignore — groq-sdk ships a browser-compatible build usable in Deno via npm:
-import Groq from "npm:groq-sdk";
+// @ts-ignore
+import { GoogleGenerativeAI } from "npm:@google/generative-ai";
 // @ts-ignore
 import { MongoClient } from "npm:mongodb";
 
@@ -137,8 +137,7 @@ Exact structure required:
   ]
 }`;
 
-const TEXT_MODEL = "llama-3.3-70b-versatile";
-const VISION_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct";
+const MODEL = "gemini-2.5-flash";
 
 async function getQueryEmbedding(text: string, hfKey: string): Promise<number[]> {
   const res = await fetch(
@@ -189,7 +188,6 @@ async function scrapeUrl(url: string): Promise<string> {
     });
     if (!res.ok) return "";
     const html = await res.text();
-    // Strip scripts, styles, tags; collapse whitespace
     const text = html
       .replace(/<script[\s\S]*?<\/script>/gi, " ")
       .replace(/<style[\s\S]*?<\/style>/gi, " ")
@@ -218,15 +216,16 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const GROQ_API_KEY = Deno.env.get("GROQ_API_KEY");
-    if (!GROQ_API_KEY) {
+    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+    if (!GEMINI_API_KEY) {
       return new Response(
-        JSON.stringify({ error: "GROQ_API_KEY not configured. Add it in Supabase → Project Settings → Edge Functions → Secrets." }),
+        JSON.stringify({ error: "GEMINI_API_KEY not configured. Add it in Supabase → Project Settings → Edge Functions → Secrets." }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const groq = new Groq({ apiKey: GROQ_API_KEY });
+    const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+    const hasImages = Array.isArray(referenceImages) && referenceImages.length > 0;
 
     // Scrape the reference URL if provided
     let urlContent = "";
@@ -234,7 +233,7 @@ Deno.serve(async (req: Request) => {
       urlContent = await scrapeUrl(referenceUrl);
     }
 
-    // Build the user prompt text
+    // Build user prompt
     let userPrompt = `Generate a creative vision for the following brief:
 
 Brand Name: ${brandName}
@@ -260,13 +259,13 @@ Use at least one of these extracted specifics in the hook so it is provably non-
     }
 
     // RAG: retrieve relevant creative intelligence chunks
-    const HF_API_KEY   = Deno.env.get("HF_API_KEY");
-    const MONGODB_URI  = Deno.env.get("MONGODB_URI");
+    const HF_API_KEY  = Deno.env.get("HF_API_KEY");
+    const MONGODB_URI = Deno.env.get("MONGODB_URI");
     if (HF_API_KEY && MONGODB_URI) {
       try {
-        const queryText  = `${brandName} ${niche} ${adFormat} ${description}`;
-        const vector     = await getQueryEmbedding(queryText, HF_API_KEY);
-        const chunks     = await searchVisionChunks(vector, MONGODB_URI);
+        const queryText = `${brandName} ${niche} ${adFormat} ${description}`;
+        const vector    = await getQueryEmbedding(queryText, HF_API_KEY);
+        const chunks    = await searchVisionChunks(vector, MONGODB_URI);
         if (chunks.length > 0) {
           userPrompt += `\n\n## CLOUT KART CREATIVE INTELLIGENCE — RELEVANT REFERENCES\n\nThe following have been retrieved from CloutKart's knowledge base as most relevant to this brief. Use them as direct creative grounding — hooks, vibes, color logic, visual direction, and category rules that have proven to work for this type of product:\n\n${chunks.map((c, i) => `[Ref ${i + 1}]\n${c}`).join("\n\n")}`;
         }
@@ -277,40 +276,34 @@ Use at least one of these extracted specifics in the hook so it is provably non-
 
     userPrompt += "\n\nReturn only the JSON object.";
 
-    // Determine model and message content based on whether images are attached
-    const hasImages = Array.isArray(referenceImages) && referenceImages.length > 0;
-    const model = hasImages ? VISION_MODEL : TEXT_MODEL;
+    // Build Gemini content parts
+    type Part = { text: string } | { inlineData: { mimeType: string; data: string } };
+    const parts: Part[] = [{ text: userPrompt }];
 
-    type MessageContent =
-      | string
-      | Array<{ type: "text"; text: string } | { type: "image_url"; image_url: { url: string } }>;
+    if (hasImages) {
+      for (const img of (referenceImages as { base64: string; mimeType: string }[]).slice(0, 3)) {
+        parts.push({ inlineData: { mimeType: img.mimeType, data: img.base64 } });
+      }
+    }
 
-    const userContent: MessageContent = hasImages
-      ? [
-          { type: "text", text: userPrompt },
-          ...referenceImages.slice(0, 3).map((img: { base64: string; mimeType: string }) => ({
-            type: "image_url" as const,
-            image_url: { url: `data:${img.mimeType};base64,${img.base64}` },
-          })),
-        ]
-      : userPrompt;
-
-    const res = await groq.chat.completions.create({
-      model,
-      messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: userContent as Parameters<typeof groq.chat.completions.create>[0]["messages"][0]["content"] },
-      ],
-      max_tokens: 1800,
-      temperature: 0.75,
-      // Vision model may not support response_format — only enforce JSON mode for text model
-      ...(hasImages ? {} : { response_format: { type: "json_object" as const } }),
+    const model = genAI.getGenerativeModel({
+      model: MODEL,
+      systemInstruction: SYSTEM_PROMPT,
     });
 
-    const raw = res.choices?.[0]?.message?.content?.trim();
-    if (!raw) throw new Error("Empty response from Groq");
+    const result = await model.generateContent({
+      contents: [{ role: "user", parts }],
+      generationConfig: {
+        temperature: 0.75,
+        maxOutputTokens: 1800,
+        // JSON mode only for text — vision inputs don't guarantee structured output
+        ...(hasImages ? {} : { responseMimeType: "application/json" }),
+      },
+    });
 
-    // Extract JSON robustly: skip any leading template tokens / markdown, find first { last }
+    const raw = result.response.text().trim();
+
+    // Robustly extract JSON from the response
     const jsonStart = raw.indexOf("{");
     const jsonEnd = raw.lastIndexOf("}");
     const cleaned = jsonStart >= 0 && jsonEnd > jsonStart
