@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Heart, X, ChevronLeft, ChevronRight, Plus, MessageCircle, Bookmark } from 'lucide-react';
+import { Heart, X, ChevronLeft, ChevronRight, MessageCircle, Bookmark, Send, MoreHorizontal } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 interface PortfolioSection {
@@ -14,19 +14,16 @@ interface PortfolioImage {
   caption: string;
 }
 
-// Deterministic rotation + offset per card index so layout is stable
-const CARD_TRANSFORMS = [
-  { rotate: -3.2, tx: 8,  ty: -6  },
-  { rotate:  2.1, tx: -5, ty: 10  },
-  { rotate: -1.5, tx: 12, ty: 4   },
-  { rotate:  3.8, tx: -8, ty: -4  },
-  { rotate: -2.4, tx: 4,  ty: 8   },
-  { rotate:  1.2, tx: -10, ty: -2 },
-];
-
-// Fake like counts per section index for the Instagram feel
 const LIKE_COUNTS = [2847, 5312, 1634, 7891, 3256, 4478];
 const COMMENT_COUNTS = [43, 118, 29, 201, 67, 89];
+const AVATAR_GRADIENTS = [
+  'from-purple-500 to-pink-500',
+  'from-blue-500 to-cyan-500',
+  'from-orange-500 to-yellow-400',
+  'from-green-500 to-emerald-400',
+  'from-rose-500 to-red-400',
+  'from-indigo-500 to-violet-500',
+];
 
 function InstagramCard({
   section,
@@ -39,10 +36,39 @@ function InstagramCard({
   onOpen: () => void;
   isVisible: boolean;
 }) {
-  const t = CARD_TRANSFORMS[index % CARD_TRANSFORMS.length];
   const [liked, setLiked] = useState(false);
   const [saved, setSaved] = useState(false);
   const [likeCount, setLikeCount] = useState(LIKE_COUNTS[index % LIKE_COUNTS.length]);
+  const [images, setImages] = useState<string[]>(section.thumbnail_url ? [section.thumbnail_url] : []);
+  const [currentIdx, setCurrentIdx] = useState(0);
+  const [imagesLoaded, setImagesLoaded] = useState(false);
+
+  useEffect(() => {
+    if (!isVisible || imagesLoaded) return;
+    supabase
+      .from('portfolio_images')
+      .select('image_url')
+      .eq('section_id', section.id)
+      .order('display_order', { ascending: true })
+      .then(({ data }) => {
+        if (data && data.length > 0) {
+          setImages(data.map((d: { image_url: string }) => d.image_url));
+        }
+        setImagesLoaded(true);
+      });
+  }, [isVisible, imagesLoaded, section.id]);
+
+  function handlePrev(e: React.MouseEvent) {
+    e.stopPropagation();
+    if (!imagesLoaded) return;
+    setCurrentIdx((i) => Math.max(0, i - 1));
+  }
+
+  function handleNext(e: React.MouseEvent) {
+    e.stopPropagation();
+    if (!imagesLoaded) return;
+    setCurrentIdx((i) => Math.min(images.length - 1, i + 1));
+  }
 
   function handleLike(e: React.MouseEvent) {
     e.stopPropagation();
@@ -55,94 +81,156 @@ function InstagramCard({
     setSaved((v) => !v);
   }
 
+  // Use section.image_count for dot/arrow count before images load
+  const totalCount = imagesLoaded ? images.length : Math.max(section.image_count || 1, images.length);
+  const hasPrev = currentIdx > 0;
+  const hasNext = imagesLoaded ? currentIdx < images.length - 1 : currentIdx < totalCount - 1;
+
   return (
     <div
-      className="group cursor-pointer"
       style={{
         opacity: isVisible ? 1 : 0,
-        transform: isVisible
-          ? `rotate(${t.rotate}deg) translate(${t.tx}px, ${t.ty}px)`
-          : `rotate(${t.rotate}deg) translate(${t.tx}px, ${t.ty + 28}px) scale(0.92)`,
+        transform: isVisible ? 'translateY(0)' : 'translateY(24px)',
         transition: `opacity 0.55s ease ${index * 90}ms, transform 0.55s ease ${index * 90}ms`,
-        willChange: 'transform, opacity',
       }}
-      onMouseEnter={(e) => {
-        (e.currentTarget as HTMLDivElement).style.transform = 'rotate(0deg) translate(0,0) scale(1.04)';
-        (e.currentTarget as HTMLDivElement).style.zIndex = '20';
-      }}
-      onMouseLeave={(e) => {
-        (e.currentTarget as HTMLDivElement).style.transform = `rotate(${t.rotate}deg) translate(${t.tx}px, ${t.ty}px)`;
-        (e.currentTarget as HTMLDivElement).style.zIndex = '';
-      }}
+      className="bg-[#1a1a1a] rounded-2xl overflow-hidden border border-white/[0.07]"
     >
-      {/* Polaroid card */}
-      <div
-        className="relative bg-white shadow-2xl"
-        style={{
-          padding: '10px 10px 40px 10px',
-          borderRadius: '2px',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.45), 0 2px 8px rgba(0,0,0,0.3)',
-        }}
-        onClick={onOpen}
-      >
-        {/* Photo area */}
-        <div className="relative overflow-hidden" style={{ aspectRatio: '1/1', width: '100%' }}>
-          {section.thumbnail_url ? (
-            <img
-              src={section.thumbnail_url}
-              alt={section.title}
-              className="w-full h-full object-cover"
-              loading="lazy"
-            />
-          ) : (
-            <div className="w-full h-full" style={{ background: 'linear-gradient(135deg, #6366f1, #3b82f6)' }} />
-          )}
-          {/* Hover overlay */}
-          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/15 transition-colors duration-300 flex items-center justify-center">
-            <span className="text-white font-semibold text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/40 px-3 py-1 rounded-full backdrop-blur-sm">
-              View all {section.image_count} photos
-            </span>
+      {/* Post header */}
+      <div className="flex items-center justify-between px-4 py-3">
+        <div className="flex items-center gap-3">
+          <div
+            className={`w-9 h-9 rounded-full bg-gradient-to-br ${AVATAR_GRADIENTS[index % AVATAR_GRADIENTS.length]} flex-shrink-0 ring-2 ring-white/10`}
+          />
+          <div>
+            <p className="text-white text-[13px] font-semibold leading-none">{section.title}</p>
+            <p className="text-white/40 text-[11px] mt-0.5 leading-none">@cloutkart</p>
           </div>
         </div>
-
-        {/* Polaroid caption area */}
-        <div className="pt-2 pb-0 px-1">
-          <p className="text-gray-800 font-medium text-[11px] text-center truncate" style={{ fontFamily: 'Georgia, serif' }}>
-            {section.title}
-          </p>
-        </div>
+        <button className="text-white/40 hover:text-white/70 transition-colors p-1">
+          <MoreHorizontal size={18} />
+        </button>
       </div>
 
-      {/* Instagram action bar — sits below the card */}
-      <div
-        className="mt-2 px-1 flex items-center justify-between"
-        style={{ color: 'rgba(255,255,255,0.85)' }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center gap-3">
-          <button onClick={handleLike} className="flex items-center gap-1 group/like">
-            <Heart
-              size={16}
-              className="transition-transform duration-200 group-hover/like:scale-125"
-              fill={liked ? '#ef4444' : 'none'}
-              stroke={liked ? '#ef4444' : 'currentColor'}
-            />
-            <span className="text-[11px] font-medium" style={{ color: liked ? '#ef4444' : 'rgba(255,255,255,0.7)' }}>
-              {likeCount.toLocaleString()}
-            </span>
+      {/* Image area */}
+      <div className="relative bg-black" style={{ aspectRatio: '1/1' }}>
+        {images.length > 0 ? (
+          <img
+            key={`${section.id}-${currentIdx}`}
+            src={images[currentIdx]}
+            alt={section.title}
+            className="w-full h-full object-cover cursor-pointer"
+            style={{ animation: 'igFadeIn 0.18s ease' }}
+            loading="lazy"
+            onClick={onOpen}
+          />
+        ) : (
+          <div
+            className={`w-full h-full bg-gradient-to-br ${AVATAR_GRADIENTS[index % AVATAR_GRADIENTS.length]} opacity-20 cursor-pointer`}
+            onClick={onOpen}
+          />
+        )}
+
+        {/* Left arrow */}
+        {totalCount > 1 && hasPrev && (
+          <button
+            onClick={handlePrev}
+            className="absolute left-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full flex items-center justify-center z-10 transition-transform duration-150 hover:scale-110 active:scale-95"
+            style={{ background: 'rgba(255,255,255,0.88)', color: '#000' }}
+          >
+            <ChevronLeft size={15} strokeWidth={2.5} />
           </button>
-          <button className="flex items-center gap-1 opacity-70 hover:opacity-100 transition-opacity">
-            <MessageCircle size={15} />
-            <span className="text-[11px] font-medium">{COMMENT_COUNTS[index % COMMENT_COUNTS.length]}</span>
+        )}
+
+        {/* Right arrow */}
+        {totalCount > 1 && hasNext && (
+          <button
+            onClick={handleNext}
+            className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full flex items-center justify-center z-10 transition-transform duration-150 hover:scale-110 active:scale-95"
+            style={{ background: 'rgba(255,255,255,0.88)', color: '#000' }}
+          >
+            <ChevronRight size={15} strokeWidth={2.5} />
+          </button>
+        )}
+
+        {/* Dot indicators (Instagram-style, bottom-center of image) */}
+        {totalCount > 1 && totalCount <= 12 && (
+          <div className="absolute bottom-2.5 left-0 right-0 flex gap-1 justify-center pointer-events-none">
+            {Array.from({ length: totalCount }).map((_, i) => (
+              <div
+                key={i}
+                className="rounded-full transition-all duration-300"
+                style={{
+                  width: i === currentIdx ? 6 : 5,
+                  height: i === currentIdx ? 6 : 5,
+                  background: i === currentIdx ? '#4f9eed' : 'rgba(255,255,255,0.45)',
+                  boxShadow: i === currentIdx ? '0 0 4px rgba(79,158,237,0.7)' : 'none',
+                }}
+              />
+            ))}
+          </div>
+        )}
+        {totalCount > 12 && (
+          <div
+            className="absolute top-2.5 right-2.5 text-white text-[11px] font-semibold px-2 py-0.5 rounded-full pointer-events-none"
+            style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)' }}
+          >
+            {currentIdx + 1}/{totalCount}
+          </div>
+        )}
+      </div>
+
+      {/* Action bar */}
+      <div className="px-4 pt-3 pb-1 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <button
+            onClick={handleLike}
+            className="transition-transform duration-150 active:scale-90"
+          >
+            <Heart
+              size={24}
+              fill={liked ? '#ef4444' : 'none'}
+              stroke={liked ? '#ef4444' : 'rgba(255,255,255,0.85)'}
+              className="transition-colors duration-150"
+            />
+          </button>
+          <button
+            onClick={onOpen}
+            className="transition-colors duration-150"
+            style={{ color: 'rgba(255,255,255,0.85)' }}
+          >
+            <MessageCircle size={23} />
+          </button>
+          <button
+            className="transition-colors duration-150"
+            style={{ color: 'rgba(255,255,255,0.6)' }}
+          >
+            <Send size={21} />
           </button>
         </div>
-        <button onClick={handleSave} className="opacity-70 hover:opacity-100 transition-opacity">
+        <button onClick={handleSave}>
           <Bookmark
-            size={15}
+            size={22}
             fill={saved ? 'rgba(255,255,255,0.9)' : 'none'}
-            stroke={saved ? 'rgba(255,255,255,0.9)' : 'currentColor'}
+            stroke={saved ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.85)'}
+            className="transition-colors duration-150"
           />
         </button>
+      </div>
+
+      {/* Like count + caption */}
+      <div className="px-4 pb-4 pt-1">
+        <p className="text-white text-[13px] font-semibold">{likeCount.toLocaleString()} likes</p>
+        <p className="text-white/70 text-[13px] mt-1 leading-relaxed">
+          <span className="text-white font-semibold mr-1">cloutkart</span>
+          {section.title} — premium ad creatives &amp; performance content ✨
+        </p>
+        <button
+          onClick={onOpen}
+          className="text-white/30 text-[12px] mt-1 transition-colors duration-150 hover:text-white/50 block"
+        >
+          View all {COMMENT_COUNTS[index % COMMENT_COUNTS.length]} comments
+        </button>
+        <p className="text-white/25 text-[11px] mt-1.5 uppercase tracking-wide">2 days ago</p>
       </div>
     </div>
   );
@@ -184,7 +272,6 @@ export default function Portfolio() {
       (entries) => {
         if (entries[0].isIntersecting) {
           setVisible(true);
-          // also reveal text elements
           entries[0].target.querySelectorAll('.reveal').forEach((el, i) => {
             setTimeout(() => el.classList.add('visible'), i * 80);
           });
@@ -226,21 +313,18 @@ export default function Portfolio() {
     setLoadingImages(false);
   }
 
-  // Group sections into rows: [3, 3] or [2, 2] etc
-  const rows: PortfolioSection[][] = [];
-  for (let i = 0; i < sections.length; i += 3) {
-    rows.push(sections.slice(i, i + 3));
-  }
-
   return (
     <section ref={sectionRef} className="relative py-20 md:py-36 [overflow-x:clip]" id="portfolio" style={{ background: 'transparent' }}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-10 md:mb-20">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center mb-10 md:mb-16">
           <div className="reveal eyebrow-pill mb-7">
             <span className="w-1 h-1 rounded-full bg-brand-purple" />
             Our Work
           </div>
-          <h2 className="reveal delay-100 font-heading font-bold leading-[1.06] tracking-tight mb-3 sm:mb-4" style={{ fontSize: 'clamp(2rem, 5vw, 4.5rem)' }}>
+          <h2
+            className="reveal delay-100 font-heading font-bold leading-[1.06] tracking-tight mb-3 sm:mb-4"
+            style={{ fontSize: 'clamp(2rem, 5vw, 4.5rem)' }}
+          >
             Results That
             <br />
             <span className="gradient-text">Speak For Themselves.</span>
@@ -251,18 +335,27 @@ export default function Portfolio() {
         </div>
 
         {!loaded ? (
-          <div className="flex flex-wrap gap-6 justify-center">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {[...Array(6)].map((_, i) => (
               <div
                 key={i}
-                className="bg-white/5 rounded-sm"
-                style={{
-                  width: 200,
-                  height: 240,
-                  animation: `pulse 2s ease-in-out ${i * 0.1}s infinite`,
-                  transform: `rotate(${CARD_TRANSFORMS[i].rotate}deg)`,
-                }}
-              />
+                className="bg-white/5 rounded-2xl overflow-hidden"
+                style={{ animation: `pulse 2s ease-in-out ${i * 0.1}s infinite` }}
+              >
+                <div className="px-4 py-3 flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-full bg-white/10" />
+                  <div className="flex-1">
+                    <div className="h-3 bg-white/10 rounded w-24 mb-1.5" />
+                    <div className="h-2 bg-white/5 rounded w-16" />
+                  </div>
+                </div>
+                <div className="bg-white/5" style={{ aspectRatio: '1/1' }} />
+                <div className="px-4 py-3">
+                  <div className="h-3 bg-white/10 rounded w-20 mb-2" />
+                  <div className="h-3 bg-white/5 rounded w-full mb-1.5" />
+                  <div className="h-3 bg-white/5 rounded w-3/4" />
+                </div>
+              </div>
             ))}
           </div>
         ) : sections.length === 0 ? (
@@ -270,27 +363,15 @@ export default function Portfolio() {
             <p className="text-[#6B7280] text-sm">Portfolio coming soon.</p>
           </div>
         ) : (
-          <div className="flex flex-col gap-16 sm:gap-20">
-            {rows.map((row, rowIdx) => (
-              <div
-                key={rowIdx}
-                className="flex flex-wrap justify-center gap-8 sm:gap-12 lg:gap-16"
-                style={{ padding: '12px 0 24px' }}
-              >
-                {row.map((section, colIdx) => {
-                  const globalIdx = rowIdx * 3 + colIdx;
-                  return (
-                    <div key={section.id} style={{ width: 'clamp(160px, 26vw, 240px)' }}>
-                      <InstagramCard
-                        section={section}
-                        index={globalIdx}
-                        onOpen={() => openLightbox(section.id, section.title)}
-                        isVisible={visible}
-                      />
-                    </div>
-                  );
-                })}
-              </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {sections.map((section, index) => (
+              <InstagramCard
+                key={section.id}
+                section={section}
+                index={index}
+                onOpen={() => openLightbox(section.id, section.title)}
+                isVisible={visible}
+              />
             ))}
           </div>
         )}
@@ -381,6 +462,7 @@ export default function Portfolio() {
       )}
 
       <style>{`
+        @keyframes igFadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes fadeIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
         @keyframes pulse { 0%,100% { opacity: 0.4; } 50% { opacity: 0.7; } }
       `}</style>
