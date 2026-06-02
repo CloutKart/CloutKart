@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ExternalLink, X, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import { Heart, X, ChevronLeft, ChevronRight, Plus, MessageCircle, Bookmark } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 interface PortfolioSection {
@@ -14,19 +14,145 @@ interface PortfolioImage {
   caption: string;
 }
 
-const spanMap: Record<number, string[]> = {
-  1: ['col-span-2 lg:col-span-3'],
-  2: ['col-span-2 lg:col-span-2', 'col-span-2 lg:col-span-1 lg:row-span-2'],
-  3: ['col-span-2 lg:col-span-1 lg:row-span-2', 'col-span-1', 'col-span-1'],
-  4: ['col-span-2 lg:col-span-2', 'col-span-2 lg:col-span-1', 'col-span-1', 'col-span-1'],
-  5: ['col-span-2 lg:col-span-1 lg:row-span-2', 'col-span-1', 'col-span-1', 'col-span-2 lg:col-span-1', 'col-span-2 lg:col-span-1'],
-  6: ['col-span-2 lg:col-span-1 lg:row-span-2', '', '', 'lg:col-span-2', '', ''],
-};
+// Deterministic rotation + offset per card index so layout is stable
+const CARD_TRANSFORMS = [
+  { rotate: -3.2, tx: 8,  ty: -6  },
+  { rotate:  2.1, tx: -5, ty: 10  },
+  { rotate: -1.5, tx: 12, ty: 4   },
+  { rotate:  3.8, tx: -8, ty: -4  },
+  { rotate: -2.4, tx: 4,  ty: 8   },
+  { rotate:  1.2, tx: -10, ty: -2 },
+];
+
+// Fake like counts per section index for the Instagram feel
+const LIKE_COUNTS = [2847, 5312, 1634, 7891, 3256, 4478];
+const COMMENT_COUNTS = [43, 118, 29, 201, 67, 89];
+
+function InstagramCard({
+  section,
+  index,
+  onOpen,
+  isVisible,
+}: {
+  section: PortfolioSection;
+  index: number;
+  onOpen: () => void;
+  isVisible: boolean;
+}) {
+  const t = CARD_TRANSFORMS[index % CARD_TRANSFORMS.length];
+  const [liked, setLiked] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [likeCount, setLikeCount] = useState(LIKE_COUNTS[index % LIKE_COUNTS.length]);
+
+  function handleLike(e: React.MouseEvent) {
+    e.stopPropagation();
+    setLiked((v) => !v);
+    setLikeCount((c) => (liked ? c - 1 : c + 1));
+  }
+
+  function handleSave(e: React.MouseEvent) {
+    e.stopPropagation();
+    setSaved((v) => !v);
+  }
+
+  return (
+    <div
+      className="group cursor-pointer"
+      style={{
+        opacity: isVisible ? 1 : 0,
+        transform: isVisible
+          ? `rotate(${t.rotate}deg) translate(${t.tx}px, ${t.ty}px)`
+          : `rotate(${t.rotate}deg) translate(${t.tx}px, ${t.ty + 28}px) scale(0.92)`,
+        transition: `opacity 0.55s ease ${index * 90}ms, transform 0.55s ease ${index * 90}ms`,
+        willChange: 'transform, opacity',
+      }}
+      onMouseEnter={(e) => {
+        (e.currentTarget as HTMLDivElement).style.transform = 'rotate(0deg) translate(0,0) scale(1.04)';
+        (e.currentTarget as HTMLDivElement).style.zIndex = '20';
+      }}
+      onMouseLeave={(e) => {
+        (e.currentTarget as HTMLDivElement).style.transform = `rotate(${t.rotate}deg) translate(${t.tx}px, ${t.ty}px)`;
+        (e.currentTarget as HTMLDivElement).style.zIndex = '';
+      }}
+    >
+      {/* Polaroid card */}
+      <div
+        className="relative bg-white shadow-2xl"
+        style={{
+          padding: '10px 10px 40px 10px',
+          borderRadius: '2px',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.45), 0 2px 8px rgba(0,0,0,0.3)',
+        }}
+        onClick={onOpen}
+      >
+        {/* Photo area */}
+        <div className="relative overflow-hidden" style={{ aspectRatio: '1/1', width: '100%' }}>
+          {section.thumbnail_url ? (
+            <img
+              src={section.thumbnail_url}
+              alt={section.title}
+              className="w-full h-full object-cover"
+              loading="lazy"
+            />
+          ) : (
+            <div className="w-full h-full" style={{ background: 'linear-gradient(135deg, #6366f1, #3b82f6)' }} />
+          )}
+          {/* Hover overlay */}
+          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/15 transition-colors duration-300 flex items-center justify-center">
+            <span className="text-white font-semibold text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/40 px-3 py-1 rounded-full backdrop-blur-sm">
+              View all {section.image_count} photos
+            </span>
+          </div>
+        </div>
+
+        {/* Polaroid caption area */}
+        <div className="pt-2 pb-0 px-1">
+          <p className="text-gray-800 font-medium text-[11px] text-center truncate" style={{ fontFamily: 'Georgia, serif' }}>
+            {section.title}
+          </p>
+        </div>
+      </div>
+
+      {/* Instagram action bar — sits below the card */}
+      <div
+        className="mt-2 px-1 flex items-center justify-between"
+        style={{ color: 'rgba(255,255,255,0.85)' }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center gap-3">
+          <button onClick={handleLike} className="flex items-center gap-1 group/like">
+            <Heart
+              size={16}
+              className="transition-transform duration-200 group-hover/like:scale-125"
+              fill={liked ? '#ef4444' : 'none'}
+              stroke={liked ? '#ef4444' : 'currentColor'}
+            />
+            <span className="text-[11px] font-medium" style={{ color: liked ? '#ef4444' : 'rgba(255,255,255,0.7)' }}>
+              {likeCount.toLocaleString()}
+            </span>
+          </button>
+          <button className="flex items-center gap-1 opacity-70 hover:opacity-100 transition-opacity">
+            <MessageCircle size={15} />
+            <span className="text-[11px] font-medium">{COMMENT_COUNTS[index % COMMENT_COUNTS.length]}</span>
+          </button>
+        </div>
+        <button onClick={handleSave} className="opacity-70 hover:opacity-100 transition-opacity">
+          <Bookmark
+            size={15}
+            fill={saved ? 'rgba(255,255,255,0.9)' : 'none'}
+            stroke={saved ? 'rgba(255,255,255,0.9)' : 'currentColor'}
+          />
+        </button>
+      </div>
+    </div>
+  );
+}
 
 export default function Portfolio() {
   const sectionRef = useRef<HTMLElement>(null);
   const [sections, setSections] = useState<PortfolioSection[]>([]);
   const [loaded, setLoaded] = useState(false);
+  const [visible, setVisible] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxImages, setLightboxImages] = useState<PortfolioImage[]>([]);
   const [lightboxTitle, setLightboxTitle] = useState('');
@@ -56,13 +182,13 @@ export default function Portfolio() {
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.querySelectorAll('.reveal, .reveal-scale').forEach((el, i) => {
-              setTimeout(() => el.classList.add('visible'), i * 80);
-            });
-          }
-        });
+        if (entries[0].isIntersecting) {
+          setVisible(true);
+          // also reveal text elements
+          entries[0].target.querySelectorAll('.reveal').forEach((el, i) => {
+            setTimeout(() => el.classList.add('visible'), i * 80);
+          });
+        }
       },
       { threshold: 0.05 }
     );
@@ -100,13 +226,16 @@ export default function Portfolio() {
     setLoadingImages(false);
   }
 
-  const count = sections.length;
-  const spans = spanMap[Math.min(count, 6)] ?? spanMap[6];
+  // Group sections into rows: [3, 3] or [2, 2] etc
+  const rows: PortfolioSection[][] = [];
+  for (let i = 0; i < sections.length; i += 3) {
+    rows.push(sections.slice(i, i + 3));
+  }
 
   return (
     <section ref={sectionRef} className="relative py-20 md:py-36 [overflow-x:clip]" id="portfolio" style={{ background: 'transparent' }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-10 md:mb-16">
+        <div className="text-center mb-10 md:mb-20">
           <div className="reveal eyebrow-pill mb-7">
             <span className="w-1 h-1 rounded-full bg-brand-purple" />
             Our Work
@@ -122,75 +251,45 @@ export default function Portfolio() {
         </div>
 
         {!loaded ? (
-          /* Skeleton while loading */
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-3.5 lg:auto-rows-[210px]">
+          <div className="flex flex-wrap gap-6 justify-center">
             {[...Array(6)].map((_, i) => (
-              <div key={i} className={`${i === 0 ? 'lg:col-span-1 lg:row-span-2' : i === 3 ? 'lg:col-span-2' : ''} rounded-xl sm:rounded-2xl aspect-square lg:aspect-auto`}
-                style={{ background: 'rgba(255,255,255,0.04)', animation: `pulse 2s ease-in-out ${i * 0.1}s infinite` }} />
+              <div
+                key={i}
+                className="bg-white/5 rounded-sm"
+                style={{
+                  width: 200,
+                  height: 240,
+                  animation: `pulse 2s ease-in-out ${i * 0.1}s infinite`,
+                  transform: `rotate(${CARD_TRANSFORMS[i].rotate}deg)`,
+                }}
+              />
             ))}
           </div>
-        ) : count === 0 ? (
+        ) : sections.length === 0 ? (
           <div className="text-center py-16">
             <p className="text-[#6B7280] text-sm">Portfolio coming soon.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-3.5 lg:auto-rows-[210px]">
-            {sections.map((section, i) => (
+          <div className="flex flex-col gap-16 sm:gap-20">
+            {rows.map((row, rowIdx) => (
               <div
-                key={section.id}
-                className={`reveal-scale ${spans[i] ?? ''} relative group overflow-hidden rounded-xl sm:rounded-2xl cursor-pointer aspect-square lg:aspect-auto`}
-                style={{ transitionDelay: `${Math.min(i * 80, 560)}ms` }}
-                onClick={() => openLightbox(section.id, section.title)}
+                key={rowIdx}
+                className="flex flex-wrap justify-center gap-8 sm:gap-12 lg:gap-16"
+                style={{ padding: '12px 0 24px' }}
               >
-                {section.thumbnail_url ? (
-                  <img
-                    src={section.thumbnail_url}
-                    alt={section.title}
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                    loading="lazy"
-                  />
-                ) : (
-                  <div className="w-full h-full" style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.15), rgba(59,130,246,0.1))' }} />
-                )}
-
-                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent opacity-60 group-hover:opacity-85 transition-opacity duration-400" />
-
-                <div className="absolute inset-0 flex flex-col justify-end p-3 sm:p-5 translate-y-1 group-hover:translate-y-0 transition-transform duration-300">
-                  <div
-                    className="inline-flex items-center rounded-full px-2.5 sm:px-3 py-0.5 sm:py-1 text-[10px] sm:text-xs font-medium text-white/80 w-fit mb-1.5 sm:mb-2 font-mono"
-                    style={{ background: 'rgba(168,85,247,0.2)', border: '1px solid rgba(168,85,247,0.3)' }}
-                  >
-                    {section.image_count} image{section.image_count !== 1 ? 's' : ''}
-                  </div>
-                  <h3 className="text-white font-semibold font-heading text-xs sm:text-sm lg:text-[15px] leading-snug">{section.title}</h3>
-                </div>
-
-                <div
-                  className="absolute top-3 right-3 w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0"
-                  style={{ background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.2)' }}
-                >
-                  <ExternalLink size={11} className="text-white/80" />
-                </div>
-
-                <div className="absolute inset-0 rounded-xl sm:rounded-2xl border border-transparent group-hover:border-brand-purple/30 transition-colors duration-300 pointer-events-none" />
-              </div>
-            ))}
-
-            {/* Fill remaining slots if fewer than 6 sections */}
-            {count < 6 && count > 0 && [...Array(Math.min(6 - count, 3))].map((_, i) => (
-              <div
-                key={`placeholder-${i}`}
-                className="reveal-scale rounded-xl sm:rounded-2xl aspect-square lg:aspect-auto flex items-center justify-center"
-                style={{
-                  background: 'rgba(255,255,255,0.02)',
-                  border: '1px dashed rgba(255,255,255,0.06)',
-                  transitionDelay: `${Math.min((count + i) * 80, 560)}ms`,
-                }}
-              >
-                <div className="flex flex-col items-center gap-2 opacity-20">
-                  <Plus size={20} className="text-white" />
-                  <span className="text-white text-[10px] font-mono">More coming soon</span>
-                </div>
+                {row.map((section, colIdx) => {
+                  const globalIdx = rowIdx * 3 + colIdx;
+                  return (
+                    <div key={section.id} style={{ width: 'clamp(160px, 26vw, 240px)' }}>
+                      <InstagramCard
+                        section={section}
+                        index={globalIdx}
+                        onOpen={() => openLightbox(section.id, section.title)}
+                        isVisible={visible}
+                      />
+                    </div>
+                  );
+                })}
               </div>
             ))}
           </div>
@@ -281,7 +380,10 @@ export default function Portfolio() {
         </div>
       )}
 
-      <style>{`@keyframes fadeIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } } @keyframes pulse { 0%,100% { opacity: 0.4; } 50% { opacity: 0.7; } }`}</style>
+      <style>{`
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
+        @keyframes pulse { 0%,100% { opacity: 0.4; } 50% { opacity: 0.7; } }
+      `}</style>
     </section>
   );
 }
