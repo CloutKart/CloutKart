@@ -81,16 +81,17 @@ function buildStabilityPrompt(
   vision: VisionData,
   brandName: string,
   niche: string,
-  ragChunks: string[]
+  ragChunks: string[],
+  hasRefImage: boolean
 ): string {
   const parts: string[] = [];
 
-  // Core visual direction — most important for image gen
+  // Visual direction is the strongest signal for both modes
   if (vision.visualDirection) {
     parts.push(vision.visualDirection);
   }
 
-  // Creative vibe mood
+  // Creative vibe
   if (vision.creativeVibe) {
     parts.push(`${vision.creativeVibe.label} aesthetic. ${vision.creativeVibe.description}`);
   }
@@ -101,27 +102,26 @@ function buildStabilityPrompt(
     parts.push(`Color atmosphere: ${vibeColorNames}`);
   }
 
-  // Product color anchors
-  const productColorNames = (vision.productColors ?? []).map((c) => c.name).join(", ");
-  if (productColorNames) {
-    parts.push(`Product tones: ${productColorNames}`);
+  if (!hasRefImage) {
+    // Text-to-image: include product color anchors and brand context to guide what to generate
+    const productColorNames = (vision.productColors ?? []).map((c) => c.name).join(", ");
+    if (productColorNames) parts.push(`Product tones: ${productColorNames}`);
+    parts.push(`${niche} product for ${brandName}`);
+    parts.push("commercial advertising photography, professional studio lighting, ultra high resolution, cinematic composition");
+  } else {
+    // Image-to-image: keep prompt focused on scene/atmosphere, not what the product looks like
+    // — the reference image carries the product identity; over-describing competes with it
+    parts.push("commercial advertising campaign, dramatic lighting, magazine quality");
   }
 
-  // Brand/niche context
-  parts.push(`${niche} brand campaign for ${brandName}`);
-
-  // Quality and style anchors for Stability AI
-  parts.push(
-    "commercial advertising photography, professional studio lighting, ultra high resolution, award-winning creative campaign, magazine quality, cinematic composition"
-  );
-
-  // RAG: inject relevant prompt-library cinematic language (first 2 chunks, 400 chars each)
+  // RAG: cinematic prompt-library language (fewer chars when image is provided to reduce drift)
   if (ragChunks.length > 0) {
+    const charLimit = hasRefImage ? 200 : 400;
     const ragContext = ragChunks
-      .slice(0, 2)
-      .map((c) => c.slice(0, 400))
+      .slice(0, hasRefImage ? 1 : 2)
+      .map((c) => c.slice(0, charLimit))
       .join(" | ");
-    parts.push(`Creative reference context: ${ragContext}`);
+    parts.push(ragContext);
   }
 
   return parts.join(". ");
@@ -182,7 +182,7 @@ Deno.serve(async (req: Request) => {
     }
 
     // Build the Stability AI prompt
-    const prompt = buildStabilityPrompt(vision, brandName, niche, ragChunks);
+    const prompt = buildStabilityPrompt(vision, brandName, niche, ragChunks, hasRefImage);
     console.log(`[generate-vision-image] mode=${hasRefImage ? "sd3-img2img" : "core-txt2img"} prompt_len=${prompt.length}`);
 
     const formData = new FormData();
@@ -201,8 +201,8 @@ Deno.serve(async (req: Request) => {
       const imageBlob = new Blob([bytes], { type: ref.mimeType });
       formData.append("image", imageBlob, "product.jpg");
       formData.append("mode", "image-to-image");
-      formData.append("strength", "0.70");   // 0=copy, 1=ignore; 0.7 keeps product shape, applies creative direction
-      formData.append("model", "sd3-large-turbo");
+      formData.append("strength", "0.40");   // 0=copy source, 1=ignore source; 0.40 preserves product form while shifting scene/light
+      formData.append("model", "sd3-large"); // sd3-large follows reference more faithfully than turbo
       apiUrl = STABILITY_SD3_URL;
     } else {
       // Core text-to-image — no reference photo provided
