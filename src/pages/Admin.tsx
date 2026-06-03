@@ -1730,15 +1730,27 @@ export default function Admin() {
     setRedditError('');
     setRedditResults([]);
     try {
-      const { data, error } = await supabase.functions.invoke('lead-agent', {
-        body: { mode: 'reddit_search', subreddits: redditSubreddits, keywords: redditKeywords.trim(), timeframe: redditTimeframe },
-      });
-      if (error) throw new Error(error.message);
-      if (data?.error) { setRedditError(data.error); setSearchingReddit(false); return; }
-      setRedditResults(data?.posts ?? []);
-      if ((data?.posts ?? []).length === 0) setRedditError('No matching posts found. Try different keywords or a wider timeframe.');
-    } catch (e) {
-      setRedditError((e as Error).message || 'Reddit search failed');
+      const subredditStr = redditSubreddits.join('+');
+      const url = `https://www.reddit.com/r/${subredditStr}/search.json?q=${encodeURIComponent(redditKeywords.trim())}&sort=new&t=${redditTimeframe}&limit=25&restrict_sr=1`;
+      const res = await fetch(url, { headers: { Accept: 'application/json' } });
+      if (!res.ok) {
+        setRedditError(res.status === 429 ? 'Reddit rate limit — wait a minute and retry.' : `Reddit returned ${res.status}. Try different keywords.`);
+        setSearchingReddit(false);
+        return;
+      }
+      const json = await res.json();
+      type RChild = { data: { id: string; title: string; subreddit: string; selftext: string; score: number; num_comments: number; author: string; created_utc: number; permalink: string; is_self: boolean } };
+      const posts: RedditPost[] = (json.data?.children ?? []).map((c: RChild) => ({
+        id: c.data.id, title: c.data.title, subreddit: c.data.subreddit,
+        selftext: c.data.selftext?.slice(0, 400) ?? '', score: c.data.score,
+        numComments: c.data.num_comments, author: c.data.author,
+        createdUtc: c.data.created_utc, permalink: `https://reddit.com${c.data.permalink}`,
+        isSelf: c.data.is_self,
+      }));
+      setRedditResults(posts);
+      if (posts.length === 0) setRedditError('No matching posts found. Try different keywords or a wider timeframe.');
+    } catch {
+      setRedditError('Could not reach Reddit. Check your connection and try again.');
     }
     setSearchingReddit(false);
   }
