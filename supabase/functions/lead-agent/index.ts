@@ -370,7 +370,7 @@ Deno.serve(async (req: Request) => {
     if (mode === "reddit_search") {
       const { subreddits = ["ecommerce", "smallbusiness"], keywords = "", sort = "new", timeframe = "week" } = body;
       const subredditStr = (subreddits as string[]).join("+");
-      const url = `https://www.reddit.com/r/${subredditStr}/search.json?q=${encodeURIComponent(keywords as string)}&sort=${sort}&t=${timeframe}&limit=25&restrict_sr=1&type=link`;
+      const url = `https://www.reddit.com/r/${subredditStr}/search.json?q=${encodeURIComponent(keywords as string)}&sort=${sort}&t=${timeframe}&limit=25&restrict_sr=1`;
 
       const res = await fetch(url, {
         headers: {

@@ -1156,7 +1156,7 @@ export default function Admin() {
   // Social Listening state
   const [leadsSubTab, setLeadsSubTab] = useState<'operations' | 'listening'>('operations');
   const [redditSubreddits, setRedditSubreddits] = useState<string[]>(['ecommerce', 'smallbusiness']);
-  const [redditKeywords, setRedditKeywords] = useState('looking for marketing agency OR need creative team OR hiring social media manager');
+  const [redditKeywords, setRedditKeywords] = useState('marketing agency OR social media manager OR creative agency');
   const [redditTimeframe, setRedditTimeframe] = useState<'day' | 'week' | 'month'>('week');
   const [redditResults, setRedditResults] = useState<RedditPost[]>([]);
   const [searchingReddit, setSearchingReddit] = useState(false);
