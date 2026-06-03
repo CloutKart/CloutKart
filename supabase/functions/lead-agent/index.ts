@@ -366,47 +366,76 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // reddit_search doesn't need Groq — handle it before the key check
+    // reddit_search uses Reddit OAuth (client credentials) — no user login needed
     if (mode === "reddit_search") {
+      const REDDIT_CLIENT_ID     = Deno.env.get("REDDIT_CLIENT_ID")     ?? "";
+      const REDDIT_CLIENT_SECRET = Deno.env.get("REDDIT_CLIENT_SECRET") ?? "";
+
+      if (!REDDIT_CLIENT_ID || !REDDIT_CLIENT_SECRET) {
+        return new Response(
+          JSON.stringify({ posts: [], error: "Reddit credentials not configured. Add REDDIT_CLIENT_ID and REDDIT_CLIENT_SECRET in Supabase → Project Settings → Edge Functions → Secrets." }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Get a short-lived access token via client credentials
+      const tokenRes = await fetch("https://www.reddit.com/api/v1/access_token", {
+        method: "POST",
+        headers: {
+          "Authorization": `Basic ${btoa(`${REDDIT_CLIENT_ID}:${REDDIT_CLIENT_SECRET}`)}`,
+          "Content-Type": "application/x-www-form-urlencoded",
+          "User-Agent": "CloutKart:EzioLeadHunter:v1.0",
+        },
+        body: "grant_type=client_credentials",
+        signal: AbortSignal.timeout(8000),
+      });
+
+      if (!tokenRes.ok) {
+        return new Response(
+          JSON.stringify({ posts: [], error: `Reddit auth failed (${tokenRes.status}). Check your REDDIT_CLIENT_ID and REDDIT_CLIENT_SECRET.` }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const { access_token: accessToken } = await tokenRes.json();
+      if (!accessToken) {
+        return new Response(
+          JSON.stringify({ posts: [], error: "Reddit did not return an access token. Check your app credentials." }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
       const { subreddits = ["ecommerce", "smallbusiness"], keywords = "", sort = "new", timeframe = "week" } = body;
       const subredditStr = (subreddits as string[]).join("+");
-      const url = `https://www.reddit.com/r/${subredditStr}/search.json?q=${encodeURIComponent(keywords as string)}&sort=${sort}&t=${timeframe}&limit=25&restrict_sr=1`;
+      const searchUrl = `https://oauth.reddit.com/r/${subredditStr}/search?q=${encodeURIComponent(keywords as string)}&sort=${sort}&t=${timeframe}&limit=25&restrict_sr=1`;
 
-      const res = await fetch(url, {
+      const searchRes = await fetch(searchUrl, {
         headers: {
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-          "Accept": "application/json, text/plain, */*",
-          "Accept-Language": "en-US,en;q=0.9",
+          "Authorization": `Bearer ${accessToken}`,
+          "User-Agent": "CloutKart:EzioLeadHunter:v1.0",
         },
         signal: AbortSignal.timeout(10000),
       });
 
-      if (!res.ok) {
-        const hint = res.status === 429
+      if (!searchRes.ok) {
+        const hint = searchRes.status === 429
           ? "Reddit rate limit hit — wait a minute and try again."
-          : res.status === 403
-          ? "Reddit blocked this request. Try fewer subreddits or different keywords."
-          : `Reddit returned HTTP ${res.status}.`;
+          : `Reddit returned HTTP ${searchRes.status}.`;
         return new Response(
           JSON.stringify({ posts: [], error: hint }),
           { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 
-      const json = await res.json();
+      const json = await searchRes.json();
       type RedditChild = { data: { id: string; title: string; subreddit: string; selftext: string; score: number; num_comments: number; author: string; created_utc: number; permalink: string; is_self: boolean } };
       const posts = ((json.data?.children ?? []) as RedditChild[]).map((child) => {
         const p = child.data;
         return {
-          id: p.id,
-          title: p.title,
-          subreddit: p.subreddit,
+          id: p.id, title: p.title, subreddit: p.subreddit,
           selftext: p.selftext ? p.selftext.slice(0, 400) : "",
-          score: p.score,
-          numComments: p.num_comments,
-          author: p.author,
-          createdUtc: p.created_utc,
-          permalink: `https://reddit.com${p.permalink}`,
+          score: p.score, numComments: p.num_comments, author: p.author,
+          createdUtc: p.created_utc, permalink: `https://reddit.com${p.permalink}`,
           isSelf: p.is_self,
         };
       });
