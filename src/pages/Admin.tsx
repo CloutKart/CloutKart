@@ -2724,7 +2724,7 @@ export default function Admin() {
                     </div>
               }
             </div>
-            </>}
+            </>)}
 
             {/* ── Social Listening ─────────────────────────────────── */}
             {leadsSubTab === 'listening' && (

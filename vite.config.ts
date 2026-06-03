@@ -1,6 +1,6 @@
 import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
-import { writeFileSync } from 'fs';
+import { writeFileSync, mkdirSync } from 'fs';
 import { resolve } from 'path';
 
 const SITE_URL = 'https://clout-kart.com';
@@ -35,6 +35,7 @@ ${urls.map(u => `  <url>
   </url>`).join('\n')}
 </urlset>`;
 
+      mkdirSync(resolve(__dirname, 'dist'), { recursive: true });
       writeFileSync(resolve(__dirname, 'dist/sitemap.xml'), xml, 'utf-8');
     },
   };
