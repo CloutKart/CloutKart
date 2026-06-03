@@ -359,10 +359,52 @@ Deno.serve(async (req: Request) => {
     const body = await req.json();
     const { mode } = body;
 
-    if (mode !== "discover" && mode !== "score" && mode !== "fetch_contacts" && mode !== "scrape_products") {
+    if (mode !== "discover" && mode !== "score" && mode !== "fetch_contacts" && mode !== "scrape_products" && mode !== "reddit_search") {
       return new Response(
-        JSON.stringify({ error: "mode must be 'discover', 'score', 'fetch_contacts', or 'scrape_products'" }),
+        JSON.stringify({ error: "mode must be 'discover', 'score', 'fetch_contacts', 'scrape_products', or 'reddit_search'" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // reddit_search doesn't need Groq — handle it before the key check
+    if (mode === "reddit_search") {
+      const { subreddits = ["ecommerce", "smallbusiness"], keywords = "", sort = "new", timeframe = "week" } = body;
+      const subredditStr = (subreddits as string[]).join("+");
+      const url = `https://www.reddit.com/r/${subredditStr}/search.json?q=${encodeURIComponent(keywords as string)}&sort=${sort}&t=${timeframe}&limit=25&restrict_sr=1&type=link`;
+
+      const res = await fetch(url, {
+        headers: { "User-Agent": "CloutKart-Ezio/1.0 (social listening)" },
+        signal: AbortSignal.timeout(8000),
+      });
+
+      if (!res.ok) {
+        return new Response(
+          JSON.stringify({ error: `Reddit API error: ${res.status}` }),
+          { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const json = await res.json();
+      type RedditChild = { data: { id: string; title: string; subreddit: string; selftext: string; score: number; num_comments: number; author: string; created_utc: number; permalink: string; is_self: boolean } };
+      const posts = ((json.data?.children ?? []) as RedditChild[]).map((child) => {
+        const p = child.data;
+        return {
+          id: p.id,
+          title: p.title,
+          subreddit: p.subreddit,
+          selftext: p.selftext ? p.selftext.slice(0, 400) : "",
+          score: p.score,
+          numComments: p.num_comments,
+          author: p.author,
+          createdUtc: p.created_utc,
+          permalink: `https://reddit.com${p.permalink}`,
+          isSelf: p.is_self,
+        };
+      });
+
+      return new Response(
+        JSON.stringify({ posts }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -708,48 +750,6 @@ Return only the JSON object.`;
 
       return new Response(
         JSON.stringify({ products }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // ── REDDIT SEARCH MODE ───────────────────────────────────────────────────────
-    if (mode === "reddit_search") {
-      const { subreddits = ["ecommerce", "smallbusiness"], keywords = "", sort = "new", timeframe = "week" } = body;
-      const subredditStr = (subreddits as string[]).join("+");
-      const url = `https://www.reddit.com/r/${subredditStr}/search.json?q=${encodeURIComponent(keywords as string)}&sort=${sort}&t=${timeframe}&limit=25&restrict_sr=1&type=link`;
-
-      const res = await fetch(url, {
-        headers: { "User-Agent": "CloutKart-Ezio/1.0 (social listening)" },
-        signal: AbortSignal.timeout(8000),
-      });
-
-      if (!res.ok) {
-        return new Response(
-          JSON.stringify({ error: `Reddit API error: ${res.status}` }),
-          { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
-      const json = await res.json();
-      type RedditChild = { data: { id: string; title: string; subreddit: string; selftext: string; score: number; num_comments: number; author: string; created_utc: number; permalink: string; is_self: boolean } };
-      const posts = ((json.data?.children ?? []) as RedditChild[]).map((child) => {
-        const p = child.data;
-        return {
-          id: p.id,
-          title: p.title,
-          subreddit: p.subreddit,
-          selftext: p.selftext ? p.selftext.slice(0, 400) : "",
-          score: p.score,
-          numComments: p.num_comments,
-          author: p.author,
-          createdUtc: p.created_utc,
-          permalink: `https://reddit.com${p.permalink}`,
-          isSelf: p.is_self,
-        };
-      });
-
-      return new Response(
-        JSON.stringify({ posts }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
