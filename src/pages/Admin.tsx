@@ -6,7 +6,8 @@ import {
   Plus, ArrowRight, Search, Upload, Loader,
   Eye, EyeOff, Trash2, RefreshCw, ChevronLeft, X, CheckCircle, Clock,
   AlertCircle, IndianRupee, Sparkles, Edit2, Check, MessageSquare,
-  Send, Star, TrendingUp, Target, Copy, ChevronDown, ExternalLink
+  Send, Star, TrendingUp, Target, Copy, ChevronDown, ExternalLink,
+  Radio, Activity, Bell
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -154,6 +155,19 @@ interface LeadContact {
   instagram_handle: string | null;
   notes: string | null;
   created_at: string;
+}
+
+interface RedditPost {
+  id: string;
+  title: string;
+  subreddit: string;
+  selftext: string;
+  score: number;
+  numComments: number;
+  author: string;
+  createdUtc: number;
+  permalink: string;
+  isSelf: boolean;
 }
 
 const leadStatusColors: Record<string, { bg: string; border: string; text: string; label: string }> = {
@@ -1139,6 +1153,17 @@ export default function Admin() {
   const [savingContact, setSavingContact] = useState(false);
   const [deletingContactId, setDeletingContactId] = useState<string | null>(null);
 
+  // Social Listening state
+  const [leadsSubTab, setLeadsSubTab] = useState<'operations' | 'listening'>('operations');
+  const [redditSubreddits, setRedditSubreddits] = useState<string[]>(['ecommerce', 'smallbusiness']);
+  const [redditKeywords, setRedditKeywords] = useState('looking for marketing agency OR need creative team OR hiring social media manager');
+  const [redditTimeframe, setRedditTimeframe] = useState<'day' | 'week' | 'month'>('week');
+  const [redditResults, setRedditResults] = useState<RedditPost[]>([]);
+  const [searchingReddit, setSearchingReddit] = useState(false);
+  const [redditError, setRedditError] = useState('');
+  const [igAuditForm, setIgAuditForm] = useState({ handle: '', followers: '', lastPostDays: '', postsPerWeek: '', avgLikes: '' });
+  const [igAuditScore, setIgAuditScore] = useState<{ score: number; signals: string[]; verdict: string } | null>(null);
+
   const handleSignOut = async () => { await signOut(); navigate('/'); };
 
   useEffect(() => { loadOverview(); loadAdminProfile(); }, []);
@@ -1699,6 +1724,49 @@ export default function Admin() {
     setDeletingContactId(null);
   }
 
+  async function searchReddit() {
+    if (!redditKeywords.trim() || redditSubreddits.length === 0) return;
+    setSearchingReddit(true);
+    setRedditError('');
+    setRedditResults([]);
+    try {
+      const { data, error } = await supabase.functions.invoke('lead-agent', {
+        body: { mode: 'reddit_search', subreddits: redditSubreddits, keywords: redditKeywords.trim(), timeframe: redditTimeframe },
+      });
+      if (error) throw new Error(error.message);
+      setRedditResults(data?.posts ?? []);
+      if ((data?.posts ?? []).length === 0) setRedditError('No matching posts found. Try different keywords or a wider timeframe.');
+    } catch (e) {
+      setRedditError((e as Error).message || 'Reddit search failed');
+    }
+    setSearchingReddit(false);
+  }
+
+  function calcIgAuditScore() {
+    const followers = parseInt(igAuditForm.followers) || 0;
+    const lastPostDays = parseInt(igAuditForm.lastPostDays) || 0;
+    const postsPerWeek = parseFloat(igAuditForm.postsPerWeek) || 0;
+    const avgLikes = parseInt(igAuditForm.avgLikes) || 0;
+    let score = 0;
+    const signals: string[] = [];
+    if (followers >= 1000 && followers <= 50000) { score += 3; signals.push('Follower count in the ideal sweet spot (1K–50K indie brand)'); }
+    else if (followers < 1000) { score += 2; signals.push('Very early stage — high creative need'); }
+    else { score += 1; }
+    if (lastPostDays > 30) { score += 4; signals.push(`Last post was ${lastPostDays}d ago — neglected presence`); }
+    else if (lastPostDays > 14) { score += 3; signals.push('Posting infrequently — low creative investment'); }
+    else if (lastPostDays > 7) { score += 2; signals.push('Inconsistent posting cadence'); }
+    else { score += 1; }
+    if (postsPerWeek < 1) { score += 3; signals.push('Less than 1 post/week — abandoned social presence'); }
+    else if (postsPerWeek <= 2) { score += 2; signals.push('Below-average posting frequency'); }
+    else { score += 1; }
+    const engRate = followers > 0 ? (avgLikes / followers) * 100 : 0;
+    if (engRate > 0 && engRate < 1 && followers > 1000) { score += 2; signals.push(`${engRate.toFixed(1)}% engagement rate — poor content resonance`); }
+    else if (engRate >= 3) { score += 1; signals.push('Decent engagement — creative quality may still be the bottleneck'); }
+    const normalized = Math.min(10, Math.round((score / 12) * 100) / 10);
+    const verdict = normalized >= 7 ? 'High Intent — reach out now' : normalized >= 4 ? 'Medium Intent — worth monitoring' : 'Low Intent — not ready yet';
+    setIgAuditScore({ score: normalized, signals, verdict });
+  }
+
   const conversionRate = overviewStats.conversionUsers > 0 ? ((overviewStats.paidUsers / overviewStats.conversionUsers) * 100).toFixed(1) : '0.0';
   const filteredRequests = requestFilter === 'all' ? requests : requests.filter(r => r.status === requestFilter);
   const filteredUsers = users.filter(u => !userSearch || (u.full_name ?? '').toLowerCase().includes(userSearch.toLowerCase()) || (u.company_name ?? '').toLowerCase().includes(userSearch.toLowerCase()));
@@ -2249,6 +2317,18 @@ export default function Admin() {
               <p className="text-[#9CA3AF] text-sm mt-1">Precision lead hunting for CloutKart — surgical targeting, no wasted effort.</p>
             </div>
 
+            {/* Sub-tab nav */}
+            <div className="flex items-center gap-1 p-1 rounded-xl self-start" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+              {(['operations', 'listening'] as const).map(st => (
+                <button key={st} onClick={() => setLeadsSubTab(st)}
+                  className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-sm font-semibold transition-all"
+                  style={leadsSubTab === st ? { background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.3)', color: '#818CF8' } : { color: '#6B7280' }}>
+                  {st === 'operations' ? <><Target size={13} /> Operations</> : <><Radio size={13} /> Social Listening</>}
+                </button>
+              ))}
+            </div>
+
+            {leadsSubTab === 'operations' && (<>
             {/* ── Discover Leads ─────────────────────────────────────── */}
             <div className="glass-card rounded-2xl overflow-hidden" style={{ border: '1px solid rgba(99,102,241,0.15)' }}>
               <div className="px-6 py-4 border-b flex items-center gap-2" style={{ borderColor: 'rgba(99,102,241,0.1)' }}>
@@ -2644,6 +2724,224 @@ export default function Admin() {
                     </div>
               }
             </div>
+            </>}
+
+            {/* ── Social Listening ─────────────────────────────────── */}
+            {leadsSubTab === 'listening' && (
+              <div className="space-y-6">
+
+                {/* Reddit Radar */}
+                <div className="glass-card rounded-2xl overflow-hidden" style={{ border: '1px solid rgba(99,102,241,0.15)' }}>
+                  <div className="px-6 py-4 border-b flex items-center gap-2" style={{ borderColor: 'rgba(99,102,241,0.1)' }}>
+                    <Radio size={15} className="text-[#818CF8]" />
+                    <h3 className="font-heading font-semibold text-white text-base">Reddit Radar</h3>
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full ml-auto" style={{ background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.2)', color: '#818CF8' }}>Free · No Key Needed</span>
+                  </div>
+                  <div className="p-6 space-y-5">
+                    <p className="text-[#9CA3AF] text-sm">Businesses actively asking for marketing help in these subreddits are the highest-intent leads you can find — they're raising their hand.</p>
+                    <div>
+                      <label className="block text-[10px] font-bold text-[#9CA3AF] uppercase tracking-widest mb-2">Subreddits</label>
+                      <div className="flex flex-wrap gap-2">
+                        {['ecommerce', 'smallbusiness', 'IndiaStartups', 'digital_marketing', 'startups', 'Entrepreneur'].map(sub => {
+                          const active = redditSubreddits.includes(sub);
+                          return (
+                            <button key={sub} onClick={() => setRedditSubreddits(prev => active ? prev.filter(s => s !== sub) : [...prev, sub])}
+                              className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
+                              style={active ? { background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.3)', color: '#818CF8' } : { background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: '#6B7280' }}>
+                              r/{sub}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-[#9CA3AF] uppercase tracking-widest mb-2">Search Keywords</label>
+                      <textarea value={redditKeywords} onChange={e => setRedditKeywords(e.target.value)} rows={2}
+                        placeholder="e.g. looking for marketing agency OR need creative team"
+                        className="w-full resize-none rounded-xl px-4 py-3 text-sm text-white placeholder-[#6B7280] bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(99,102,241,0.5)] focus:outline-none" />
+                    </div>
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <div className="flex items-center gap-1 p-1 rounded-xl" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                        {(['day', 'week', 'month'] as const).map(t => (
+                          <button key={t} onClick={() => setRedditTimeframe(t)}
+                            className="px-3 py-1 rounded-lg text-xs font-semibold transition-all capitalize"
+                            style={redditTimeframe === t ? { background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.25)', color: '#818CF8' } : { color: '#6B7280' }}>
+                            {t}
+                          </button>
+                        ))}
+                      </div>
+                      <button onClick={searchReddit} disabled={searchingReddit || redditSubreddits.length === 0 || !redditKeywords.trim()}
+                        className="btn-primary flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                        {searchingReddit ? <Loader size={14} className="animate-spin" /> : <Search size={14} />}
+                        {searchingReddit ? 'Scanning Reddit…' : 'Scan Reddit'}
+                      </button>
+                    </div>
+                    {redditError && <p className="text-red-400 text-sm">{redditError}</p>}
+                    {redditResults.length > 0 && (
+                      <div className="space-y-3">
+                        <p className="text-[10px] font-bold text-[#6B7280] uppercase tracking-widest">{redditResults.length} posts found</p>
+                        {redditResults.map(post => (
+                          <div key={post.id} className="rounded-xl p-4 space-y-2" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                            <div className="flex items-start gap-3">
+                              <div className="flex-1 min-w-0">
+                                <a href={post.permalink} target="_blank" rel="noopener noreferrer"
+                                  className="text-sm font-semibold text-white hover:text-[#818CF8] transition-colors line-clamp-2 leading-snug block">{post.title}</a>
+                                <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                  <span className="text-[10px] font-bold text-[#818CF8]">r/{post.subreddit}</span>
+                                  <span className="text-[#6B7280] text-[10px]">·</span>
+                                  <span className="text-[#6B7280] text-[10px]">u/{post.author}</span>
+                                  <span className="text-[#6B7280] text-[10px]">·</span>
+                                  <span className="text-[#6B7280] text-[10px]">{Math.round((Date.now() / 1000 - post.createdUtc) / 3600)}h ago</span>
+                                </div>
+                              </div>
+                              <a href={post.permalink} target="_blank" rel="noopener noreferrer"
+                                className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 hover:text-white text-[#6B7280] transition-colors"
+                                style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                                <ExternalLink size={12} />
+                              </a>
+                            </div>
+                            {post.selftext && <p className="text-[#9CA3AF] text-xs leading-relaxed line-clamp-3">{post.selftext}</p>}
+                            <div className="flex items-center gap-3 pt-1">
+                              <span className="text-[10px] text-[#6B7280]">▲ {post.score}</span>
+                              <span className="text-[10px] text-[#6B7280]">💬 {post.numComments}</span>
+                              <button onClick={() => { setShowAddLead(true); setAddLeadForm({ ...DEFAULT_ADD_LEAD_FORM, brand_name: post.author, platform: 'instagram_dm', notes: `Reddit: "${post.title.slice(0, 80)}" — r/${post.subreddit}` }); }}
+                                className="ml-auto text-[10px] font-semibold px-2.5 py-1 rounded-lg transition-all"
+                                style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)', color: '#10B981' }}>
+                                + Save as Lead
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Google Alerts Setup */}
+                <div className="glass-card rounded-2xl overflow-hidden" style={{ border: '1px solid rgba(251,191,36,0.15)' }}>
+                  <div className="px-6 py-4 border-b flex items-center gap-2" style={{ borderColor: 'rgba(251,191,36,0.1)' }}>
+                    <Bell size={15} className="text-[#FBBF24]" />
+                    <h3 className="font-heading font-semibold text-white text-base">Google Alerts Setup</h3>
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full ml-auto" style={{ background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.2)', color: '#FBBF24' }}>Free · Zero Maintenance</span>
+                  </div>
+                  <div className="p-6 space-y-4">
+                    <p className="text-[#9CA3AF] text-sm">Businesses posting these phrases are actively in the market for a marketing partner. Set up once, catch leads in your inbox forever.</p>
+                    <div className="space-y-2">
+                      {[
+                        'looking for marketing agency',
+                        'need creative team',
+                        'hiring social media manager',
+                        'need help with Instagram ads',
+                        'digital marketing freelancer needed',
+                        'brand creative needed',
+                        'need video ads for Instagram',
+                      ].map(phrase => (
+                        <div key={phrase} className="flex items-center justify-between gap-3 rounded-xl px-4 py-3"
+                          style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                          <p className="text-sm text-[#D1D5DB] font-mono truncate">"{phrase}"</p>
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            <button onClick={() => navigator.clipboard.writeText(phrase)}
+                              className="w-7 h-7 rounded-lg flex items-center justify-center text-[#6B7280] hover:text-white transition-colors"
+                              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                              <Copy size={11} />
+                            </button>
+                            <a href="https://www.google.com/alerts" target="_blank" rel="noopener noreferrer"
+                              className="flex items-center gap-1.5 text-[10px] font-semibold px-2.5 py-1 rounded-lg transition-all"
+                              style={{ background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.2)', color: '#FBBF24' }}>
+                              Set Alert <ExternalLink size={9} />
+                            </a>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-[#6B7280] text-xs">Open Google Alerts → paste the phrase → set frequency to "As it happens" and source to "Web".</p>
+                  </div>
+                </div>
+
+                {/* Instagram Audit */}
+                <div className="glass-card rounded-2xl overflow-hidden" style={{ border: '1px solid rgba(168,85,247,0.15)' }}>
+                  <div className="px-6 py-4 border-b flex items-center gap-2" style={{ borderColor: 'rgba(168,85,247,0.1)' }}>
+                    <Activity size={15} className="text-[#C084FC]" />
+                    <h3 className="font-heading font-semibold text-white text-base">Instagram Audit</h3>
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full ml-auto" style={{ background: 'rgba(168,85,247,0.08)', border: '1px solid rgba(168,85,247,0.2)', color: '#C084FC' }}>Signal Scorer · Free</span>
+                  </div>
+                  <div className="p-6 space-y-5">
+                    <p className="text-[#9CA3AF] text-sm">Spot businesses with poor creative quality or inconsistent branding — enter what you observe while browsing their profile.</p>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-[10px] font-bold text-[#9CA3AF] uppercase tracking-widest mb-1.5">Instagram Handle</label>
+                        <input value={igAuditForm.handle} onChange={e => setIgAuditForm(f => ({ ...f, handle: e.target.value }))}
+                          placeholder="@brandname"
+                          className="w-full rounded-xl px-3 py-2.5 text-sm text-white placeholder-[#6B7280] bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(168,85,247,0.5)] focus:outline-none" />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-[#9CA3AF] uppercase tracking-widest mb-1.5">Followers</label>
+                        <input type="number" value={igAuditForm.followers} onChange={e => setIgAuditForm(f => ({ ...f, followers: e.target.value }))}
+                          placeholder="e.g. 5000"
+                          className="w-full rounded-xl px-3 py-2.5 text-sm text-white placeholder-[#6B7280] bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(168,85,247,0.5)] focus:outline-none" />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-[#9CA3AF] uppercase tracking-widest mb-1.5">Days Since Last Post</label>
+                        <input type="number" value={igAuditForm.lastPostDays} onChange={e => setIgAuditForm(f => ({ ...f, lastPostDays: e.target.value }))}
+                          placeholder="e.g. 21"
+                          className="w-full rounded-xl px-3 py-2.5 text-sm text-white placeholder-[#6B7280] bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(168,85,247,0.5)] focus:outline-none" />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-[#9CA3AF] uppercase tracking-widest mb-1.5">Posts Per Week (avg)</label>
+                        <input type="number" step="0.5" value={igAuditForm.postsPerWeek} onChange={e => setIgAuditForm(f => ({ ...f, postsPerWeek: e.target.value }))}
+                          placeholder="e.g. 0.5"
+                          className="w-full rounded-xl px-3 py-2.5 text-sm text-white placeholder-[#6B7280] bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(168,85,247,0.5)] focus:outline-none" />
+                      </div>
+                      <div className="col-span-2">
+                        <label className="block text-[10px] font-bold text-[#9CA3AF] uppercase tracking-widest mb-1.5">Avg Likes per Post</label>
+                        <input type="number" value={igAuditForm.avgLikes} onChange={e => setIgAuditForm(f => ({ ...f, avgLikes: e.target.value }))}
+                          placeholder="e.g. 30"
+                          className="w-full rounded-xl px-3 py-2.5 text-sm text-white placeholder-[#6B7280] bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(168,85,247,0.5)] focus:outline-none" />
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <button onClick={calcIgAuditScore} className="btn-primary flex items-center gap-2">
+                        <Activity size={14} /> Score Signal
+                      </button>
+                      {igAuditScore && igAuditForm.handle && (
+                        <button onClick={() => { setShowAddLead(true); setAddLeadForm({ ...DEFAULT_ADD_LEAD_FORM, brand_name: igAuditForm.handle.replace('@', ''), platform: 'instagram_dm', notes: `IG Audit: ${igAuditScore.score}/10 — ${igAuditScore.verdict}\n${igAuditScore.signals.join('; ')}` }); }}
+                          className="flex items-center gap-1.5 text-sm font-semibold px-3.5 py-2 rounded-xl transition-all"
+                          style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)', color: '#10B981' }}>
+                          <Plus size={13} /> Add to Mission Log
+                        </button>
+                      )}
+                    </div>
+                    {igAuditScore && (
+                      <div className="rounded-2xl p-5 space-y-3" style={{ background: 'rgba(168,85,247,0.06)', border: '1px solid rgba(168,85,247,0.15)' }}>
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-bold text-[#9CA3AF] uppercase tracking-widest">Intent Signal Score</span>
+                          <span className="text-2xl font-bold font-mono" style={{ color: igAuditScore.score >= 7 ? '#10B981' : igAuditScore.score >= 4 ? '#FBBF24' : '#EF4444' }}>
+                            {igAuditScore.score}<span className="text-sm text-[#6B7280]">/10</span>
+                          </span>
+                        </div>
+                        <div className="w-full h-2 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.08)' }}>
+                          <div className="h-full rounded-full transition-all duration-700"
+                            style={{ width: `${igAuditScore.score * 10}%`, background: igAuditScore.score >= 7 ? 'linear-gradient(90deg,#10B981,#34D399)' : igAuditScore.score >= 4 ? 'linear-gradient(90deg,#FBBF24,#FDE68A)' : 'linear-gradient(90deg,#EF4444,#FCA5A5)' }} />
+                        </div>
+                        <p className="text-xs font-semibold" style={{ color: igAuditScore.score >= 7 ? '#10B981' : igAuditScore.score >= 4 ? '#FBBF24' : '#EF4444' }}>
+                          {igAuditScore.verdict}
+                        </p>
+                        {igAuditScore.signals.length > 0 && (
+                          <ul className="space-y-1.5 mt-1">
+                            {igAuditScore.signals.map((s, i) => (
+                              <li key={i} className="flex items-start gap-2 text-xs text-[#D1D5DB]">
+                                <span className="text-[#818CF8] flex-shrink-0 mt-0.5">→</span>{s}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+              </div>
+            )}
 
             {/* ── Add Lead Modal ─────────────────────────────────────── */}
             {showAddLead && createPortal(

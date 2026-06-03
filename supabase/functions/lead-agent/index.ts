@@ -712,6 +712,48 @@ Return only the JSON object.`;
       );
     }
 
+    // ── REDDIT SEARCH MODE ───────────────────────────────────────────────────────
+    if (mode === "reddit_search") {
+      const { subreddits = ["ecommerce", "smallbusiness"], keywords = "", sort = "new", timeframe = "week" } = body;
+      const subredditStr = (subreddits as string[]).join("+");
+      const url = `https://www.reddit.com/r/${subredditStr}/search.json?q=${encodeURIComponent(keywords as string)}&sort=${sort}&t=${timeframe}&limit=25&restrict_sr=1&type=link`;
+
+      const res = await fetch(url, {
+        headers: { "User-Agent": "CloutKart-Ezio/1.0 (social listening)" },
+        signal: AbortSignal.timeout(8000),
+      });
+
+      if (!res.ok) {
+        return new Response(
+          JSON.stringify({ error: `Reddit API error: ${res.status}` }),
+          { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const json = await res.json();
+      type RedditChild = { data: { id: string; title: string; subreddit: string; selftext: string; score: number; num_comments: number; author: string; created_utc: number; permalink: string; is_self: boolean } };
+      const posts = ((json.data?.children ?? []) as RedditChild[]).map((child) => {
+        const p = child.data;
+        return {
+          id: p.id,
+          title: p.title,
+          subreddit: p.subreddit,
+          selftext: p.selftext ? p.selftext.slice(0, 400) : "",
+          score: p.score,
+          numComments: p.num_comments,
+          author: p.author,
+          createdUtc: p.created_utc,
+          permalink: `https://reddit.com${p.permalink}`,
+          isSelf: p.is_self,
+        };
+      });
+
+      return new Response(
+        JSON.stringify({ posts }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
   } catch (err) {
     console.error("[lead-agent] Error:", err);
     const message = err instanceof Error ? err.message : "Lead agent failed";
