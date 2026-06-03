@@ -373,14 +373,23 @@ Deno.serve(async (req: Request) => {
       const url = `https://www.reddit.com/r/${subredditStr}/search.json?q=${encodeURIComponent(keywords as string)}&sort=${sort}&t=${timeframe}&limit=25&restrict_sr=1&type=link`;
 
       const res = await fetch(url, {
-        headers: { "User-Agent": "CloutKart-Ezio/1.0 (social listening)" },
-        signal: AbortSignal.timeout(8000),
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+          "Accept": "application/json, text/plain, */*",
+          "Accept-Language": "en-US,en;q=0.9",
+        },
+        signal: AbortSignal.timeout(10000),
       });
 
       if (!res.ok) {
+        const hint = res.status === 429
+          ? "Reddit rate limit hit — wait a minute and try again."
+          : res.status === 403
+          ? "Reddit blocked this request. Try fewer subreddits or different keywords."
+          : `Reddit returned HTTP ${res.status}.`;
         return new Response(
-          JSON.stringify({ error: `Reddit API error: ${res.status}` }),
-          { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          JSON.stringify({ posts: [], error: hint }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 

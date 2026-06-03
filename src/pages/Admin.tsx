@@ -1734,6 +1734,7 @@ export default function Admin() {
         body: { mode: 'reddit_search', subreddits: redditSubreddits, keywords: redditKeywords.trim(), timeframe: redditTimeframe },
       });
       if (error) throw new Error(error.message);
+      if (data?.error) { setRedditError(data.error); setSearchingReddit(false); return; }
       setRedditResults(data?.posts ?? []);
       if ((data?.posts ?? []).length === 0) setRedditError('No matching posts found. Try different keywords or a wider timeframe.');
     } catch (e) {
