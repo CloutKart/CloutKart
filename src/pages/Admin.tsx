@@ -135,18 +135,6 @@ interface EmailDraft {
   subject: string;
   body: string;
   angle_type: string;
-  approved: boolean;
-  // contact info to push
-  email?: string;
-  first_name?: string;
-  company_name?: string;
-  website?: string;
-}
-
-interface InstantlyCampaign {
-  id: string;
-  name: string;
-  status: number;
 }
 
 interface Lead {
@@ -353,7 +341,7 @@ const DiscoverLeadCard = memo(function DiscoverLeadCard({
   onSave: (lead: LeadResult) => void;
   emailDraft?: EmailDraft;
   onGenerateEmail: (lead: LeadResult) => void;
-  onUpdateDraft: (leadName: string, patch: Partial<EmailDraft>) => void;
+  onUpdateDraft: (leadName: string, patch: Pick<EmailDraft, 'subject' | 'body'>) => void;
   generatingEmail?: boolean;
 }) {
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -523,29 +511,14 @@ const DiscoverLeadCard = memo(function DiscoverLeadCard({
                 </span>
               )}
             </div>
-            <div className="flex items-center gap-2">
-              {emailDraft && (
-                <label className="flex items-center gap-1.5 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={emailDraft.approved}
-                    onChange={e => onUpdateDraft(lead.name, { approved: e.target.checked })}
-                    className="accent-[#10B981] w-3 h-3"
-                  />
-                  <span className="text-[10px] font-semibold" style={{ color: emailDraft.approved ? '#10B981' : '#6B7280' }}>
-                    {emailDraft.approved ? 'Approved' : 'Approve'}
-                  </span>
-                </label>
-              )}
-              <button
-                onClick={() => onGenerateEmail(lead)}
-                disabled={generatingEmail}
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-semibold transition-all disabled:opacity-50"
-                style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.25)', color: '#F59E0B' }}>
-                {generatingEmail ? <Loader size={10} className="animate-spin" /> : <Zap size={10} />}
-                {emailDraft ? 'Regenerate' : 'Generate'}
-              </button>
-            </div>
+            <button
+              onClick={() => onGenerateEmail(lead)}
+              disabled={generatingEmail}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-semibold transition-all disabled:opacity-50"
+              style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.25)', color: '#F59E0B' }}>
+              {generatingEmail ? <Loader size={10} className="animate-spin" /> : <Zap size={10} />}
+              {emailDraft ? 'Regenerate' : 'Generate'}
+            </button>
           </div>
           {emailDraft ? (
             <div className="p-4 space-y-3" style={{ background: 'rgba(0,0,0,0.15)' }}>
@@ -564,15 +537,6 @@ const DiscoverLeadCard = memo(function DiscoverLeadCard({
                   onChange={e => onUpdateDraft(lead.name, { body: e.target.value })}
                   rows={5}
                   className="w-full rounded-lg px-3 py-2 text-xs text-white bg-white/[0.06] border border-white/[0.10] focus:border-[rgba(245,158,11,0.4)] focus:outline-none resize-none leading-relaxed"
-                />
-              </div>
-              <div>
-                <p className="text-[9px] font-bold text-[#6B7280] uppercase tracking-widest mb-1">Send to (email)</p>
-                <input
-                  value={emailDraft.email ?? ''}
-                  onChange={e => onUpdateDraft(lead.name, { email: e.target.value })}
-                  placeholder="founder@brand.com"
-                  className="w-full rounded-lg px-3 py-2 text-xs text-white placeholder-[#4B5563] bg-white/[0.06] border border-white/[0.10] focus:border-[rgba(245,158,11,0.4)] focus:outline-none"
                 />
               </div>
             </div>
@@ -1255,14 +1219,9 @@ export default function Admin() {
   const [savingContact, setSavingContact] = useState(false);
   const [deletingContactId, setDeletingContactId] = useState<string | null>(null);
 
-  // Instantly.ai state
-  const [instaCampaigns, setInstaCampaigns] = useState<InstantlyCampaign[]>([]);
-  const [selectedCampaign, setSelectedCampaign] = useState('');
-  const [loadingCampaigns, setLoadingCampaigns] = useState(false);
+  // Email draft state
   const [emailDrafts, setEmailDrafts] = useState<Record<string, EmailDraft>>({});
   const [generatingEmailFor, setGeneratingEmailFor] = useState<string | null>(null);
-  const [pushingToInstantly, setPushingToInstantly] = useState(false);
-  const [pushToast, setPushToast] = useState('');
 
   // Social Listening state
   const [leadsSubTab, setLeadsSubTab] = useState<'operations' | 'listening'>('operations');
@@ -1854,22 +1813,6 @@ export default function Admin() {
     setSearchingReddit(false);
   }
 
-  async function loadInstantlyCampaigns() {
-    setLoadingCampaigns(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('lead-agent', {
-        body: { mode: 'instantly_campaigns' },
-      });
-      if (error) throw new Error(error.message);
-      if (data?.error) { setLoadingCampaigns(false); return; }
-      setInstaCampaigns(data?.campaigns ?? []);
-      if (data?.campaigns?.length > 0 && !selectedCampaign) {
-        setSelectedCampaign(data.campaigns[0].id);
-      }
-    } catch { /* silent */ }
-    setLoadingCampaigns(false);
-  }
-
   async function generateEmailForLead(lead: LeadResult) {
     setGeneratingEmailFor(lead.name);
     try {
@@ -1896,51 +1839,11 @@ export default function Admin() {
             subject: data.subject,
             body: data.body,
             angle_type: data.angle_type ?? '',
-            approved: false,
-            email: prev[lead.name]?.email ?? '',
-            company_name: lead.name,
-            website: lead.website ?? '',
           },
         }));
       }
     } catch { /* silent */ }
     setGeneratingEmailFor(null);
-  }
-
-  async function pushApprovedLeads() {
-    if (!selectedCampaign) return;
-    const approved = Object.entries(emailDrafts).filter(([, d]) => d.approved && d.email?.includes('@'));
-    if (approved.length === 0) return;
-    setPushingToInstantly(true);
-    try {
-      const leads = approved.map(([name, d]) => ({
-        email: d.email!,
-        first_name: d.email?.split('@')[0] ?? '',
-        company_name: name,
-        website: d.website ?? '',
-        subject: d.subject,
-        body: d.body,
-      }));
-      const { data, error } = await supabase.functions.invoke('lead-agent', {
-        body: { mode: 'instantly_push', campaign_id: selectedCampaign, leads },
-      });
-      if (error) throw new Error(error.message);
-      if (data?.error) { setPushToast(`Error: ${data.error}`); }
-      else {
-        const campaignName = instaCampaigns.find(c => c.id === selectedCampaign)?.name ?? 'campaign';
-        setPushToast(`${data?.pushed ?? approved.length} lead${approved.length !== 1 ? 's' : ''} pushed to "${campaignName}"`);
-        // Clear approved state
-        setEmailDrafts(prev => {
-          const updated = { ...prev };
-          approved.forEach(([name]) => { updated[name] = { ...updated[name], approved: false }; });
-          return updated;
-        });
-      }
-    } catch (e) {
-      setPushToast(`Failed: ${(e as Error).message}`);
-    }
-    setPushingToInstantly(false);
-    setTimeout(() => setPushToast(''), 4000);
   }
 
   function calcIgAuditScore() {
@@ -2666,42 +2569,6 @@ export default function Admin() {
                         style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', color: '#9CA3AF' }}>
                         <ArrowRight size={11} style={{ transform: 'rotate(90deg)' }} /> Export CSV
                       </button>
-                    </div>
-
-                    {/* Instantly.ai campaign bar */}
-                    <div className="rounded-xl px-4 py-3 flex flex-wrap items-center gap-3" style={{ background: 'rgba(245,158,11,0.04)', border: '1px solid rgba(245,158,11,0.15)' }}>
-                      <Mail size={13} className="text-[#F59E0B] flex-shrink-0" />
-                      <div className="flex items-center gap-2 flex-1 min-w-0">
-                        <select
-                          value={selectedCampaign}
-                          onChange={e => setSelectedCampaign(e.target.value)}
-                          className="flex-1 min-w-0 rounded-lg px-2.5 py-1.5 text-xs text-white bg-white/[0.06] border border-white/[0.08] focus:outline-none focus:border-[rgba(245,158,11,0.4)]"
-                          style={{ maxWidth: 220 }}>
-                          {instaCampaigns.length === 0
-                            ? <option value="">No campaigns loaded</option>
-                            : instaCampaigns.map(c => <option key={c.id} value={c.id}>{c.name}</option>)
-                          }
-                        </select>
-                        <button onClick={loadInstantlyCampaigns} disabled={loadingCampaigns}
-                          className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-semibold transition-all disabled:opacity-50"
-                          style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#9CA3AF' }}>
-                          {loadingCampaigns ? <Loader size={10} className="animate-spin" /> : <RefreshCw size={10} />}
-                          {instaCampaigns.length === 0 ? 'Load' : 'Refresh'}
-                        </button>
-                      </div>
-                      {Object.values(emailDrafts).some(d => d.approved && d.email?.includes('@')) && (
-                        <button onClick={pushApprovedLeads} disabled={pushingToInstantly || !selectedCampaign}
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all disabled:opacity-50"
-                          style={{ background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.3)', color: '#F59E0B' }}>
-                          {pushingToInstantly ? <Loader size={11} className="animate-spin" /> : <Zap size={11} />}
-                          Push {Object.values(emailDrafts).filter(d => d.approved && d.email?.includes('@')).length} Approved
-                        </button>
-                      )}
-                      {pushToast && (
-                        <span className="text-[11px] font-semibold" style={{ color: pushToast.startsWith('Error') || pushToast.startsWith('Failed') ? '#F87171' : '#10B981' }}>
-                          {pushToast}
-                        </span>
-                      )}
                     </div>
 
                     {discoverResults.map((lead, i) => (

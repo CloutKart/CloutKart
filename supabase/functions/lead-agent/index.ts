@@ -401,7 +401,7 @@ Deno.serve(async (req: Request) => {
     const body = await req.json();
     const { mode } = body;
 
-    const validModes = ["discover", "score", "fetch_contacts", "scrape_products", "reddit_search", "generate_email", "instantly_campaigns", "instantly_push"];
+    const validModes = ["discover", "score", "fetch_contacts", "scrape_products", "reddit_search", "generate_email"];
     if (!validModes.includes(mode)) {
       return errorResponse(`mode must be one of: ${validModes.join(", ")}`, 400);
     }
@@ -481,95 +481,6 @@ Deno.serve(async (req: Request) => {
 
       return new Response(
         JSON.stringify({ posts }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // ── INSTANTLY: LIST CAMPAIGNS ─────────────────────────────────────────────
-    if (mode === "instantly_campaigns") {
-      const INSTANTLY_API_KEY = Deno.env.get("INSTANTLY_API_KEY") ?? "";
-      if (!INSTANTLY_API_KEY) {
-        return new Response(
-          JSON.stringify({ campaigns: [], error: "INSTANTLY_API_KEY not configured. Add it in Supabase → Project Settings → Edge Functions → Secrets." }),
-          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
-      const res = await fetch("https://api.instantly.ai/api/v2/campaigns?limit=50", {
-        headers: { "Authorization": `Bearer ${INSTANTLY_API_KEY}` },
-        signal: AbortSignal.timeout(8000),
-      });
-
-      if (!res.ok) {
-        return new Response(
-          JSON.stringify({ campaigns: [], error: `Instantly.ai returned HTTP ${res.status}. Check your API key.` }),
-          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
-      const data = await res.json();
-      type InstantlyCampaign = { id: string; name: string; status: number };
-      const campaigns = ((data.items ?? data.data ?? []) as InstantlyCampaign[]).map((c) => ({
-        id: c.id, name: c.name, status: c.status,
-      }));
-
-      return new Response(
-        JSON.stringify({ campaigns }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // ── INSTANTLY: PUSH LEADS ─────────────────────────────────────────────────
-    if (mode === "instantly_push") {
-      const INSTANTLY_API_KEY = Deno.env.get("INSTANTLY_API_KEY") ?? "";
-      if (!INSTANTLY_API_KEY) {
-        return new Response(
-          JSON.stringify({ pushed: 0, error: "INSTANTLY_API_KEY not configured." }),
-          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
-      type InLead = { email: string; first_name?: string; last_name?: string; company_name?: string; website?: string; subject?: string; body?: string };
-      const { campaign_id, leads: inLeads } = body as { campaign_id: string; leads: InLead[] };
-
-      if (!campaign_id || !Array.isArray(inLeads) || inLeads.length === 0) {
-        return errorResponse("campaign_id and leads[] are required for instantly_push", 400);
-      }
-
-      const payload = {
-        campaign_id,
-        leads: inLeads.map((l) => ({
-          email: l.email,
-          first_name: l.first_name ?? "",
-          last_name: l.last_name ?? "",
-          company_name: l.company_name ?? "",
-          website: l.website ?? "",
-          personalization: l.body ?? "",
-          custom_variables: { subject_line: l.subject ?? "" },
-        })),
-      };
-
-      const res = await fetch("https://api.instantly.ai/api/v2/leads/add", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${INSTANTLY_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-        signal: AbortSignal.timeout(12000),
-      });
-
-      if (!res.ok) {
-        const errText = await res.text();
-        return new Response(
-          JSON.stringify({ pushed: 0, error: `Instantly.ai error (${res.status}): ${errText}` }),
-          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
-      const data = await res.json();
-      return new Response(
-        JSON.stringify({ pushed: inLeads.length, response: data }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
