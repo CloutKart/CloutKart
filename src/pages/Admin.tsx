@@ -7,7 +7,7 @@ import {
   Eye, EyeOff, Trash2, RefreshCw, ChevronLeft, X, CheckCircle, Clock,
   AlertCircle, IndianRupee, Sparkles, Edit2, Check, MessageSquare,
   Send, Star, TrendingUp, Target, Copy, ChevronDown, ExternalLink,
-  Radio, Activity, Bell, Mail, Zap
+  Radio, Activity, Bell
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -131,11 +131,6 @@ interface DiscoverResponse {
   source?: 'google_places' | 'ai_archetypes';
 }
 
-interface EmailDraft {
-  subject: string;
-  body: string;
-  angle_type: string;
-}
 
 interface Lead {
   id: string;
@@ -335,14 +330,10 @@ const LeadStatusDropdown = memo(function LeadStatusDropdown({ lead, onUpdate }: 
 
 // ── DiscoverLeadCard — memo so it doesn't re-render on parent form changes ────
 const DiscoverLeadCard = memo(function DiscoverLeadCard({
-  lead, onSave, emailDraft, onGenerateEmail, onUpdateDraft, generatingEmail,
+  lead, onSave,
 }: {
   lead: LeadResult;
   onSave: (lead: LeadResult) => void;
-  emailDraft?: EmailDraft;
-  onGenerateEmail: (lead: LeadResult) => void;
-  onUpdateDraft: (leadName: string, patch: Pick<EmailDraft, 'subject' | 'body'>) => void;
-  generatingEmail?: boolean;
 }) {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const scoreColor = lead.compositeScore >= 8 ? '#10B981' : lead.compositeScore >= 5 ? '#F59E0B' : '#F87171';
@@ -499,53 +490,6 @@ const DiscoverLeadCard = memo(function DiscoverLeadCard({
           </div>
         )}
 
-        {/* ── Email Draft Panel ──────────────────────────────────── */}
-        <div className="rounded-xl overflow-hidden" style={{ border: '1px solid rgba(245,158,11,0.2)' }}>
-          <div className="px-4 py-3 flex items-center justify-between" style={{ background: 'rgba(245,158,11,0.05)' }}>
-            <div className="flex items-center gap-2">
-              <Mail size={12} className="text-[#F59E0B]" />
-              <p className="text-[10px] font-bold text-[#F59E0B] uppercase tracking-widest">Email Draft</p>
-              {emailDraft?.angle_type && (
-                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(245,158,11,0.15)', color: '#F59E0B', border: '1px solid rgba(245,158,11,0.25)' }}>
-                  {emailDraft.angle_type}
-                </span>
-              )}
-            </div>
-            <button
-              onClick={() => onGenerateEmail(lead)}
-              disabled={generatingEmail}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-semibold transition-all disabled:opacity-50"
-              style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.25)', color: '#F59E0B' }}>
-              {generatingEmail ? <Loader size={10} className="animate-spin" /> : <Zap size={10} />}
-              {emailDraft ? 'Regenerate' : 'Generate'}
-            </button>
-          </div>
-          {emailDraft ? (
-            <div className="p-4 space-y-3" style={{ background: 'rgba(0,0,0,0.15)' }}>
-              <div>
-                <p className="text-[9px] font-bold text-[#6B7280] uppercase tracking-widest mb-1">Subject</p>
-                <input
-                  value={emailDraft.subject}
-                  onChange={e => onUpdateDraft(lead.name, { subject: e.target.value })}
-                  className="w-full rounded-lg px-3 py-2 text-xs text-white bg-white/[0.06] border border-white/[0.10] focus:border-[rgba(245,158,11,0.4)] focus:outline-none"
-                />
-              </div>
-              <div>
-                <p className="text-[9px] font-bold text-[#6B7280] uppercase tracking-widest mb-1">Body</p>
-                <textarea
-                  value={emailDraft.body}
-                  onChange={e => onUpdateDraft(lead.name, { body: e.target.value })}
-                  rows={5}
-                  className="w-full rounded-lg px-3 py-2 text-xs text-white bg-white/[0.06] border border-white/[0.10] focus:border-[rgba(245,158,11,0.4)] focus:outline-none resize-none leading-relaxed"
-                />
-              </div>
-            </div>
-          ) : (
-            <div className="px-4 py-5 text-center" style={{ background: 'rgba(0,0,0,0.1)' }}>
-              <p className="text-[#4B5563] text-xs">Click Generate to create a situation-aware cold email draft.</p>
-            </div>
-          )}
-        </div>
       </div>
     </div>
   );
@@ -1219,9 +1163,6 @@ export default function Admin() {
   const [savingContact, setSavingContact] = useState(false);
   const [deletingContactId, setDeletingContactId] = useState<string | null>(null);
 
-  // Email draft state
-  const [emailDrafts, setEmailDrafts] = useState<Record<string, EmailDraft>>({});
-  const [generatingEmailFor, setGeneratingEmailFor] = useState<string | null>(null);
 
   // Social Listening state
   const [leadsSubTab, setLeadsSubTab] = useState<'operations' | 'listening'>('operations');
@@ -1811,39 +1752,6 @@ export default function Admin() {
       setRedditError((e as Error).message || 'Reddit search failed');
     }
     setSearchingReddit(false);
-  }
-
-  async function generateEmailForLead(lead: LeadResult) {
-    setGeneratingEmailFor(lead.name);
-    try {
-      const { data, error } = await supabase.functions.invoke('lead-agent', {
-        body: {
-          mode: 'generate_email',
-          brandName: lead.name,
-          niche: discoverForm.niche,
-          city: discoverForm.city ?? '',
-          platform: discoverForm.platform ?? 'Email',
-          targetProfile: lead.targetProfile,
-          greenFlags: lead.greenFlags ?? [],
-          redFlags: lead.redFlags ?? [],
-          whyTheyNeedUs: lead.whyTheyNeedUs,
-          outreachAngle: lead.outreachAngle ?? '',
-          compositeScore: lead.compositeScore,
-        },
-      });
-      if (error) throw new Error(error.message);
-      if (data?.subject && data?.body) {
-        setEmailDrafts(prev => ({
-          ...prev,
-          [lead.name]: {
-            subject: data.subject,
-            body: data.body,
-            angle_type: data.angle_type ?? '',
-          },
-        }));
-      }
-    } catch { /* silent */ }
-    setGeneratingEmailFor(null);
   }
 
   function calcIgAuditScore() {
@@ -2572,15 +2480,7 @@ export default function Admin() {
                     </div>
 
                     {discoverResults.map((lead, i) => (
-                      <DiscoverLeadCard
-                        key={i}
-                        lead={lead}
-                        onSave={openAddLeadFromResult}
-                        emailDraft={emailDrafts[lead.name]}
-                        onGenerateEmail={generateEmailForLead}
-                        onUpdateDraft={(name, patch) => setEmailDrafts(prev => ({ ...prev, [name]: { ...prev[name], ...patch } }))}
-                        generatingEmail={generatingEmailFor === lead.name}
-                      />
+                      <DiscoverLeadCard key={i} lead={lead} onSave={openAddLeadFromResult} />
                     ))}
                   </div>
                 )}
