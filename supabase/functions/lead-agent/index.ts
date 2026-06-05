@@ -8,7 +8,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
 };
 
-const MODEL = "llama-3.3-70b-versatile";
+const MODEL      = "llama-3.3-70b-versatile";
+const FAST_MODEL = "llama-3.1-8b-instant"; // for simple extraction tasks
 
 // ── People Data Labs helpers ──────────────────────────────────────────────────
 
@@ -144,9 +145,13 @@ async function googlePlacesSearch(
 
   if (requestDenied || allPlaces.length === 0) return [];
 
+  // A1: Deduplicate by place_id before fetching details
+  const seenPlaceIds = new Set<string>();
+  const deduped = allPlaces.filter(p => p.place_id && !seenPlaceIds.has(p.place_id) && seenPlaceIds.add(p.place_id));
+
   // Step 2: Fetch place details in parallel (phone + website)
   const detailsResults = await Promise.allSettled(
-    allPlaces.map(async (p) => {
+    deduped.map(async (p) => {
       if (!p.place_id) return null;
       try {
         const det = await fetch(
@@ -164,7 +169,7 @@ async function googlePlacesSearch(
     })
   );
 
-  return allPlaces.map((p, i) => {
+  return deduped.map((p, i) => {
     const det = detailsResults[i].status === "fulfilled" ? detailsResults[i].value : null;
     return {
       name: p.name,
@@ -192,19 +197,21 @@ Location: ${b.city ?? b.full_address ?? "India"}
 Category: ${b.category ?? "Unknown"}${phone}${site}${ig}${rating}${desc}`.trim();
 }
 
+// A5: Niche-aware search queries — 3 per mode for better coverage
 function buildSearchQueries(niche: string, targetMode: string, city: string): string[] {
   const loc = city?.trim() || "India";
-  // Use Google Maps-friendly queries — match what someone would search on Google Maps
   if (targetMode === "growth") {
     return [
       `${niche} brand ${loc}`,
       `${niche} company ${loc}`,
+      `${niche} online store ${loc}`,
     ];
   }
-  // Local mode — small shops, boutiques, home businesses
+  // Local mode — adds "home" variant to catch home-based sellers
   return [
     `${niche} boutique ${loc}`,
     `${niche} store ${loc}`,
+    `home ${niche} ${loc}`,
   ];
 }
 
@@ -219,41 +226,41 @@ function extractDomain(url: string): string | null {
   }
 }
 
+// A2: Jina AI Reader — free, no API key, returns clean markdown of any public URL
 async function scrapeWebsiteSnippet(url: string): Promise<string> {
   try {
     const fullUrl = url.startsWith("http") ? url : `https://${url}`;
-    const res = await fetch(fullUrl, {
-      signal: AbortSignal.timeout(6000),
-      headers: { "User-Agent": "Mozilla/5.0 (compatible; CloutKart/1.0)" },
+    const res = await fetch(`https://r.jina.ai/${encodeURIComponent(fullUrl)}`, {
+      signal: AbortSignal.timeout(8000),
+      headers: { "Accept": "text/plain" },
     });
     if (!res.ok) return "";
-    const html = await res.text();
-
-    const title = html.match(/<title[^>]*>([^<]{4,120})<\/title>/i)?.[1]?.replace(/\s+/g, " ").trim() ?? "";
-    const metaDesc =
-      html.match(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']{10,300})["']/i)?.[1] ??
-      html.match(/<meta[^>]+content=["']([^"']{10,300})["'][^>]+name=["']description["']/i)?.[1] ??
-      "";
-    const h1 = html.match(/<h1[^>]*>([^<]{4,120})<\/h1>/i)?.[1]?.replace(/\s+/g, " ").trim() ?? "";
-
-    return [title, h1, metaDesc].filter(Boolean).join(" | ").slice(0, 400);
+    return (await res.text()).slice(0, 400);
   } catch {
     return "";
   }
 }
 
+// A4: Fuzzy name match — strips non-alphanumeric, checks equality and substring
+function fuzzyMatch(a: string, b: string): boolean {
+  const n = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
+  const na = n(a), nb = n(b);
+  return na === nb || (na.length > 3 && nb.length > 3 && (na.includes(nb) || nb.includes(na)));
+}
+
 // ── System prompts ────────────────────────────────────────────────────────────
 
 const OUTREACH_RULES = `## Outreach Rules
-1. NEVER begin with: "Hi, I saw your brand...", "I came across your profile...", "Hope you're doing well...", or any generic opener.
-2. First sentence MUST reference a specific observation about the brand.
-3. Identify ONE opportunity — not multiple problems.
+1. NEVER begin with: "Hi, I saw your brand...", "I came across your profile...", "Hope you're doing well...", "I'd love to...", "Quick question...", or any generic opener.
+2. First sentence MUST reference a specific, observable signal about this exact brand — not a category description.
+3. Identify ONE opportunity — not a list of problems.
 4. Never claim poor creatives/ROAS/engagement without evidence. Frame as opportunity: "There may be an opportunity to…", "One area worth exploring…"
 5. Sound founder-to-founder, not agency-to-client.
-6. Structure: Observation → Opportunity → Why CloutKart → Conversation starter.
+6. Structure: Specific observation → One opportunity → Why CloutKart → Single easy question (not a pitch).
 7. Maximum 50 words.
-8. Banned: disruptive, game-changing, innovative, cutting-edge, revolutionary, elevate, unleash, world-class, "Dear", "I hope this message finds you".
-9. Every message must feel custom-written — no templates.`;
+8. Banned words/phrases: disruptive, game-changing, innovative, cutting-edge, revolutionary, elevate, unleash, world-class, "Dear", "I hope this message finds you", "just checking in", "I'd love to", "quick question".
+9. Every message must feel written specifically for this brand — zero template feel.
+10. Always output an "angle_type" field alongside the message — pick the most accurate: "Creative Quality", "Platform Unlock", "Ad Readiness", "Scale Signal", or "Timing".`;
 
 const DISCOVER_LOCAL_SYSTEM = `You are Ezio — CloutKart's precision lead hunter. Identify exact brands that need CloutKart's help. No wasted effort. Every lead is a calculated strike.
 
@@ -279,7 +286,7 @@ ${OUTREACH_RULES}
 
 ## Output Format
 Return ONLY valid raw JSON — no markdown fences, no preamble:
-{"leads":[{"name":"Specific archetype like 'Mumbai Home Baker - Instagram Only'","compositeScore":8.5,"scoreBreakdown":{"creativeVolumeNeed":9,"capacityGap":10,"budgetReadiness":7,"growthStageFit":9},"whyTheyNeedUs":"2–3 sentences on their exact pain point","scoreRationale":"1–2 sentences with specific signals","targetProfile":"Follower range, posting style, bio cues, selling method, city/region, product type","whereToFindThem":"Exact Instagram hashtags — e.g. #mumbaihomebaker #handmadejewelleryindia","outreachAngle":"Specific opening referencing their exact situation"}]}`;
+{"leads":[{"name":"Specific archetype like 'Mumbai Home Baker - Instagram Only'","compositeScore":8.5,"scoreBreakdown":{"creativeVolumeNeed":9,"capacityGap":10,"budgetReadiness":7,"growthStageFit":9},"whyTheyNeedUs":"2–3 sentences on their exact pain point","scoreRationale":"1–2 sentences with specific signals","targetProfile":"Follower range, posting style, bio cues, selling method, city/region, product type","whereToFindThem":"Exact Instagram hashtags — e.g. #mumbaihomebaker #handmadejewelleryindia","outreachAngle":"Specific opening referencing their exact situation","angle_type":"Creative Quality"}]}`;
 
 const DISCOVER_GROWTH_SYSTEM = `You are Ezio — CloutKart's precision lead hunter. Surface only brands at the exact inflection point where CloutKart's work will change their trajectory.
 
@@ -305,7 +312,7 @@ ${OUTREACH_RULES}
 
 ## Output Format
 Return ONLY valid raw JSON — no markdown fences, no preamble:
-{"leads":[{"name":"Specific archetype like 'Bootstrapped Skincare Brand - Scaling Meta Ads'","compositeScore":8.5,"scoreBreakdown":{"creativeVolumeNeed":9,"capacityGap":8,"budgetReadiness":8,"growthStageFit":9},"whyTheyNeedUs":"2–3 sentences on their exact pain point","scoreRationale":"1–2 sentences with specific signals","targetProfile":"Follower range, ad spend signals, store type, team size, posting cadence","whereToFindThem":"Exact Instagram hashtags — e.g. #dtcbrandindia #skincarefounder","outreachAngle":"Specific pain point referencing their ad situation"}]}`;
+{"leads":[{"name":"Specific archetype like 'Bootstrapped Skincare Brand - Scaling Meta Ads'","compositeScore":8.5,"scoreBreakdown":{"creativeVolumeNeed":9,"capacityGap":8,"budgetReadiness":8,"growthStageFit":9},"whyTheyNeedUs":"2–3 sentences on their exact pain point","scoreRationale":"1–2 sentences with specific signals","targetProfile":"Follower range, ad spend signals, store type, team size, posting cadence","whereToFindThem":"Exact Instagram hashtags — e.g. #dtcbrandindia #skincarefounder","outreachAngle":"Specific pain point referencing their ad situation","angle_type":"Ad Readiness"}]}`;
 
 const SCORE_SYSTEM = `You are Ezio — CloutKart's precision lead qualifier. Study a target, assess every signal, deliver a verdict: worthy or not. CloutKart makes ads and social creatives for the smallest D2C brands — local sellers, home-based businesses, first-time founders. NOT well-known, deliberately targets brands bigger agencies ignore.
 
@@ -325,7 +332,34 @@ Also for score mode: Instagram DM / WhatsApp = peer texting tone. Email = short 
 
 ## Output Format
 Return ONLY valid raw JSON — no markdown fences, no preamble:
-{"name":"Brand name","compositeScore":7.2,"scoreBreakdown":{"creativeVolumeNeed":8,"capacityGap":7,"budgetReadiness":6,"growthStageFit":8},"whyTheyNeedUs":"2–3 sentences on their specific pain point","scoreRationale":"1–2 sentences with evidence","targetProfile":"Concrete signals about size, activity, creative situation","greenFlags":["signal 1","signal 2","signal 3"],"redFlags":["issue 1","issue 2"],"outreachMessage":"Ready-to-send message tailored to this brand and platform"}`;
+{"name":"Brand name","compositeScore":7.2,"scoreBreakdown":{"creativeVolumeNeed":8,"capacityGap":7,"budgetReadiness":6,"growthStageFit":8},"whyTheyNeedUs":"2–3 sentences on their specific pain point","scoreRationale":"1–2 sentences with evidence","targetProfile":"Concrete signals about size, activity, creative situation","greenFlags":["signal 1","signal 2","signal 3"],"redFlags":["issue 1","issue 2"],"outreachMessage":"Ready-to-send message tailored to this brand and platform","angle_type":"Creative Quality"}`;
+
+// B: Email generation system prompt — situation-aware angles
+const EMAIL_GEN_SYSTEM = `You are Ezio — CloutKart's cold outreach specialist. Your job is to write a single personalized cold email for one specific brand based on the signals provided.
+
+CloutKart is an India-based performance creative studio making ads and social creatives for small D2C brands.
+
+## Angle Selection (pick exactly ONE based on signals)
+- **Creative Quality**: greenFlags mention iPhone photos, Canva, blurry images, or no website. Open with an observation about their visual content.
+- **Platform Unlock**: Brand sells only via Instagram DM or WhatsApp. Open with what becomes possible when they have proper creatives.
+- **Ad Readiness**: Brand has followers + consistent posts but no paid ads. Open with the organic traction signal.
+- **Scale Signal**: Brand has a website but low conversion or stale creatives. Open with the conversion opportunity.
+- **Timing**: Brand recently launched a new SKU, festival season is approaching, or they just started posting consistently. Open with the timing signal.
+
+## Email Rules
+- Subject: 5–7 words, personal, includes first name if known, references something specific about the brand
+- Body: 60–100 words total
+- Line 1: A specific, observable fact about this brand (NOT a compliment, NOT generic). Reference their city/product/channel.
+- Line 2: One opportunity this creates — framed as possibility, not problem
+- Line 3: Why CloutKart fits this exact stage (1 line, no boasting)
+- Final line: One easy, non-pushy question that invites a reply
+- Tone: founder-to-founder, peer texting on email, confident but not salesy
+- NEVER use: "I'd love to", "Hope this finds you", "Quick question", "Just reaching out", "game-changing", "elevate", "Dear", any generic opener
+- Sign off is handled by the email template — do NOT add a signature
+
+## Output Format
+Return ONLY valid raw JSON — no markdown fences:
+{"angle_type":"Creative Quality","subject":"Your masala chai photos, Priya","body":"Your masala chai is moving units through DMs without a rupee on ads — that tells me the product pulls attention even on an iPhone shot. The opportunity is making that same attention work on a proper creative so you can run it and scale what's already working. CloutKart works with Pune-based founders at exactly this stage. Worth a quick look at what a few test creatives could do?"}`;
 
 // ── Groq retry helper ────────────────────────────────────────────────────────
 async function groqWithRetry(
@@ -348,6 +382,14 @@ async function groqWithRetry(
   throw new Error("unreachable");
 }
 
+// ── Shared JSON error response ────────────────────────────────────────────────
+function errorResponse(message: string, status = 500): Response {
+  return new Response(
+    JSON.stringify({ error: message }),
+    { status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+  );
+}
+
 // ── Main handler ──────────────────────────────────────────────────────────────
 
 Deno.serve(async (req: Request) => {
@@ -359,14 +401,12 @@ Deno.serve(async (req: Request) => {
     const body = await req.json();
     const { mode } = body;
 
-    if (mode !== "discover" && mode !== "score" && mode !== "fetch_contacts" && mode !== "scrape_products" && mode !== "reddit_search") {
-      return new Response(
-        JSON.stringify({ error: "mode must be 'discover', 'score', 'fetch_contacts', 'scrape_products', or 'reddit_search'" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    const validModes = ["discover", "score", "fetch_contacts", "scrape_products", "reddit_search", "generate_email", "instantly_campaigns", "instantly_push"];
+    if (!validModes.includes(mode)) {
+      return errorResponse(`mode must be one of: ${validModes.join(", ")}`, 400);
     }
 
-    // reddit_search uses Reddit OAuth (client credentials) — no user login needed
+    // ── REDDIT SEARCH ─────────────────────────────────────────────────────────
     if (mode === "reddit_search") {
       const REDDIT_CLIENT_ID     = Deno.env.get("REDDIT_CLIENT_ID")     ?? "";
       const REDDIT_CLIENT_SECRET = Deno.env.get("REDDIT_CLIENT_SECRET") ?? "";
@@ -378,7 +418,6 @@ Deno.serve(async (req: Request) => {
         );
       }
 
-      // Get a short-lived access token via client credentials
       const tokenRes = await fetch("https://www.reddit.com/api/v1/access_token", {
         method: "POST",
         headers: {
@@ -446,12 +485,99 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    // ── INSTANTLY: LIST CAMPAIGNS ─────────────────────────────────────────────
+    if (mode === "instantly_campaigns") {
+      const INSTANTLY_API_KEY = Deno.env.get("INSTANTLY_API_KEY") ?? "";
+      if (!INSTANTLY_API_KEY) {
+        return new Response(
+          JSON.stringify({ campaigns: [], error: "INSTANTLY_API_KEY not configured. Add it in Supabase → Project Settings → Edge Functions → Secrets." }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const res = await fetch("https://api.instantly.ai/api/v2/campaigns?limit=50", {
+        headers: { "Authorization": `Bearer ${INSTANTLY_API_KEY}` },
+        signal: AbortSignal.timeout(8000),
+      });
+
+      if (!res.ok) {
+        return new Response(
+          JSON.stringify({ campaigns: [], error: `Instantly.ai returned HTTP ${res.status}. Check your API key.` }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const data = await res.json();
+      type InstantlyCampaign = { id: string; name: string; status: number };
+      const campaigns = ((data.items ?? data.data ?? []) as InstantlyCampaign[]).map((c) => ({
+        id: c.id, name: c.name, status: c.status,
+      }));
+
+      return new Response(
+        JSON.stringify({ campaigns }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // ── INSTANTLY: PUSH LEADS ─────────────────────────────────────────────────
+    if (mode === "instantly_push") {
+      const INSTANTLY_API_KEY = Deno.env.get("INSTANTLY_API_KEY") ?? "";
+      if (!INSTANTLY_API_KEY) {
+        return new Response(
+          JSON.stringify({ pushed: 0, error: "INSTANTLY_API_KEY not configured." }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      type InLead = { email: string; first_name?: string; last_name?: string; company_name?: string; website?: string; subject?: string; body?: string };
+      const { campaign_id, leads: inLeads } = body as { campaign_id: string; leads: InLead[] };
+
+      if (!campaign_id || !Array.isArray(inLeads) || inLeads.length === 0) {
+        return errorResponse("campaign_id and leads[] are required for instantly_push", 400);
+      }
+
+      const payload = {
+        campaign_id,
+        leads: inLeads.map((l) => ({
+          email: l.email,
+          first_name: l.first_name ?? "",
+          last_name: l.last_name ?? "",
+          company_name: l.company_name ?? "",
+          website: l.website ?? "",
+          personalization: l.body ?? "",
+          custom_variables: { subject_line: l.subject ?? "" },
+        })),
+      };
+
+      const res = await fetch("https://api.instantly.ai/api/v2/leads/add", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${INSTANTLY_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(12000),
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        return new Response(
+          JSON.stringify({ pushed: 0, error: `Instantly.ai error (${res.status}): ${errText}` }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const data = await res.json();
+      return new Response(
+        JSON.stringify({ pushed: inLeads.length, response: data }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // ── Groq-powered modes — require GROQ_API_KEY ─────────────────────────────
     const GROQ_API_KEY = Deno.env.get("GROQ_API_KEY");
     if (!GROQ_API_KEY) {
-      return new Response(
-        JSON.stringify({ error: "GROQ_API_KEY not configured. Add it in Supabase → Project Settings → Edge Functions → Secrets." }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return errorResponse("GROQ_API_KEY not configured. Add it in Supabase → Project Settings → Edge Functions → Secrets.", 500);
     }
 
     const PDL_API_KEY           = Deno.env.get("PDL_API_KEY")           ?? "";
@@ -459,12 +585,59 @@ Deno.serve(async (req: Request) => {
     const GOOGLE_PLACES_API_KEY = Deno.env.get("GOOGLE_PLACES_API_KEY") ?? "";
     const groq = new Groq({ apiKey: GROQ_API_KEY });
 
+    // ── GENERATE EMAIL ────────────────────────────────────────────────────────
+    if (mode === "generate_email") {
+      const { brandName, niche, city, platform, targetProfile, greenFlags, redFlags, whyTheyNeedUs, outreachAngle, compositeScore, contactFirstName } = body;
+
+      if (!brandName) return errorResponse("brandName is required for generate_email", 400);
+
+      const userPrompt = `Write a cold email for this specific brand:
+
+Brand: ${brandName}
+Niche: ${niche || "Unknown"}
+City: ${city || "India"}
+Outreach Platform: ${platform || "Email"}
+Contact First Name: ${contactFirstName || "unknown"}
+Composite Score: ${compositeScore ?? "N/A"}
+Target Profile: ${targetProfile || "N/A"}
+Green Flags: ${Array.isArray(greenFlags) ? greenFlags.join(", ") : greenFlags || "None"}
+Red Flags: ${Array.isArray(redFlags) ? redFlags.join(", ") : redFlags || "None"}
+Why They Need CloutKart: ${whyTheyNeedUs || "N/A"}
+Outreach Angle (brief): ${outreachAngle || "N/A"}
+
+Select the most appropriate angle type from the signals above and write the full email.
+Return only the JSON object.`;
+
+      const res = await groqWithRetry(groq, {
+        model: MODEL,
+        messages: [
+          { role: "system", content: EMAIL_GEN_SYSTEM },
+          { role: "user", content: userPrompt },
+        ],
+        max_tokens: 400,
+        temperature: 0.7,
+        response_format: { type: "json_object" },
+      });
+
+      const raw = res.choices?.[0]?.message?.content?.trim() ?? "{}";
+      let result: Record<string, unknown>;
+      try {
+        result = JSON.parse(raw);
+      } catch {
+        throw new Error("Model returned malformed JSON for generate_email. Try again.");
+      }
+
+      return new Response(
+        JSON.stringify(result),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // ── DISCOVER MODE ─────────────────────────────────────────────────────────
     if (mode === "discover") {
       const { niche, stage, geography, platform, budget, followers, funding, runningAds, creativeSetup, painPoint, employeeRange, targetMode, city } = body;
       const discoverSystem = targetMode === "growth" ? DISCOVER_GROWTH_SYSTEM : DISCOVER_LOCAL_SYSTEM;
 
-      // Try Google Places first for real businesses — fall back to archetypes if unavailable
       console.log(`[Ezio] Places key present: ${!!GOOGLE_PLACES_API_KEY} | niche: "${niche}" | city: "${city ?? ""}" | mode: ${targetMode ?? "local"}`);
       let realBusinessContext = "";
       let realBusinesses: OutscraperBusiness[] = [];
@@ -474,13 +647,11 @@ Deno.serve(async (req: Request) => {
         realBusinesses = await googlePlacesSearch(queries, GOOGLE_PLACES_API_KEY, 5);
         console.log(`[Ezio] Places returned ${realBusinesses.length} businesses`);
 
-        // Enrich with PDL (growth mode) and website snippets — run in parallel
         let pdlMap: Record<string, PDLCompany> = {};
         let websiteMap: Record<string, string> = {};
 
         if (realBusinesses.length > 0) {
           const [pdlResults, websiteResults] = await Promise.all([
-            // PDL: growth mode only
             PDL_API_KEY && targetMode === "growth"
               ? Promise.allSettled(
                   realBusinesses.map(async (b) => {
@@ -491,7 +662,6 @@ Deno.serve(async (req: Request) => {
                   })
                 )
               : Promise.resolve([]),
-            // Website snippets: all modes
             Promise.allSettled(
               realBusinesses.map(async (b) => {
                 if (!b.site) return null;
@@ -563,14 +733,10 @@ Return only the JSON object.`;
         throw new Error("Model returned malformed JSON. Try again.");
       }
 
-      // Re-attach real contact info by name match (index-based matching is unreliable
-      // because the model may reorder results)
+      // A4: Fuzzy name matching when re-attaching real contact info
       if (realBusinesses.length > 0 && Array.isArray(result.leads)) {
-        const bizByName = Object.fromEntries(
-          realBusinesses.map(b => [b.name?.toLowerCase().trim() ?? "", b])
-        );
         result.leads = result.leads.map((lead: Record<string, unknown>) => {
-          const biz = bizByName[(lead.name as string)?.toLowerCase().trim() ?? ""] ?? null;
+          const biz = realBusinesses.find(b => fuzzyMatch(b.name ?? "", lead.name as string ?? "")) ?? null;
           if (!biz) return lead;
           return {
             ...lead,
@@ -597,10 +763,7 @@ Return only the JSON object.`;
       const { brandName, brandUrl, niche, platform } = body;
 
       if (!brandName) {
-        return new Response(
-          JSON.stringify({ error: "brandName is required for score mode" }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        return errorResponse("brandName is required for score mode", 400);
       }
 
       let enrichContext = "";
@@ -704,69 +867,35 @@ Return only the JSON object.`;
       }
 
       const fullUrl = website.startsWith("http") ? website : `https://${website}`;
-      const baseOrigin = (() => { try { return new URL(fullUrl).origin; } catch { return ""; } })();
 
-      // Fetch homepage + collections/all in parallel
-      const rawHtmlPages: string[] = [];
-      const fetchResults = await Promise.allSettled(
-        [fullUrl, `${fullUrl.replace(/\/$/, "")}/collections/all`].map(url =>
-          fetch(url, {
-            signal: AbortSignal.timeout(7000),
-            headers: { "User-Agent": "Mozilla/5.0 (compatible; CloutKart/1.0)" },
-          }).then(r => r.ok ? r.text() : "")
-        )
-      );
-      for (const r of fetchResults) {
-        if (r.status === "fulfilled" && r.value) rawHtmlPages.push(r.value);
+      // A2+A3: Use Jina AI Reader for clean markdown — much better than regex HTML stripping
+      const jinaContent = await scrapeWebsiteSnippet(fullUrl);
+
+      // Fallback: also try /collections/all via Jina if site looks like Shopify
+      let combinedContent = jinaContent;
+      if (fullUrl.match(/shopify|myshopify/) || jinaContent.toLowerCase().includes("collection")) {
+        const collectionsContent = await scrapeWebsiteSnippet(`${fullUrl.replace(/\/$/, "")}/collections/all`);
+        combinedContent = [jinaContent, collectionsContent].filter(Boolean).join("\n\n---\n\n").slice(0, 2000);
       }
 
-      if (rawHtmlPages.length === 0) {
+      if (!combinedContent) {
         return new Response(
           JSON.stringify({ products: [] }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 
-      // Extract image URLs before stripping tags
-      const imgRegex = /<img[^>]+(?:data-src|src)=["']([^"']+)["'][^>]*>/gi;
-      const seenImgs = new Set<string>();
-      const imgUrls: string[] = [];
-      for (const html of rawHtmlPages) {
-        let m: RegExpExecArray | null;
-        imgRegex.lastIndex = 0;
-        while ((m = imgRegex.exec(html)) !== null && imgUrls.length < 20) {
-          const src = m[1];
-          if (src.startsWith("data:") || src.endsWith(".svg") || src.length < 8) continue;
-          const abs = src.startsWith("http") ? src : src.startsWith("//") ? `https:${src}` : `${baseOrigin}${src.startsWith("/") ? "" : "/"}${src}`;
-          if (!seenImgs.has(abs)) { seenImgs.add(abs); imgUrls.push(abs); }
-        }
-      }
-
-      // Strip HTML for text extraction
-      const htmlChunks = rawHtmlPages.map(html =>
-        html
-          .replace(/<script[\s\S]*?<\/script>/gi, " ")
-          .replace(/<style[\s\S]*?<\/style>/gi, " ")
-          .replace(/<[^>]+>/g, " ")
-          .replace(/\s+/g, " ")
-          .trim()
-          .slice(0, 1800)
-      );
-
-      const imgListText = imgUrls.length > 0
-        ? `\n\nAvailable image URLs (try to match each product to the most likely image URL):\n${imgUrls.map((u, i) => `${i + 1}. ${u}`).join("\n")}`
-        : "";
-
+      // A3: Use fast model for simple extraction
       const extractRes = await groqWithRetry(groq, {
-        model: MODEL,
+        model: FAST_MODEL,
         messages: [
           {
             role: "system",
-            content: `You extract product names and their image URLs from website content. Return ONLY a JSON object with a "products" key containing an array of objects with "name" (string) and "imageUrl" (string or null). Example: {"products":[{"name":"Ashwagandha KSM-66 500mg","imageUrl":"https://cdn.../ashwagandha.jpg"},{"name":"Pure Shilajit Resin","imageUrl":null}]}. If no products found, return {"products":[]}.`,
+            content: `You extract product names from website content. Return ONLY a JSON object with a "products" key containing an array of objects with "name" (string) and "imageUrl" (string or null). Example: {"products":[{"name":"Ashwagandha KSM-66 500mg","imageUrl":null},{"name":"Pure Shilajit Resin","imageUrl":null}]}. If no products found, return {"products":[]}.`,
           },
           {
             role: "user",
-            content: `Brand: ${brandName ?? "Unknown"} | Niche: ${niche ?? "Unknown"}\n\nWebsite text:\n${htmlChunks.join("\n\n---\n\n")}${imgListText}`,
+            content: `Brand: ${brandName ?? "Unknown"} | Niche: ${niche ?? "Unknown"}\n\nWebsite content:\n${combinedContent}`,
           },
         ],
         max_tokens: 300,
