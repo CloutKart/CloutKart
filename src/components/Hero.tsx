@@ -160,6 +160,7 @@ export default function Hero({ onSignupOpen }: Props) {
   // Stat counter state
   const [statsVisible, setStatsVisible] = useState(false);
   const [counts, setCounts] = useState({ brands: 0, roas: 0, turnaround: 0 });
+  const [convertActive, setConvertActive] = useState(false);
 
   // Scroll-reveal for .reveal, .reveal-scale, and .reveal-clip elements
   useEffect(() => {
@@ -169,6 +170,10 @@ export default function Hero({ onSignupOpen }: Props) {
           if (entry.isIntersecting) {
             entry.target.querySelectorAll('.reveal, .reveal-scale, .reveal-clip').forEach((el, i) => {
               setTimeout(() => el.classList.add('visible'), i * 80);
+            });
+            // Wait for Borel to load then trigger the write animation
+            document.fonts.ready.then(() => {
+              setTimeout(() => setConvertActive(true), 900);
             });
           }
         });
@@ -276,11 +281,43 @@ export default function Hero({ onSignupOpen }: Props) {
               >
                 That Actually
               </span>
-              <span
-                className="reveal-clip block overflow-hidden"
-                style={{ transitionDelay: '240ms' }}
-              >
-                <span className="gradient-text-warm">Convert.</span>
+              {/* "Convert." — Borel script with Apple-style stroke-drawing animation */}
+              <span className="block" style={{ transitionDelay: '240ms', lineHeight: 1.15 }}>
+                <svg
+                  aria-label="Convert."
+                  role="img"
+                  style={{
+                    display: 'block',
+                    height: 'clamp(3.6rem, 8.5vw, 6.8rem)',
+                    width: '100%',
+                    overflow: 'visible',
+                  }}
+                >
+                  <defs>
+                    <linearGradient id="convertGrad" x1="0" y1="0" x2="1" y2="1" gradientUnits="objectBoundingBox">
+                      <stop offset="0%" stopColor="#C084FC" />
+                      <stop offset="45%" stopColor="#A855F7" />
+                      <stop offset="100%" stopColor="#818CF8" />
+                    </linearGradient>
+                  </defs>
+                  <text
+                    x="0"
+                    y="0.78em"
+                    fill="url(#convertGrad)"
+                    stroke="url(#convertGrad)"
+                    className={convertActive ? 'animate-hello-write' : ''}
+                    style={{
+                      fontFamily: "'Borel', cursive",
+                      fontSize: 'clamp(3rem, 7vw, 5.6rem)',
+                      fontWeight: 400,
+                      strokeWidth: '1.5',
+                      strokeDasharray: 5000,
+                      ...(convertActive ? {} : { strokeDashoffset: 5000, fillOpacity: 0 }),
+                    }}
+                  >
+                    Convert.
+                  </text>
+                </svg>
               </span>
             </h1>
 

@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,700;1,800;1,900&family=Inter:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,700;1,800;1,900&family=Inter:wght@300;400;500;600&family=DM+Mono:wght@400;500&family=Borel&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -530,6 +530,16 @@ img { max-width: 100%; height: auto; }
 }
 .animate-scan-line { animation: scanLine 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 
+/* Hello-style stroke-drawing animation for SVG text */
+@keyframes helloWrite {
+  0%   { stroke-dashoffset: 5000; fill-opacity: 0; }
+  78%  { fill-opacity: 0; }
+  100% { stroke-dashoffset: 0; fill-opacity: 1; }
+}
+.animate-hello-write {
+  animation: helloWrite 2.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
 /* ─── prefers-reduced-motion (WCAG AA, non-optional) ─────── */
 @media (prefers-reduced-motion: reduce) {
   .reveal, .reveal-scale {
@@ -547,6 +557,7 @@ img { max-width: 100%; height: auto; }
   .animate-marquee, .animate-marquee-reverse,
   .animate-orb-drift, .animate-orb-drift-alt,
   .animate-border-pulse, .animate-count-up, .animate-shimmer, .animate-scan-line,
+  .animate-hello-write,
   .animate-vision-section, .animate-swatch-pop,
   .animate-deliverable-slide, .animate-kart-roll,
   .animate-streak-1, .animate-streak-2, .animate-streak-3 {
