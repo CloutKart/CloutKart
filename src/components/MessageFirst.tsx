@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 
-const accentColors = ['#A855F7', '#6366F1', '#06B6D4'];
+const accentColors = ['#A855F7', '#6366F1', '#06B6D4'] as const;
 
 const truths = [
   {
@@ -29,13 +29,13 @@ export default function MessageFirst() {
           if (entry.isIntersecting) {
             setSectionVisible(true);
             entry.target.querySelectorAll('.reveal, .reveal-scale, .reveal-clip').forEach((el, i) => {
-              setTimeout(() => el.classList.add('visible'), i * 90);
+              setTimeout(() => el.classList.add('visible'), i * 80);
             });
-            setTimeout(() => setScanLineActive(true), 600);
+            setTimeout(() => setScanLineActive(true), 720);
           }
         });
       },
-      { threshold: 0.1 }
+      { threshold: 0.12 }
     );
     if (sectionRef.current) observer.observe(sectionRef.current);
     return () => observer.disconnect();
@@ -48,67 +48,38 @@ export default function MessageFirst() {
       id="message"
       style={{ background: 'transparent' }}
     >
-      {/* Stage lighting — spotlight behind focal line */}
+      {/* Single subtle spotlight — behind the focal line only */}
       <div
         className="absolute pointer-events-none animate-orb-drift"
         style={{
-          width: '760px', height: '320px', borderRadius: '50%',
-          background: 'radial-gradient(ellipse, rgba(168,85,247,0.09) 0%, transparent 70%)',
-          top: '8%', left: '-8%', zIndex: 0,
-          opacity: sectionVisible ? 1 : 0,
-          transition: 'opacity 1.4s ease',
-        }}
-      />
-      {/* Second, warmer orb for depth */}
-      <div
-        className="absolute pointer-events-none animate-orb-drift-alt"
-        style={{
-          width: '420px', height: '420px', borderRadius: '50%',
-          background: 'radial-gradient(ellipse, rgba(99,102,241,0.06) 0%, transparent 70%)',
-          top: '30%', right: '-4%', zIndex: 0,
-          animationDelay: '-8s',
-          opacity: sectionVisible ? 1 : 0,
-          transition: 'opacity 1.8s ease 0.4s',
-        }}
-      />
-
-      {/* Decorative background "MESSAGE" — depth layer */}
-      <div
-        className="absolute pointer-events-none select-none"
-        aria-hidden
-        style={{
-          top: '2%',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          fontFamily: "'Bricolage Grotesque', system-ui, sans-serif",
-          fontSize: 'clamp(7rem, 14vw, 13rem)',
-          fontWeight: 200,
-          color: 'rgba(255,255,255,0.025)',
-          letterSpacing: '-0.04em',
-          whiteSpace: 'nowrap',
+          width: '640px',
+          height: '260px',
+          borderRadius: '50%',
+          background: 'radial-gradient(ellipse, rgba(168,85,247,0.07) 0%, transparent 70%)',
+          top: '12%',
+          left: '-6%',
           zIndex: 0,
-          lineHeight: 1,
+          opacity: sectionVisible ? 1 : 0,
+          transition: 'opacity 1.6s ease',
         }}
-      >
-        MESSAGE
-      </div>
+      />
 
       <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
 
         {/* Eyebrow */}
-        <div className="reveal eyebrow-pill mb-10">
+        <div className="reveal eyebrow-pill mb-12">
           <span className="w-1 h-1 rounded-full bg-brand-purple" />
           The Philosophy
         </div>
 
-        {/* Headline block */}
-        <div className="mb-20 md:mb-28 space-y-1">
+        {/* Headline block — size-contrast approach */}
+        <div className="mb-16 md:mb-20">
 
-          {/* Line 1 — light, receding */}
+          {/* Line 1 — supporting, small, dim */}
           <div
-            className="reveal-clip font-heading leading-[1.04] tracking-[-0.03em] block"
+            className="reveal-clip font-heading leading-[1.1] tracking-[-0.02em] block mb-2"
             style={{
-              fontSize: 'clamp(2.8rem, 7.5vw, 6rem)',
+              fontSize: 'clamp(1.5rem, 3vw, 2.2rem)',
               fontWeight: 300,
               color: 'rgba(255,255,255,0.30)',
               transitionDelay: '0ms',
@@ -117,11 +88,11 @@ export default function MessageFirst() {
             It's not about the ad.
           </div>
 
-          {/* Line 2 — focal line, word-by-word reveal */}
+          {/* Line 2 — focal, dominant, word-by-word reveal */}
           <div
-            className="font-heading leading-[1.04] tracking-[-0.035em] block"
+            className="font-heading leading-[1.03] tracking-[-0.04em] block my-1"
             style={{
-              fontSize: 'clamp(2.8rem, 7.5vw, 6rem)',
+              fontSize: 'clamp(3rem, 7.5vw, 6rem)',
               fontWeight: 800,
               fontStyle: 'italic',
             }}
@@ -131,8 +102,8 @@ export default function MessageFirst() {
                 key={wi}
                 className="reveal-clip inline-block gradient-text-warm"
                 style={{
-                  transitionDelay: `${120 + wi * 80}ms`,
-                  marginRight: wi < 3 ? '0.22em' : 0,
+                  transitionDelay: `${100 + wi * 80}ms`,
+                  marginRight: wi < 3 ? '0.2em' : 0,
                 }}
               >
                 {word}
@@ -140,66 +111,71 @@ export default function MessageFirst() {
             ))}
           </div>
 
-          {/* Scan line — sweeps once after words reveal */}
-          <div className="relative overflow-hidden" style={{ height: '1px', marginTop: '2px' }}>
+          {/* Scan line — fires after words reveal */}
+          <div className="relative overflow-hidden" style={{ height: '2px', marginTop: '6px', marginBottom: '8px', borderRadius: '1px' }}>
+            <div
+              className="absolute inset-0 rounded-full"
+              style={{ background: 'rgba(255,255,255,0.05)' }}
+            />
             {scanLineActive && (
               <div
-                className="animate-scan-line absolute inset-0"
+                className="animate-scan-line absolute inset-0 rounded-full"
                 style={{
-                  background: 'linear-gradient(90deg, transparent 0%, #A855F7 35%, #818CF8 65%, transparent 100%)',
+                  background: 'linear-gradient(90deg, transparent 0%, #A855F7 30%, #818CF8 60%, #06B6D4 85%, transparent 100%)',
                 }}
               />
             )}
           </div>
 
-          {/* Line 3 — most receding */}
+          {/* Line 3 — receding, smaller still */}
           <div
-            className="reveal-clip font-heading leading-[1.04] tracking-[-0.03em] block"
+            className="reveal-clip font-heading leading-[1.1] tracking-[-0.02em] block mt-2"
             style={{
-              fontSize: 'clamp(2.8rem, 7.5vw, 6rem)',
+              fontSize: 'clamp(1.5rem, 3vw, 2.2rem)',
               fontWeight: 300,
-              color: 'rgba(255,255,255,0.15)',
-              transitionDelay: '480ms',
-              marginTop: '0.1em',
+              color: 'rgba(255,255,255,0.18)',
+              transitionDelay: '500ms',
             }}
           >
             The ad is just the vehicle.
           </div>
         </div>
 
-        {/* Pull-quote — raw editorial, no card */}
-        <div className="reveal mb-20 md:mb-28">
-          {/* Giant opening quote mark */}
-          <div
-            className="gradient-text-warm font-heading select-none"
-            aria-hidden
-            style={{
-              fontSize: 'clamp(5rem, 10vw, 8rem)',
-              lineHeight: 0.7,
-              marginBottom: '-0.5rem',
-              fontWeight: 800,
-            }}
+        {/* Thin divider before quote */}
+        <div
+          className="reveal mb-12"
+          style={{
+            height: '1px',
+            background: 'linear-gradient(90deg, rgba(168,85,247,0.35) 0%, rgba(99,102,241,0.2) 40%, transparent 80%)',
+          }}
+        />
+
+        {/* Pull-quote — clean blockquote with left-border accent */}
+        <div
+          className="reveal mb-16 md:mb-20 pl-6 sm:pl-8"
+          style={{ borderLeft: '2px solid rgba(168,85,247,0.5)' }}
+        >
+          <p
+            className="text-[#E5E7EB] font-semibold leading-[1.6] italic mb-4"
+            style={{ fontSize: 'clamp(1.1rem, 2.2vw, 1.45rem)', maxWidth: '42rem' }}
           >
-            "
-          </div>
-          <p className="text-[#F3F4F6] text-xl sm:text-2xl lg:text-[1.85rem] font-semibold leading-[1.5] italic max-w-3xl">
-            A winning message can be translated into{' '}
-            <em className="not-italic gradient-text">anything.</em>
+            "A winning message can be translated into{' '}
+            <em className="not-italic gradient-text">anything.</em>"
           </p>
-          <p className="text-white/30 text-sm mt-5 max-w-xl leading-relaxed not-italic">
-            The message is the foundation. The format is just the container. CloutKart builds the message first — everything else scales from there.
+          <p className="text-white/30 text-sm leading-relaxed not-italic max-w-sm">
+            The message is the foundation. The format is the container. CloutKart builds the message first — everything else scales from there.
           </p>
         </div>
 
-        {/* Three truths — accent border + background number */}
+        {/* Three truths — accent border + faint background number */}
         <div
-          className="reveal grid sm:grid-cols-3 gap-0"
+          className="reveal grid sm:grid-cols-3 gap-px"
           style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}
         >
           {truths.map((item, i) => (
             <div
               key={i}
-              className="reveal relative pt-8 pb-6 overflow-hidden"
+              className="reveal relative pt-8 pb-6 overflow-hidden transition-colors duration-300"
               style={{
                 transitionDelay: `${(i + 4) * 80}ms`,
                 borderLeft: `2px solid ${accentColors[i]}`,
@@ -207,25 +183,26 @@ export default function MessageFirst() {
                 paddingRight: i < 2 ? '2rem' : '0',
               }}
             >
-              {/* Background number */}
+              {/* Faint background number */}
               <span
-                className="absolute top-4 right-2 font-mono font-bold pointer-events-none select-none leading-none"
+                className="absolute -top-1 right-2 font-mono font-bold pointer-events-none select-none leading-none"
                 aria-hidden
-                style={{
-                  fontSize: '5rem',
-                  color: accentColors[i],
-                  opacity: 0.05,
-                }}
+                style={{ fontSize: '4.5rem', color: accentColors[i], opacity: 0.04 }}
               >
                 {String(i + 1).padStart(2, '0')}
               </span>
 
-              <div
-                className="text-white font-semibold font-heading text-base mb-2 leading-snug relative z-10"
-              >
-                {item.label}
+              {/* Label with small accent dot */}
+              <div className="flex items-center gap-2 mb-2 relative z-10">
+                <div
+                  className="w-1 h-1 rounded-full flex-shrink-0"
+                  style={{ background: accentColors[i] }}
+                />
+                <div className="text-white font-semibold font-heading text-sm sm:text-base leading-snug">
+                  {item.label}
+                </div>
               </div>
-              <p className="text-white/35 text-sm leading-relaxed relative z-10">{item.body}</p>
+              <p className="text-white/30 text-sm leading-relaxed relative z-10">{item.body}</p>
             </div>
           ))}
         </div>
