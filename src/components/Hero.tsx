@@ -281,43 +281,21 @@ export default function Hero({ onSignupOpen }: Props) {
               >
                 That Actually
               </span>
-              {/* "Convert." — Borel script with Apple-style stroke-drawing animation */}
-              <span className="block" style={{ transitionDelay: '240ms', lineHeight: 1.15 }}>
-                <svg
-                  aria-label="Convert."
-                  role="img"
+              {/* "Convert." — Borel script with left-to-right wipe (pen-on-paper effect) */}
+              <span className="block" style={{ lineHeight: 1.15 }}>
+                <span
+                  className={`gradient-text-warm${convertActive ? ' animate-hello-write' : ''}`}
                   style={{
-                    display: 'block',
-                    height: 'clamp(3.6rem, 8.5vw, 6.8rem)',
-                    width: '100%',
-                    overflow: 'visible',
+                    fontFamily: "'Borel', cursive",
+                    fontSize: 'clamp(3rem, 7vw, 5.6rem)',
+                    fontWeight: 400,
+                    display: 'inline-block',
+                    paddingBottom: '0.08em',
+                    ...(convertActive ? {} : { clipPath: 'inset(0 102% 0 0)' }),
                   }}
                 >
-                  <defs>
-                    <linearGradient id="convertGrad" x1="0" y1="0" x2="1" y2="1" gradientUnits="objectBoundingBox">
-                      <stop offset="0%" stopColor="#C084FC" />
-                      <stop offset="45%" stopColor="#A855F7" />
-                      <stop offset="100%" stopColor="#818CF8" />
-                    </linearGradient>
-                  </defs>
-                  <text
-                    x="0"
-                    y="0.78em"
-                    fill="url(#convertGrad)"
-                    stroke="url(#convertGrad)"
-                    className={convertActive ? 'animate-hello-write' : ''}
-                    style={{
-                      fontFamily: "'Borel', cursive",
-                      fontSize: 'clamp(3rem, 7vw, 5.6rem)',
-                      fontWeight: 400,
-                      strokeWidth: '1.5',
-                      strokeDasharray: 5000,
-                      ...(convertActive ? {} : { strokeDashoffset: 5000, fillOpacity: 0 }),
-                    }}
-                  >
-                    Convert.
-                  </text>
-                </svg>
+                  Convert.
+                </span>
               </span>
             </h1>
 
