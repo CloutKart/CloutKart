@@ -173,7 +173,6 @@ export default function Hero({ onSignupOpen }: Props) {
   const [statsVisible, setStatsVisible] = useState(false);
   const [counts, setCounts] = useState({ brands: 0, roas: 0, turnaround: 0 });
   const [convertActive, setConvertActive] = useState(false);
-  const [svgReady, setSvgReady] = useState(false);
   const convertSvgRef = useRef<SVGSVGElement>(null);
 
   // Scroll-reveal for .reveal, .reveal-scale, and .reveal-clip elements
@@ -197,44 +196,6 @@ export default function Hero({ onSignupOpen }: Props) {
     if (heroRef.current) observer.observe(heroRef.current);
     return () => observer.disconnect();
   }, []);
-
-  // Initialize SVG paths: measure real length, set initial hidden state
-  useEffect(() => {
-    const svg = convertSvgRef.current;
-    if (!svg) return;
-    svg.querySelectorAll('path').forEach((el) => {
-      const len = (el as SVGPathElement).getTotalLength();
-      el.style.strokeDasharray = String(len);
-      el.style.strokeDashoffset = String(len);
-      el.style.fillOpacity = '0';
-    });
-    setSvgReady(true);
-  }, []);
-
-  // Per-character stroke-draw + fill-in animation via Web Animations API
-  useEffect(() => {
-    const svg = convertSvgRef.current;
-    if (!convertActive || !svg) return;
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    svg.querySelectorAll('path').forEach((el, i) => {
-      const path = el as SVGPathElement;
-      if (reduced) {
-        path.style.strokeDashoffset = '0';
-        path.style.fillOpacity = '1';
-        return;
-      }
-      const len = parseFloat(path.style.strokeDasharray || '5000');
-      const delay = i * 210;
-      path.animate(
-        [{ strokeDashoffset: String(len) }, { strokeDashoffset: '0' }],
-        { duration: 420, delay, easing: 'cubic-bezier(0.4, 0, 0.2, 1)', fill: 'forwards' }
-      );
-      path.animate(
-        [{ fillOpacity: '0' }, { fillOpacity: '1' }],
-        { duration: 280, delay: delay + 380, fill: 'forwards' }
-      );
-    });
-  }, [convertActive]);
 
   // Animated stat counters — one-shot on first intersection
   useEffect(() => {
@@ -333,7 +294,7 @@ export default function Hero({ onSignupOpen }: Props) {
               >
                 That Actually
               </span>
-              {/* "Convert." — Borel glyphs as SVG paths, animated character by character */}
+              {/* "Convert." — Borel glyphs revealed by a single round-nib ink sweep */}
               <span className="block" style={{ lineHeight: 1.1, overflow: 'visible' }}>
                 <svg
                   ref={convertSvgRef}
@@ -341,12 +302,13 @@ export default function Hero({ onSignupOpen }: Props) {
                   aria-label="Convert."
                   role="img"
                   preserveAspectRatio="xMinYMin meet"
+                  className={convertActive ? 'animate-ink-write' : ''}
                   style={{
                     display: 'block',
                     width: '100%',
                     aspectRatio: '4643 / 830',
                     overflow: 'visible',
-                    visibility: svgReady ? 'visible' : 'hidden',
+                    ...(convertActive ? {} : { clipPath: 'inset(-15% 100% -15% 0%)' }),
                   }}
                 >
                   <defs>
@@ -357,16 +319,7 @@ export default function Hero({ onSignupOpen }: Props) {
                     </linearGradient>
                   </defs>
                   {CONVERT_PATHS.map((d, i) => (
-                    <path
-                      key={i}
-                      d={d}
-                      fill="url(#convertGrad)"
-                      stroke="url(#convertGrad)"
-                      strokeWidth="2"
-                      vectorEffect="non-scaling-stroke"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
+                    <path key={i} d={d} fill="url(#convertGrad)" />
                   ))}
                 </svg>
               </span>

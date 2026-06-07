@@ -531,6 +531,15 @@ img { max-width: 100%; height: auto; }
 .animate-scan-line { animation: scanLine 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 
 
+/* Pen-nib ink sweep — round leading edge (500px) sweeps left → right */
+@keyframes inkWrite {
+  from { clip-path: inset(-15% 100% -15% 0% round 0 500px 500px 0); }
+  to   { clip-path: inset(-15% 0%   -15% 0% round 0 500px 500px 0); }
+}
+.animate-ink-write {
+  animation: inkWrite 2s cubic-bezier(0.4, 0, 0.3, 1) forwards;
+}
+
 /* ─── prefers-reduced-motion (WCAG AA, non-optional) ─────── */
 @media (prefers-reduced-motion: reduce) {
   .reveal, .reveal-scale {
@@ -548,6 +557,7 @@ img { max-width: 100%; height: auto; }
   .animate-marquee, .animate-marquee-reverse,
   .animate-orb-drift, .animate-orb-drift-alt,
   .animate-border-pulse, .animate-count-up, .animate-shimmer, .animate-scan-line,
+  .animate-ink-write,
   .animate-vision-section, .animate-swatch-pop,
   .animate-deliverable-slide, .animate-kart-roll,
   .animate-streak-1, .animate-streak-2, .animate-streak-3 {
