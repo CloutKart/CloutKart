@@ -108,7 +108,7 @@ export default function Contact() {
             <div className="relative z-10">
               <h2 className="font-heading font-bold leading-tight tracking-tight mb-4" style={{ fontSize: 'clamp(2rem, 5vw, 3.5rem)' }}>
                 <span className="text-white">Ready to Build Ads That </span>
-                <span className="gradient-text">Actually Convert?</span>
+                <span style={{ color: '#F5F0EB' }}>Actually Convert?</span>
               </h2>
               <p className="text-[#D1D5DB] text-sm sm:text-lg max-w-lg mx-auto leading-relaxed">
                 For enterprise deals, custom briefs, partnership inquiries, or anything else — reach out here. Free creative requests are handled inside your dashboard after signing up.

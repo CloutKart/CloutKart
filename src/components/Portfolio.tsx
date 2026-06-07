@@ -352,7 +352,7 @@ export default function Portfolio() {
           >
             Results That
             <br />
-            <span className="gradient-text">Speak For Themselves.</span>
+            <span style={{ color: '#F5F0EB' }}>Speak For Themselves.</span>
           </h2>
           <p className="reveal delay-200 text-[#D1D5DB] text-sm sm:text-lg max-w-xl mx-auto leading-relaxed">
             A showcase of premium ad creatives, campaign visuals, and performance-focused content.

@@ -71,7 +71,7 @@ export default function Services() {
             >
               <span className="text-white">One message.</span>
               <br />
-              <span className="gradient-text">Every format that converts.</span>
+              <span style={{ color: '#F5F0EB' }}>Every format that converts.</span>
             </h2>
           </div>
           <p className="reveal delay-200 text-white/35 text-sm leading-relaxed max-w-xs md:text-right">
@@ -99,10 +99,14 @@ export default function Services() {
               </div>
 
               {/* Title */}
-              <div className="flex-shrink-0 sm:w-44">
-                <span className="font-heading font-bold text-base sm:text-lg text-white group-hover:gradient-text transition-all duration-300 leading-tight">
+              <div className="flex-shrink-0 sm:w-44 relative">
+                <span className="font-heading font-bold text-base sm:text-lg text-white leading-tight">
                   {service.title}
                 </span>
+                <div
+                  className="absolute bottom-0 left-0 h-px w-0 group-hover:w-full transition-all duration-500"
+                  style={{ background: 'linear-gradient(90deg, #A855F7, #6366F1)' }}
+                />
               </div>
 
               {/* Desc */}

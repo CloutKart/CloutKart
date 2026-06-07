@@ -61,7 +61,7 @@ export default function FAQ() {
           </div>
           <h2 className="reveal delay-100 font-heading font-bold leading-[1.06] tracking-tight" style={{ fontSize: 'clamp(2rem, 5vw, 4.5rem)' }}>
             Common{' '}
-            <span className="gradient-text">Questions.</span>
+            <span style={{ color: '#F5F0EB' }}>Questions.</span>
           </h2>
         </div>
 

@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=DM+Sans:ital,wght@0,400;0,500;0,600;1,400&family=DM+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Manrope:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -14,20 +14,22 @@
 
   body {
     background-color: #080808;
-    background-image: radial-gradient(circle, rgba(255,255,255,0.07) 1px, transparent 1px);
-    background-size: 28px 28px;
+    background-image:
+      radial-gradient(ellipse 80% 50% at 50% -20%, rgba(99,102,241,0.055) 0%, transparent 60%),
+      radial-gradient(circle, rgba(255,255,255,0.07) 1px, transparent 1px);
+    background-size: 100% 100%, 28px 28px;
     color: #D1D5DB;
-    font-family: 'DM Sans', system-ui, sans-serif;
+    font-family: 'Manrope', system-ui, sans-serif;
     overflow-x: hidden;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     min-height: 100vh;
   }
 
-
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Sora', system-ui, sans-serif;
-    color: #FFFFFF;
+    font-family: 'Bricolage Grotesque', system-ui, sans-serif;
+    color: #F5F0EB;
+    text-wrap: balance;
   }
 
   ::selection {
@@ -115,7 +117,7 @@
   .btn-primary {
     background: linear-gradient(135deg, rgba(168,85,247,0.7), rgba(59,130,246,0.65), rgba(6,182,212,0.6));
     color: #FFFFFF;
-    font-family: 'Sora', sans-serif;
+    font-family: 'Bricolage Grotesque', sans-serif;
     font-weight: 600;
     font-size: 15px;
     letter-spacing: 0.01em;
@@ -144,7 +146,7 @@
     padding: 13px 30px;
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    font-family: 'Sora', sans-serif;
+    font-family: 'Bricolage Grotesque', sans-serif;
     font-weight: 500;
     font-size: 15px;
     cursor: pointer;
@@ -169,12 +171,32 @@
     background: rgba(168, 85, 247, 0.10);
     border: 1px solid rgba(168, 85, 247, 0.25);
     border-radius: 100px;
-    font-family: 'Sora', sans-serif;
+    font-family: 'Manrope', sans-serif;
     font-size: 11px;
     font-weight: 600;
     letter-spacing: 0.12em;
     text-transform: uppercase;
     color: #C084FC;
+  }
+
+  /* Tighter warm gradient — used sparingly as the ONE accent per section */
+  .gradient-text-warm {
+    background: linear-gradient(135deg, #C084FC 0%, #A855F7 45%, #818CF8 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Clip-path reveal — cinematic word-by-word entrance, distinct from fadeUp */
+  .reveal-clip {
+    clip-path: inset(100% 0 0 0);
+    opacity: 0;
+    transition: clip-path 0.72s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.12s ease;
+  }
+
+  .reveal-clip.visible {
+    clip-path: inset(0% 0 0 0);
+    opacity: 1;
   }
 
   /* Gradient border card — uses box-shadow trick to avoid background bleed */
@@ -306,8 +328,8 @@
 }
 
 @keyframes shimmer {
-  0%   { background-position: -200% center; }
-  100% { background-position: 200% center; }
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(200%); }
 }
 
 .animate-float       { animation: floatY 5s ease-in-out infinite; }
@@ -334,11 +356,12 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: opacity 0.6s ease, visibility 0.6s ease;
+  transition: opacity 0.7s ease, visibility 0.7s ease, transform 0.7s cubic-bezier(0.4, 0, 1, 1);
 }
 .loading-screen.hidden {
   opacity: 0;
   visibility: hidden;
+  transform: scale(1.04);
 }
 
 /* Premium cursor system */
@@ -463,3 +486,70 @@ img { max-width: 100%; height: auto; }
 .animate-streak-1 { animation: speed-streak 0.38s ease-in-out infinite; transform-origin: right; }
 .animate-streak-2 { animation: speed-streak 0.38s ease-in-out infinite 0.1s; transform-origin: right; }
 .animate-streak-3 { animation: speed-streak 0.38s ease-in-out infinite 0.06s; transform-origin: right; }
+
+/* ─── New animations ──────────────────────────────────────── */
+
+@keyframes orbDrift {
+  0%, 100% { transform: translate(0px, 0px) scale(1); }
+  25%       { transform: translate(28px, -18px) scale(1.04); }
+  50%       { transform: translate(12px, 28px) scale(0.97); }
+  75%       { transform: translate(-18px, 8px) scale(1.02); }
+}
+
+@keyframes orbDriftAlt {
+  0%, 100% { transform: translate(0px, 0px) scale(1); }
+  33%       { transform: translate(-22px, 18px) scale(1.05); }
+  66%       { transform: translate(18px, -14px) scale(0.96); }
+}
+
+@keyframes marqueeReverse {
+  from { transform: translateX(-50%); }
+  to   { transform: translateX(0); }
+}
+
+@keyframes borderPulse {
+  0%, 100% { box-shadow: 0 0 0 1px rgba(168,85,247,0.35), 0 8px 32px rgba(0,0,0,0.45); }
+  50%       { box-shadow: 0 0 0 1px rgba(168,85,247,0.7), 0 8px 32px rgba(0,0,0,0.45), 0 0 24px rgba(168,85,247,0.1); }
+}
+
+@keyframes countUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.animate-orb-drift      { animation: orbDrift    22s ease-in-out infinite; }
+.animate-orb-drift-alt  { animation: orbDriftAlt 28s ease-in-out infinite; }
+.animate-marquee-reverse { animation: marqueeReverse 35s linear infinite; }
+.animate-border-pulse   { animation: borderPulse 2.5s ease-in-out infinite; }
+.animate-count-up       { animation: countUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+/* ─── prefers-reduced-motion (WCAG AA, non-optional) ─────── */
+@media (prefers-reduced-motion: reduce) {
+  .reveal, .reveal-scale {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  .reveal-clip {
+    clip-path: none;
+    opacity: 1;
+    transition: none;
+  }
+  .animate-float, .animate-float-slow, .animate-float-delayed,
+  .animate-fade-up, .animate-fade-in,
+  .animate-marquee, .animate-marquee-reverse,
+  .animate-orb-drift, .animate-orb-drift-alt,
+  .animate-border-pulse, .animate-count-up, .animate-shimmer,
+  .animate-vision-section, .animate-swatch-pop,
+  .animate-deliverable-slide, .animate-kart-roll,
+  .animate-streak-1, .animate-streak-2, .animate-streak-3 {
+    animation: none !important;
+  }
+  .loading-screen { transition: opacity 0.1s ease, visibility 0.1s ease; }
+  .loading-screen.hidden { transform: none; }
+}
+
+/* Disable decorative orb animations on mobile (GPU cost, no visual payoff) */
+@media (max-width: 768px) {
+  .animate-orb-drift, .animate-orb-drift-alt { animation: none; }
+}

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ArrowRight, Sparkles, CheckCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -144,7 +144,7 @@ function VisionPreview() {
         className="absolute -bottom-5 right-2 z-10 flex items-center gap-2.5 rounded-full px-4 py-2 animate-float-delayed"
         style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.10)', backdropFilter: 'blur(12px)' }}
       >
-        <span className="font-mono text-sm font-bold gradient-text">+284%</span>
+        <span className="font-mono text-sm font-bold gradient-text-warm">+284%</span>
         <span className="text-[11px] text-white/40">avg ROAS lift</span>
       </div>
     </div>
@@ -153,16 +153,22 @@ function VisionPreview() {
 
 export default function Hero({ onSignupOpen }: Props) {
   const heroRef = useRef<HTMLDivElement>(null);
+  const statsRef = useRef<HTMLDivElement>(null);
   const { isLoggedIn } = useAuth();
   const navigate = useNavigate();
 
+  // Stat counter state
+  const [statsVisible, setStatsVisible] = useState(false);
+  const [counts, setCounts] = useState({ brands: 0, roas: 0, turnaround: 0 });
+
+  // Scroll-reveal for .reveal, .reveal-scale, and .reveal-clip elements
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            entry.target.querySelectorAll('.reveal, .reveal-scale').forEach((el, i) => {
-              setTimeout(() => el.classList.add('visible'), i * 100);
+            entry.target.querySelectorAll('.reveal, .reveal-scale, .reveal-clip').forEach((el, i) => {
+              setTimeout(() => el.classList.add('visible'), i * 80);
             });
           }
         });
@@ -172,6 +178,36 @@ export default function Hero({ onSignupOpen }: Props) {
     if (heroRef.current) observer.observe(heroRef.current);
     return () => observer.disconnect();
   }, []);
+
+  // Animated stat counters — one-shot on first intersection
+  useEffect(() => {
+    const el = statsRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !statsVisible) {
+          setStatsVisible(true);
+          const duration = 1200;
+          let start: number | null = null;
+          const tick = (ts: number) => {
+            if (!start) start = ts;
+            const prog = Math.min((ts - start) / duration, 1);
+            const eased = 1 - (1 - prog) * (1 - prog); // ease-out quad
+            setCounts({
+              brands: Math.floor(eased * 500),
+              roas: Math.round(eased * 100) / 10,       // 0.0 → 10.0
+              turnaround: Math.floor(eased * 48),
+            });
+            if (prog < 1) requestAnimationFrame(tick);
+          };
+          requestAnimationFrame(tick);
+        }
+      },
+      { threshold: 0.5 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [statsVisible]);
 
   const handlePrimary = () => {
     if (isLoggedIn) navigate('/dashboard');
@@ -185,6 +221,34 @@ export default function Hero({ onSignupOpen }: Props) {
       id="hero"
       style={{ background: 'transparent' }}
     >
+      {/* Ambient background orbs — pure radial gradients, no filter:blur, GPU-safe */}
+      <div
+        className="absolute pointer-events-none animate-orb-drift"
+        style={{
+          width: '600px', height: '600px', borderRadius: '50%',
+          background: 'radial-gradient(ellipse, rgba(168,85,247,0.08) 0%, transparent 70%)',
+          top: '-8%', left: '-12%', zIndex: 0,
+        }}
+      />
+      <div
+        className="absolute pointer-events-none animate-orb-drift-alt"
+        style={{
+          width: '480px', height: '480px', borderRadius: '50%',
+          background: 'radial-gradient(ellipse, rgba(59,130,246,0.06) 0%, transparent 70%)',
+          top: '35%', right: '-8%', zIndex: 0,
+          animationDelay: '-10s',
+        }}
+      />
+      <div
+        className="absolute pointer-events-none animate-orb-drift"
+        style={{
+          width: '360px', height: '360px', borderRadius: '50%',
+          background: 'radial-gradient(ellipse, rgba(99,102,241,0.05) 0%, transparent 70%)',
+          bottom: '8%', left: '28%', zIndex: 0,
+          animationDelay: '-16s',
+        }}
+      />
+
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 sm:pt-32 pb-24 w-full">
         <div className="grid lg:grid-cols-2 gap-16 lg:gap-20 items-center">
 
@@ -195,17 +259,33 @@ export default function Hero({ onSignupOpen }: Props) {
               AI Creative Operations Platform
             </div>
 
+            {/* Headline — each word line gets a clip-path reveal with staggered delay */}
             <h1
-              className="font-heading font-bold leading-[1.06] tracking-[-0.03em] mb-6 animate-fade-up delay-100"
-              style={{ fontSize: 'clamp(2.6rem, 6vw, 4.75rem)' }}
+              className="font-heading font-extrabold leading-[1.03] tracking-[-0.035em] mb-6"
+              style={{ fontSize: 'clamp(3rem, 7vw, 5.6rem)' }}
             >
-              <span className="text-white block">AI-Powered Ads</span>
-              <span className="text-white block">That Actually</span>
-              <span className="gradient-text-animated block">Convert.</span>
+              <span
+                className="reveal-clip block overflow-hidden"
+                style={{ color: '#F5F0EB', transitionDelay: '0ms' }}
+              >
+                AI-Powered Ads
+              </span>
+              <span
+                className="reveal-clip block overflow-hidden"
+                style={{ color: '#F5F0EB', transitionDelay: '120ms' }}
+              >
+                That Actually
+              </span>
+              <span
+                className="reveal-clip block overflow-hidden"
+                style={{ transitionDelay: '240ms' }}
+              >
+                <span className="gradient-text-warm">Convert.</span>
+              </span>
             </h1>
 
             <p className="text-[#9CA3AF] text-base sm:text-lg leading-[1.8] mb-9 max-w-md animate-fade-up delay-200">
-              A complete creative operations platform — submit briefs, manage requests, review deliverables, and collaborate with your team in one place. Powered by <span className="text-white font-medium">Pixie</span>, our AI engine that turns product info into campaign-ready hooks, color stories, and visual direction before production begins.
+              A complete creative operations platform — submit briefs, manage requests, review deliverables, and collaborate with your team in one place. Powered by <span className="text-white font-semibold">Pixie</span>, our AI engine that turns product info into campaign-ready hooks, color stories, and visual direction before production begins.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 animate-fade-up delay-300">
@@ -218,21 +298,30 @@ export default function Hero({ onSignupOpen }: Props) {
               </a>
             </div>
 
-            {/* Stats row */}
+            {/* Animated stat counters */}
             <div
+              ref={statsRef}
               className="grid grid-cols-3 gap-4 mt-12 pt-10 animate-fade-up delay-400"
               style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}
             >
-              {[
-                { value: '500+', label: 'Brands Scaled' },
-                { value: '10×', label: 'Avg ROAS' },
-                { value: '48h', label: 'Turnaround' },
-              ].map((stat) => (
-                <div key={stat.label}>
-                  <div className="font-mono text-2xl sm:text-3xl font-bold gradient-text mb-1 tracking-tight">{stat.value}</div>
-                  <div className="text-[10px] sm:text-xs text-white/30 font-medium uppercase tracking-widest">{stat.label}</div>
+              <div className={statsVisible ? 'animate-count-up' : ''}>
+                <div className="font-mono text-2xl sm:text-3xl font-bold gradient-text-warm mb-1 tracking-tight">
+                  {statsVisible ? `${counts.brands}+` : '0+'}
                 </div>
-              ))}
+                <div className="text-[10px] sm:text-xs text-white/30 font-medium uppercase tracking-widest">Brands Scaled</div>
+              </div>
+              <div className={statsVisible ? 'animate-count-up' : ''} style={{ animationDelay: '60ms' }}>
+                <div className="font-mono text-2xl sm:text-3xl font-bold gradient-text-warm mb-1 tracking-tight">
+                  {statsVisible ? (counts.roas >= 10 ? '10×' : `${counts.roas.toFixed(1)}×`) : '0×'}
+                </div>
+                <div className="text-[10px] sm:text-xs text-white/30 font-medium uppercase tracking-widest">Avg ROAS</div>
+              </div>
+              <div className={statsVisible ? 'animate-count-up' : ''} style={{ animationDelay: '120ms' }}>
+                <div className="font-mono text-2xl sm:text-3xl font-bold gradient-text-warm mb-1 tracking-tight">
+                  {statsVisible ? `${counts.turnaround}h` : '0h'}
+                </div>
+                <div className="text-[10px] sm:text-xs text-white/30 font-medium uppercase tracking-widest">Turnaround</div>
+              </div>
             </div>
           </div>
 

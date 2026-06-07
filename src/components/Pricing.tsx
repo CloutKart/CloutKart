@@ -54,7 +54,7 @@ export default function Pricing({ onSignupOpen }: Props) {
           <h2 className="reveal delay-100 font-heading font-bold leading-[1.06] tracking-tight mb-3 sm:mb-4" style={{ fontSize: 'clamp(2rem, 5vw, 4.5rem)' }}>
             Start Free.
             <br />
-            <span className="gradient-text">Scale When Ready.</span>
+            <span style={{ color: '#F5F0EB' }}>Scale When Ready.</span>
           </h2>
           <p className="reveal delay-200 text-[#D1D5DB] text-sm sm:text-lg max-w-xl mx-auto leading-relaxed">
             No subscriptions. No upfront cost. Just results first.
@@ -64,9 +64,9 @@ export default function Pricing({ onSignupOpen }: Props) {
         {/* Two-step layout */}
         <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-6 items-center">
 
-          {/* Step 1 */}
+          {/* Step 1 — border pulse */}
           <div className="reveal-scale delay-100 gradient-border-wrap">
-            <div className="glass-card rounded-[20px] p-6 sm:p-8 flex flex-col h-full">
+            <div className="glass-card animate-border-pulse rounded-[20px] p-6 sm:p-8 flex flex-col h-full">
               <div className="relative z-10 mb-6">
                 <span className="eyebrow-pill text-[10px] px-3 py-1 mb-4 inline-flex">STEP 01</span>
                 <h3 className="font-heading font-bold text-white text-2xl mb-3">Get 3 Free Creatives</h3>
@@ -98,15 +98,25 @@ export default function Pricing({ onSignupOpen }: Props) {
               <line x1="12" y1="5" x2="12" y2="19" />
               <polyline points="19 12 12 19 5 12" />
             </svg>
-            <span style={{ fontSize: 12, fontFamily: "'Sora', sans-serif", letterSpacing: '0.1em', textTransform: 'uppercase' }}>Then</span>
+            <span className="font-heading" style={{ fontSize: 12, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Then</span>
           </div>
 
-          {/* Step 2 */}
-          <div className="reveal-scale delay-200">
-            <div className="glass-card rounded-[20px] p-6 sm:p-8 flex flex-col h-full" style={{ background: 'rgba(255,255,255,0.025)' }}>
+          {/* Step 2 — indigo glow */}
+          <div className="reveal-scale delay-200 relative">
+            {/* Ambient indigo orb at top */}
+            <div
+              className="absolute pointer-events-none"
+              style={{
+                width: '200px', height: '80px', borderRadius: '50%',
+                background: 'radial-gradient(ellipse, rgba(99,102,241,0.18) 0%, transparent 70%)',
+                top: '-20px', left: '50%', transform: 'translateX(-50%)',
+                zIndex: 0,
+              }}
+            />
+            <div className="glass-card rounded-[20px] p-6 sm:p-8 flex flex-col h-full relative" style={{ background: 'rgba(255,255,255,0.025)', boxShadow: '0 0 0 1px rgba(99,102,241,0.15) inset, 0 8px 32px rgba(0,0,0,0.45)' }}>
               <div className="relative z-10 mb-6">
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 mb-4 rounded-full text-[10px] font-semibold tracking-widest uppercase"
-                  style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#9CA3AF' }}>
+                  style={{ background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.25)', color: '#818CF8' }}>
                   STEP 02
                 </span>
                 <h3 className="font-heading font-bold text-white text-2xl mb-3">Clout Club</h3>
@@ -117,7 +127,7 @@ export default function Pricing({ onSignupOpen }: Props) {
               <div className="relative z-10 space-y-3 flex-1 mb-8">
                 {step2Features.map((f) => (
                   <div key={f} className="flex items-start gap-3">
-                    <span className="text-[#9CA3AF] text-xs mt-0.5 flex-shrink-0">✦</span>
+                    <span className="text-xs mt-0.5 flex-shrink-0" style={{ color: '#818CF8' }}>✦</span>
                     <span className="text-[#D1D5DB] text-sm leading-relaxed">{f}</span>
                   </div>
                 ))}

@@ -8,8 +8,8 @@ export default function MessageFirst() {
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            entry.target.querySelectorAll('.reveal, .reveal-scale').forEach((el, i) => {
-              setTimeout(() => el.classList.add('visible'), i * 120);
+            entry.target.querySelectorAll('.reveal, .reveal-scale, .reveal-clip').forEach((el, i) => {
+              setTimeout(() => el.classList.add('visible'), i * 100);
             });
           }
         });
@@ -24,34 +24,52 @@ export default function MessageFirst() {
     <section ref={sectionRef} className="relative py-24 md:py-40 [overflow-x:clip]" id="message" style={{ background: 'transparent' }}>
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
 
-        {/* Big typographic statement */}
-        <div className="reveal mb-16 md:mb-20">
-          <div className="eyebrow-pill mb-10">
+        {/* Big typographic statement — weight contrast: 300 / 800 / 300 */}
+        <div className="mb-16 md:mb-20">
+          <div className="reveal eyebrow-pill mb-10">
             <span className="w-1 h-1 rounded-full bg-brand-purple" />
             The Philosophy
           </div>
-          <div className="space-y-0">
-            {[
-              { text: "It's not about the ad.", dim: false },
-              { text: "It's about the message.", dim: false, gradient: true },
-              { text: "The ad is just the vehicle.", dim: true },
-            ].map((line, i) => (
-              <div
-                key={i}
-                className={`reveal font-heading font-bold leading-[1.04] tracking-tight block`}
-                style={{
-                  fontSize: 'clamp(2.4rem, 6.5vw, 6rem)',
-                  transitionDelay: `${i * 100}ms`,
-                  color: line.dim ? 'rgba(255,255,255,0.2)' : '#ffffff',
-                }}
-              >
-                {line.gradient ? (
-                  <span className="gradient-text-animated">{line.text}</span>
-                ) : (
-                  line.text
-                )}
-              </div>
-            ))}
+
+          <div className="space-y-1">
+            {/* Line 1: light, receding */}
+            <div
+              className="reveal-clip font-heading leading-[1.04] tracking-[-0.03em] block"
+              style={{
+                fontSize: 'clamp(2.8rem, 7.5vw, 6rem)',
+                fontWeight: 300,
+                color: 'rgba(255,255,255,0.32)',
+                transitionDelay: '0ms',
+              }}
+            >
+              It's not about the ad.
+            </div>
+
+            {/* Line 2: bold, italic, gradient — THE focal line */}
+            <div
+              className="reveal-clip font-heading leading-[1.04] tracking-[-0.035em] block"
+              style={{
+                fontSize: 'clamp(2.8rem, 7.5vw, 6rem)',
+                fontWeight: 800,
+                fontStyle: 'italic',
+                transitionDelay: '120ms',
+              }}
+            >
+              <span className="gradient-text-warm">It's about the message.</span>
+            </div>
+
+            {/* Line 3: light, most receding */}
+            <div
+              className="reveal-clip font-heading leading-[1.04] tracking-[-0.03em] block"
+              style={{
+                fontSize: 'clamp(2.8rem, 7.5vw, 6rem)',
+                fontWeight: 300,
+                color: 'rgba(255,255,255,0.16)',
+                transitionDelay: '240ms',
+              }}
+            >
+              The ad is just the vehicle.
+            </div>
           </div>
         </div>
 
@@ -73,7 +91,7 @@ export default function MessageFirst() {
           </div>
         </div>
 
-        {/* Three truths — no icons, pure type */}
+        {/* Three truths */}
         <div
           className="reveal delay-400 grid sm:grid-cols-3 gap-0"
           style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}

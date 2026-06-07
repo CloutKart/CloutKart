@@ -12,6 +12,7 @@ import ScrollStory from './components/ScrollStory';
 import PixieSection from './components/PixieSection';
 import Pricing from './components/Pricing';
 import Portfolio from './components/Portfolio';
+import Testimonials from './components/Testimonials';
 import FAQ from './components/FAQ';
 import Contact from './components/Contact';
 import Footer from './components/Footer';
@@ -69,6 +70,7 @@ function LandingPage({ onSignupOpen }: { onSignupOpen: () => void }) {
           <Services />
           <Pricing onSignupOpen={onSignupOpen} />
           <Portfolio />
+          <Testimonials />
           <FAQ />
           <Contact />
         </main>

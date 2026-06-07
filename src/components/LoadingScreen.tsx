@@ -20,6 +20,8 @@ export default function LoadingScreen() {
 
   if (!visible) return null;
 
+  const pct = Math.min(100, Math.round(progress));
+
   return (
     <div
       className={`loading-screen ${progress >= 100 ? 'hidden' : ''}`}
@@ -32,16 +34,25 @@ export default function LoadingScreen() {
           className="h-16 w-auto object-contain opacity-90"
         />
 
-        {/* Progress bar */}
-        <div className="w-40 h-px bg-white/10 rounded-full overflow-hidden">
+        {/* Shimmer gradient progress bar */}
+        <div className="relative w-44 h-0.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
           <div
-            className="h-full bg-white/60 rounded-full transition-all duration-300"
-            style={{ width: `${Math.min(progress, 100)}%` }}
-          />
+            className="h-full rounded-full relative overflow-hidden"
+            style={{
+              width: `${pct}%`,
+              background: 'linear-gradient(90deg, #A855F7 0%, #818CF8 60%, #06B6D4 100%)',
+              transition: 'width 0.25s ease',
+            }}
+          >
+            <div
+              className="absolute inset-0 animate-shimmer"
+              style={{ background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.45) 50%, transparent 100%)' }}
+            />
+          </div>
         </div>
 
-        <div className="text-[10px] text-white/20 font-medium tracking-[0.3em] uppercase">
-          Loading
+        <div className="font-mono text-[11px] text-white/25 tracking-[0.25em]">
+          {pct}%
         </div>
       </div>
     </div>
