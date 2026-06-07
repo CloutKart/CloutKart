@@ -530,14 +530,6 @@ img { max-width: 100%; height: auto; }
 }
 .animate-scan-line { animation: scanLine 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 
-/* Hello-style left-to-right wipe — mimics pen writing on script fonts */
-@keyframes helloWrite {
-  0%   { clip-path: inset(0 102% 0 0); }
-  100% { clip-path: inset(0 0% 0 0); }
-}
-.animate-hello-write {
-  animation: helloWrite 1.8s cubic-bezier(0.25, 0, 0.35, 1) forwards;
-}
 
 /* ─── prefers-reduced-motion (WCAG AA, non-optional) ─────── */
 @media (prefers-reduced-motion: reduce) {
@@ -556,7 +548,6 @@ img { max-width: 100%; height: auto; }
   .animate-marquee, .animate-marquee-reverse,
   .animate-orb-drift, .animate-orb-drift-alt,
   .animate-border-pulse, .animate-count-up, .animate-shimmer, .animate-scan-line,
-  .animate-hello-write,
   .animate-vision-section, .animate-swatch-pop,
   .animate-deliverable-slide, .animate-kart-roll,
   .animate-streak-1, .animate-streak-2, .animate-streak-3 {

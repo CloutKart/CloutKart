@@ -7,6 +7,19 @@ interface Props {
   onSignupOpen: () => void;
 }
 
+// Borel font glyphs for "Convert." — pre-extracted SVG paths, Y-flipped, x-cumulative
+// viewBox: 0 0 4643 830  (50px top padding above tallest ascender)
+const CONVERT_PATHS = [
+  'M382 814Q280 814 206.5 769.0Q133 724 94.0 643.0Q55 562 55 453Q55 337 97.5 249.5Q140 162 216.0 113.0Q292 64 390 64Q468 64 532.5 95.5Q597 127 637 183Q632 201 611.5 220.0Q591 239 571 245Q535 198 489.0 176.0Q443 154 390 154Q319 154 265.0 191.0Q211 228 181.0 294.0Q151 360 151 448Q151 531 178.5 593.0Q206 655 259.5 689.5Q313 724 390 724Q457 724 506.0 697.0Q555 670 595 621Q614 627 634.0 643.0Q654 659 662 675Q616 743 543.5 778.5Q471 814 382 814Z',
+  'M698 728Q731 728 762.5 696.5Q794 665 816 612Q812 588 812 563Q812 491 843.0 435.0Q874 379 927.5 346.5Q981 314 1048 314Q1115 314 1168.0 346.5Q1221 379 1251.5 435.0Q1282 491 1282 563Q1282 635 1251.5 692.0Q1221 749 1168.5 781.5Q1116 814 1048 814Q987 814 937.5 787.5Q888 761 856 715Q794 814 691 814Q678 814 670.0 802.0Q662 790 662 771Q662 728 698 728ZM1047 728Q1111 728 1149.5 683.0Q1188 638 1188 563Q1188 526 1177 495Q1117 493 1068.5 471.0Q1020 449 992 411Q952 428 929.0 468.5Q906 509 906 565Q906 638 944.5 683.0Q983 728 1047 728Z',
+  'M1322 814Q1309 814 1301.0 802.0Q1293 790 1293 771Q1293 728 1329 728Q1361 728 1386.5 695.5Q1412 663 1431 587L1461 470Q1503 314 1621 314Q1666 314 1697.0 340.5Q1728 367 1740 412Q1768 365 1812.0 339.5Q1856 314 1910 314Q1988 314 2030.5 365.0Q2073 416 2073 508V625Q2073 680 2087.5 704.0Q2102 728 2134 728Q2148 728 2155.5 740.0Q2163 752 2163 772Q2163 788 2154.5 801.0Q2146 814 2127 814Q1982 814 1982 636V508Q1982 400 1897 400Q1853 400 1819.5 435.0Q1786 470 1767.5 532.0Q1749 594 1749 676V800Q1739 803 1727.0 805.0Q1715 807 1704 807Q1680 807 1659 800V481Q1659 442 1649.0 421.0Q1639 400 1613 400Q1592 400 1577.0 419.0Q1562 438 1551 480L1514 624Q1488 723 1442.0 768.5Q1396 814 1322 814Z',
+  'M2127 814Q2114 814 2106.0 802.0Q2098 790 2098 771Q2098 728 2134 728Q2166 728 2191.5 695.5Q2217 663 2236 587L2266 470Q2308 314 2426 314Q2479 314 2516.5 355.5Q2554 397 2554 468V619Q2554 728 2618 728Q2659 728 2694.0 695.0Q2729 662 2750.5 608.5Q2772 555 2772 494Q2772 486 2772 478Q2725 460 2699 430Q2702 398 2716.0 371.5Q2730 345 2750.5 329.5Q2771 314 2790 314Q2823 314 2843.5 362.5Q2864 411 2864 486Q2864 579 2830.5 653.5Q2797 728 2739.0 771.0Q2681 814 2608 814Q2541 814 2502.0 766.5Q2463 719 2463 638V481Q2463 437 2450.0 418.5Q2437 400 2418 400Q2397 400 2382.0 419.0Q2367 438 2356 480L2319 624Q2293 723 2247.0 768.5Q2201 814 2127 814Z',
+  'M2928 814Q2915 814 2907.0 802.0Q2899 790 2899 771Q2899 728 2935 728Q2964 728 2994.0 718.5Q3024 709 3064 686Q3025 618 3025 526Q3025 464 3048.0 416.5Q3071 369 3112.0 341.5Q3153 314 3205 314Q3249 314 3283.0 334.5Q3317 355 3336.0 391.0Q3355 427 3355 474Q3355 538 3317.5 591.0Q3280 644 3191 706Q3223 729 3277 729Q3291 729 3299.0 741.0Q3307 753 3307 773Q3307 792 3298.0 803.0Q3289 814 3272 814Q3224 814 3182.0 798.0Q3140 782 3112 754Q3016 814 2928 814ZM3112 518Q3112 597 3140 644Q3205 599 3236.5 556.0Q3268 513 3268 474Q3268 438 3250.5 417.5Q3233 397 3202 397Q3163 397 3137.5 432.0Q3112 467 3112 518Z',
+  'M3370 814Q3357 814 3349.0 802.0Q3341 790 3341 771Q3341 728 3377 728Q3421 728 3455.5 691.5Q3490 655 3510.5 592.0Q3531 529 3531 452Q3531 434 3529.0 419.0Q3527 404 3524 394Q3515 385 3504.5 365.0Q3494 345 3486.5 322.5Q3479 300 3479 286Q3491 267 3517.5 256.5Q3544 246 3576 251Q3595 286 3607 339Q3637 338 3688 326Q3720 319 3739.5 316.5Q3759 314 3773 314Q3827 314 3858.0 354.5Q3889 395 3889 464V625Q3889 680 3903.5 704.0Q3918 728 3950 728Q3964 728 3971.5 740.0Q3979 752 3979 772Q3979 788 3970.5 801.0Q3962 814 3943 814Q3798 814 3798 636V481Q3798 436 3788.0 418.0Q3778 400 3752 400Q3743 400 3732.0 402.0Q3721 404 3693 410Q3644 420 3619 422Q3620 438 3620 454Q3620 562 3589.0 643.0Q3558 724 3501.5 769.0Q3445 814 3370 814Z',
+  'M3950 728Q3975 728 4007.5 713.0Q4040 698 4071.0 662.0Q4102 626 4122.0 564.5Q4142 503 4142 410V314H4032Q4025 298 4025.0 274.0Q4025 250 4032 234H4142V57Q4161 50 4188 50Q4212 50 4234 57V234H4384Q4392 250 4392.0 274.0Q4392 298 4384 314H4234V521Q4234 621 4264.5 674.5Q4295 728 4351 728Q4380 728 4380 772Q4380 791 4370.5 802.5Q4361 814 4344 814Q4280 814 4235.5 777.0Q4191 740 4169 673Q4127 746 4066.5 780.0Q4006 814 3943 814Q3930 814 3922.0 801.5Q3914 789 3914 771Q3914 752 3923.0 740.0Q3932 728 3950 728Z',
+  'M4492 814Q4464 814 4444.0 793.5Q4424 773 4424 745Q4424 717 4444.0 697.0Q4464 677 4492 677Q4520 677 4540.5 697.0Q4561 717 4561 745Q4561 773 4540.5 793.5Q4520 814 4492 814Z',
+];
+
 function VisionPreview() {
   const colors = [
     { name: 'Mocha Morning', hex: '#9B5B1A' },
@@ -157,10 +170,11 @@ export default function Hero({ onSignupOpen }: Props) {
   const { isLoggedIn } = useAuth();
   const navigate = useNavigate();
 
-  // Stat counter state
   const [statsVisible, setStatsVisible] = useState(false);
   const [counts, setCounts] = useState({ brands: 0, roas: 0, turnaround: 0 });
   const [convertActive, setConvertActive] = useState(false);
+  const [svgReady, setSvgReady] = useState(false);
+  const convertSvgRef = useRef<SVGSVGElement>(null);
 
   // Scroll-reveal for .reveal, .reveal-scale, and .reveal-clip elements
   useEffect(() => {
@@ -183,6 +197,44 @@ export default function Hero({ onSignupOpen }: Props) {
     if (heroRef.current) observer.observe(heroRef.current);
     return () => observer.disconnect();
   }, []);
+
+  // Initialize SVG paths: measure real length, set initial hidden state
+  useEffect(() => {
+    const svg = convertSvgRef.current;
+    if (!svg) return;
+    svg.querySelectorAll('path').forEach((el) => {
+      const len = (el as SVGPathElement).getTotalLength();
+      el.style.strokeDasharray = String(len);
+      el.style.strokeDashoffset = String(len);
+      el.style.fillOpacity = '0';
+    });
+    setSvgReady(true);
+  }, []);
+
+  // Per-character stroke-draw + fill-in animation via Web Animations API
+  useEffect(() => {
+    const svg = convertSvgRef.current;
+    if (!convertActive || !svg) return;
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    svg.querySelectorAll('path').forEach((el, i) => {
+      const path = el as SVGPathElement;
+      if (reduced) {
+        path.style.strokeDashoffset = '0';
+        path.style.fillOpacity = '1';
+        return;
+      }
+      const len = parseFloat(path.style.strokeDasharray || '5000');
+      const delay = i * 210;
+      path.animate(
+        [{ strokeDashoffset: String(len) }, { strokeDashoffset: '0' }],
+        { duration: 420, delay, easing: 'cubic-bezier(0.4, 0, 0.2, 1)', fill: 'forwards' }
+      );
+      path.animate(
+        [{ fillOpacity: '0' }, { fillOpacity: '1' }],
+        { duration: 280, delay: delay + 380, fill: 'forwards' }
+      );
+    });
+  }, [convertActive]);
 
   // Animated stat counters — one-shot on first intersection
   useEffect(() => {
@@ -281,21 +333,42 @@ export default function Hero({ onSignupOpen }: Props) {
               >
                 That Actually
               </span>
-              {/* "Convert." — Borel script with left-to-right wipe (pen-on-paper effect) */}
-              <span className="block" style={{ lineHeight: 1.15 }}>
-                <span
-                  className={`gradient-text-warm${convertActive ? ' animate-hello-write' : ''}`}
+              {/* "Convert." — Borel glyphs as SVG paths, animated character by character */}
+              <span className="block" style={{ lineHeight: 1.1, overflow: 'visible' }}>
+                <svg
+                  ref={convertSvgRef}
+                  viewBox="0 0 4643 830"
+                  aria-label="Convert."
+                  role="img"
+                  preserveAspectRatio="xMinYMin meet"
                   style={{
-                    fontFamily: "'Borel', cursive",
-                    fontSize: 'clamp(3rem, 7vw, 5.6rem)',
-                    fontWeight: 400,
-                    display: 'inline-block',
-                    paddingBottom: '0.08em',
-                    ...(convertActive ? {} : { clipPath: 'inset(0 102% 0 0)' }),
+                    display: 'block',
+                    width: '100%',
+                    aspectRatio: '4643 / 830',
+                    overflow: 'visible',
+                    visibility: svgReady ? 'visible' : 'hidden',
                   }}
                 >
-                  Convert.
-                </span>
+                  <defs>
+                    <linearGradient id="convertGrad" x1="0" y1="0" x2="1" y2="0">
+                      <stop offset="0%" stopColor="#C084FC" />
+                      <stop offset="50%" stopColor="#A855F7" />
+                      <stop offset="100%" stopColor="#818CF8" />
+                    </linearGradient>
+                  </defs>
+                  {CONVERT_PATHS.map((d, i) => (
+                    <path
+                      key={i}
+                      d={d}
+                      fill="url(#convertGrad)"
+                      stroke="url(#convertGrad)"
+                      strokeWidth="2"
+                      vectorEffect="non-scaling-stroke"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  ))}
+                </svg>
               </span>
             </h1>
 
