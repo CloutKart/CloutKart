@@ -38,6 +38,7 @@ export default {
         'border-pulse':     'borderPulse 2.5s ease-in-out infinite',
         'count-up':         'countUp 0.6s cubic-bezier(0.16,1,0.3,1) forwards',
         'shimmer':          'shimmer 2s ease-in-out infinite',
+        'scan-line':        'scanLine 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards',
       },
       keyframes: {
         float: {
@@ -87,6 +88,11 @@ export default {
         shimmer: {
           '0%':   { transform: 'translateX(-100%)' },
           '100%': { transform: 'translateX(200%)' },
+        },
+        scanLine: {
+          '0%':   { transform: 'translateX(-102%)', opacity: '1' },
+          '85%':  { opacity: '1' },
+          '100%': { transform: 'translateX(102%)', opacity: '0' },
         },
       },
       backdropBlur: {

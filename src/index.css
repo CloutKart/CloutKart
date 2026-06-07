@@ -523,6 +523,13 @@ img { max-width: 100%; height: auto; }
 .animate-border-pulse   { animation: borderPulse 2.5s ease-in-out infinite; }
 .animate-count-up       { animation: countUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 
+@keyframes scanLine {
+  0%   { transform: translateX(-102%); opacity: 1; }
+  85%  { opacity: 1; }
+  100% { transform: translateX(102%); opacity: 0; }
+}
+.animate-scan-line { animation: scanLine 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
 /* ─── prefers-reduced-motion (WCAG AA, non-optional) ─────── */
 @media (prefers-reduced-motion: reduce) {
   .reveal, .reveal-scale {
@@ -539,7 +546,7 @@ img { max-width: 100%; height: auto; }
   .animate-fade-up, .animate-fade-in,
   .animate-marquee, .animate-marquee-reverse,
   .animate-orb-drift, .animate-orb-drift-alt,
-  .animate-border-pulse, .animate-count-up, .animate-shimmer,
+  .animate-border-pulse, .animate-count-up, .animate-shimmer, .animate-scan-line,
   .animate-vision-section, .animate-swatch-pop,
   .animate-deliverable-slide, .animate-kart-roll,
   .animate-streak-1, .animate-streak-2, .animate-streak-3 {
