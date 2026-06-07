@@ -104,6 +104,7 @@ export default function MessageFirst() {
                 style={{
                   transitionDelay: `${100 + wi * 80}ms`,
                   marginRight: wi < 3 ? '0.2em' : 0,
+                  paddingRight: '0.08em', // italic glyph overhang bleed
                 }}
               >
                 {word}
