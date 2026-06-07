@@ -4,8 +4,8 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans:    ['Manrope', 'system-ui', 'sans-serif'],
-        heading: ['Bricolage Grotesque', 'system-ui', 'sans-serif'],
+        sans:    ['Inter', 'system-ui', 'sans-serif'],
+        heading: ['Montserrat', 'system-ui', 'sans-serif'],
         mono:    ['DM Mono', 'monospace'],
       },
       colors: {

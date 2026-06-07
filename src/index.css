@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Manrope:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,700;1,800;1,900&family=Inter:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -19,7 +19,7 @@
       radial-gradient(circle, rgba(255,255,255,0.07) 1px, transparent 1px);
     background-size: 100% 100%, 28px 28px;
     color: #D1D5DB;
-    font-family: 'Manrope', system-ui, sans-serif;
+    font-family: 'Inter', system-ui, sans-serif;
     overflow-x: hidden;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -27,7 +27,7 @@
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Bricolage Grotesque', system-ui, sans-serif;
+    font-family: 'Montserrat', system-ui, sans-serif;
     color: #F5F0EB;
     text-wrap: balance;
   }
