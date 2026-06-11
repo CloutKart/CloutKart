@@ -5,8 +5,10 @@ import LoadingScreen from './components/LoadingScreen';
 import CursorGlow from './components/CursorGlow';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
+import About from './components/About';
 import MessageFirst from './components/MessageFirst';
 import Services from './components/Services';
+import Process from './components/Process';
 import Marquee from './components/Marquee';
 import ScrollStory from './components/ScrollStory';
 import PixieSection from './components/PixieSection';
@@ -63,10 +65,12 @@ function LandingPage({ onSignupOpen }: { onSignupOpen: () => void }) {
         <main>
           <Hero onSignupOpen={onSignupOpen} />
           <Marquee />
+          <About />
           <MessageFirst />
           <PixieSection onSignupOpen={onSignupOpen} />
           <ScrollStory />
           <Services />
+          <Process />
           <Pricing onSignupOpen={onSignupOpen} />
           <Portfolio />
           <FAQ />
