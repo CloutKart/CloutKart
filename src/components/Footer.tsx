@@ -31,10 +31,9 @@ export default function Footer() {
 
   return (
     <footer
-      data-theme="dark"
       className="relative border-t border-white/[0.06] [overflow-x:clip]"
       style={{
-        background: 'var(--bg)',
+        background: 'var(--bg-elev)',
         backdropFilter: 'blur(8px)',
         WebkitBackdropFilter: 'blur(8px)',
       }}

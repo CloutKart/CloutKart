@@ -66,18 +66,24 @@ export default function Navbar({ onSignupOpen }: Props) {
     <>
       <div className="scroll-progress-bar" style={{ width: `${scrollProgress}%` }} />
 
-      <nav
-        className={`site-nav fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-          scrolled ? 'border-b border-white/[0.08] shadow-2xl shadow-black/60' : ''
-        }`}
-        style={{
-          background: scrolled ? 'var(--nav-bg)' : 'transparent',
-          backdropFilter: scrolled ? 'blur(20px)' : 'none',
-          WebkitBackdropFilter: scrolled ? 'blur(20px)' : 'none',
-        }}
-      >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-[68px]">
+      <div className="fixed top-0 inset-x-0 z-50 px-3 sm:px-4 pointer-events-none">
+        <nav
+          className="site-nav pointer-events-auto mx-auto max-w-5xl border transition-all duration-[400ms] ease-[cubic-bezier(0.22,1,0.36,1)]"
+          style={{
+            // Hero: a notch flush to the top edge (square top, rounded bottom).
+            // Scroll: detaches into a floating rounded pill.
+            marginTop: scrolled ? '14px' : '0px',
+            borderRadius: scrolled ? '9999px' : '0 0 22px 22px',
+            borderTopWidth: scrolled ? '1px' : '0px',
+            borderColor: 'var(--border)',
+            background: 'var(--nav-bg)',
+            backdropFilter: 'blur(20px)',
+            WebkitBackdropFilter: 'blur(20px)',
+            boxShadow: scrolled ? 'var(--shadow-card-hover)' : 'var(--shadow-card)',
+          }}
+        >
+          <div className="px-3 sm:px-4 lg:pl-6 lg:pr-4">
+            <div className={`flex items-center justify-between transition-all duration-300 ${scrolled ? 'h-[52px]' : 'h-[60px]'}`}>
             <a href="/" className="flex items-center gap-3 group flex-shrink-0">
               <img src="/logo.png" alt="CloutKart" className="h-8 sm:h-10 w-auto object-contain" />
             </a>
@@ -112,7 +118,8 @@ export default function Navbar({ onSignupOpen }: Props) {
             </div>
           </div>
         </div>
-      </nav>
+        </nav>
+      </div>
 
       <div
         className={`md:hidden fixed inset-0 z-40 transition-opacity duration-300 ${

@@ -20,7 +20,7 @@ function DemoMock() {
   const visionBorder = `rgba(${c0},0.30)`;
 
   return (
-    <div data-theme="dark" className="w-full rounded-2xl overflow-hidden border border-white/[0.08] shadow-2xl" style={{ background: '#111111' }}>
+    <div className="w-full rounded-2xl overflow-hidden border border-white/[0.08]" style={{ background: 'var(--bg-elev)', boxShadow: 'var(--shadow-card-hover)' }}>
       {/* top bar */}
       <div className="flex items-center gap-1.5 px-4 py-3 border-b border-white/[0.06]" style={{ background: 'rgb(var(--white-rgb) / 0.02)' }}>
         {['#EF4444','#F59E0B','var(--success)'].map(c => (
@@ -80,7 +80,7 @@ function DemoMock() {
             <div className="text-[8px] font-semibold text-white/30 uppercase tracking-widest mb-1.5 font-mono">Creative Vibe</div>
             <div className="flex items-start gap-2">
               <span className="px-2 py-0.5 rounded-full text-[9px] font-bold flex-shrink-0"
-                style={{ background: 'rgb(var(--accent-rgb) / 0.2)', border: '1px solid rgb(var(--accent-rgb) / 0.35)', color: '#E9D5FF' }}>
+                style={{ background: 'rgb(var(--accent-rgb) / 0.14)', border: '1px solid rgb(var(--accent-rgb) / 0.35)', color: 'var(--accent-ink)' }}>
                 Brewed Awakening
               </span>
               <span className="text-[9px] text-white/40 leading-relaxed">

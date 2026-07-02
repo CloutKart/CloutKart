@@ -16,11 +16,20 @@ re-resolves automatically. Tailwind's `white` is remapped to `--white-rgb`, so
 the many existing `text-white` / `bg-white/[x]` / `border-white/[x]` utilities
 flip with the theme for free.
 
-Overall aesthetic is glass-on-surface: semi-transparent cards with backdrop blur.
+Overall aesthetic is glass-on-surface. In **light** mode the canvas is a crisp
+near-neutral gray and cards are pure white — separation comes from crisp borders +
+defined, violet-tinted shadows (high-contrast editorial), not a tinted canvas.
+
 **Product mockups** (Hero "Our Vision" card, the Pixie dashboard preview, the
-ScrollStory ad phone) and the **footer** are pinned to dark in both themes via a
-nested `data-theme="dark"` scope, so they read as dark-app screenshots regardless
-of page theme. The `/dashboard` and `/admin` app routes are likewise pinned dark.
+ScrollStory scenes) are **theme-aware**: their chrome (panels, inputs, browser bar,
+phone screen) uses tokens and renders as light UI on the light page / dark UI on
+the dark page. Only *intrinsic content* stays fixed: the extracted coffee color
+swatches, the Instagram brand gradient, and the coffee **ad-creative image** (whose
+overlaid hook text is pinned `data-theme="dark"` to stay legible over the dark
+image). Because the real `/dashboard` and `/admin` app is dark-only (still pinned
+dark), a light dashboard mockup is a marketing illustration, not a literal
+screenshot. The **footer** stays a deliberate full-width dark anchor band in both
+themes.
 
 ## Color Palette
 
@@ -29,18 +38,18 @@ Tokens (dark / light):
 
 | Role | Token | Dark | Light |
 |---|---|---|---|
-| Canvas | `--bg` | `#080808` | `#FBFBFD` |
-| Elevated surface | `--bg-elev` | `#0E0E10` | `#FFFFFF` |
-| Overlay base (`white`) | `--white-rgb` | `255 255 255` | `24 22 32` |
-| Surface fill | `--surface` | white 4% | ink 4% |
-| Border | `--border` | white 10% | ink 10% |
-| Ink (headings) | `--ink` | `#F5F0EB` | `#16151A` |
-| Ink body | `--ink-body` | `#D1D5DB` | `#3A3844` |
-| Ink muted | `--ink-muted` | `#9CA3AF` | `#635F70` |
+| Canvas | `--bg` | `#080808` | `#F2F2F6` |
+| Elevated surface / cards | `--bg-elev` | `#0E0E10` | `#FFFFFF` |
+| Overlay base (`white`) | `--white-rgb` | `255 255 255` | `20 19 26` |
+| Surface fill | `--surface` | white 4% | white (cards) |
+| Border | `--border` | white 10% | ink 14% (crisp) |
+| Ink (headings) | `--ink` | `#F5F0EB` | `#111016` (near-black) |
+| Ink body | `--ink-body` | `#D1D5DB` | `#2C2A35` |
+| Ink muted | `--ink-muted` | `#9CA3AF` | `#5C5869` |
 | Accent | `--accent` | `#7C3AED` | `#6D28D9` |
-| Accent (as text) | `--accent-ink` | `#C084FC` | `#5B21B6` |
+| Accent (as text) | `--accent-ink` | `#C084FC` | `#5B1FB0` |
 | On-accent | `--accent-contrast` | `#FFFFFF` | `#FFFFFF` |
-| Success | `--success` | `#10B981` | `#059669` |
+| Success | `--success` | `#10B981` | `#048960` |
 
 All foreground/background pairs meet WCAG AA (body ≥ 4.5:1, large ≥ 3:1) in both
 themes.

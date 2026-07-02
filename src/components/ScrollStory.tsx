@@ -12,7 +12,7 @@ function BriefScene({ localProg }: { localProg: number }) {
   return (
     <div
       className="w-full max-w-md rounded-2xl overflow-hidden"
-      style={{ background: 'rgba(10,10,10,0.9)', border: '1px solid rgb(var(--white-rgb) / 0.08)', boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}
+      style={{ background: 'var(--bg-elev)', border: '1px solid rgb(var(--white-rgb) / 0.08)', boxShadow: 'var(--shadow-card)' }}
     >
       <div className="px-5 py-3.5 flex items-center gap-2" style={{ borderBottom: '1px solid rgb(var(--white-rgb) / 0.06)' }}>
         <div className="text-[11px] font-bold text-white/50 font-mono uppercase tracking-widest">New Creative Brief</div>
@@ -74,7 +74,7 @@ function VisionScene({ localProg }: { localProg: number }) {
   return (
     <div
       className="w-full max-w-md rounded-2xl overflow-hidden"
-      style={{ background: 'rgba(10,10,10,0.9)', border: '1px solid rgb(var(--white-rgb) / 0.08)', boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}
+      style={{ background: 'var(--bg-elev)', border: '1px solid rgb(var(--white-rgb) / 0.08)', boxShadow: 'var(--shadow-card)' }}
     >
       <div style={vis(sections[0].delay)}>
         <div className="flex items-center justify-between px-5 py-3.5" style={{ borderBottom: '1px solid rgb(var(--white-rgb) / 0.06)' }}>
@@ -93,7 +93,7 @@ function VisionScene({ localProg }: { localProg: number }) {
           <div className="text-[9px] uppercase tracking-widest text-white/25 mb-2 font-mono">Creative Vibe</div>
           <div className="flex items-center gap-2.5">
             <span className="px-3 py-1 rounded-full text-[10px] font-bold"
-              style={{ background: 'rgb(var(--accent-rgb) / 0.15)', border: '1px solid rgb(var(--accent-rgb) / 0.3)', color: '#E9D5FF' }}>
+              style={{ background: 'rgb(var(--accent-rgb) / 0.15)', border: '1px solid rgb(var(--accent-rgb) / 0.3)', color: 'var(--accent-ink)' }}>
               Brewed Awakening
             </span>
             <span className="text-[10px] text-white/35 leading-snug">Raw, earthy, unapologetically effective.</span>
@@ -144,13 +144,14 @@ function AdScene({ localProg }: { localProg: number }) {
     <div className="flex flex-col sm:flex-row items-center justify-center gap-5">
       <div className="relative flex-shrink-0" style={{ width: 180, ...vis(0) }}>
         <div className="rounded-[28px] overflow-hidden"
-          style={{ background: '#0f0f0f', border: '2px solid rgb(var(--white-rgb) / 0.12)', boxShadow: '0 8px 32px rgba(0,0,0,0.7)' }}>
+          style={{ background: 'var(--bg-elev)', border: '2px solid var(--border)', boxShadow: 'var(--shadow-card-hover)' }}>
           <div className="px-3 py-2 flex items-center gap-2" style={{ borderBottom: '1px solid rgb(var(--white-rgb) / 0.07)' }}>
             <div className="w-5 h-5 rounded-full" style={{ background: 'linear-gradient(135deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888)' }} />
             <span className="text-[9px] font-bold text-white/70">brewora</span>
             <span className="ml-auto text-[8px] text-white/30 font-mono">Sponsored</span>
           </div>
-          <div className="relative" style={{ height: 200 }}>
+          {/* Ad creative image — intrinsically dark content, so pin dark to keep overlay text white */}
+          <div className="relative" data-theme="dark" style={{ height: 200 }}>
             <div className="absolute inset-0" style={{ background: 'linear-gradient(145deg, #3a1a08 0%, #7a3510 40%, #1a0a02 100%)' }} />
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="relative">
@@ -210,7 +211,7 @@ function CartScene({ localProg }: { localProg: number }) {
 
   return (
     <div className="w-full max-w-sm space-y-4">
-      <div className="rounded-2xl overflow-hidden" style={{ background: 'rgba(10,10,10,0.9)', border: '1px solid rgb(var(--white-rgb) / 0.08)', boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
+      <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--bg-elev)', border: '1px solid rgb(var(--white-rgb) / 0.08)', boxShadow: 'var(--shadow-card)' }}>
         <div className="flex items-center gap-2.5 px-5 py-3.5" style={{ borderBottom: '1px solid rgb(var(--white-rgb) / 0.06)' }}>
           <ShoppingCart size={14} style={{ color: 'var(--success)' }} />
           <span className="text-[12px] font-bold text-white font-heading">Cart</span>
@@ -241,14 +242,14 @@ function CartScene({ localProg }: { localProg: number }) {
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <div className="rounded-2xl p-4" style={{ background: 'rgba(10,10,10,0.9)', border: '1px solid rgb(var(--accent-rgb) / 0.2)' }}>
+        <div className="rounded-2xl p-4" style={{ background: 'var(--bg-elev)', border: '1px solid rgb(var(--accent-rgb) / 0.2)' }}>
           <div className="flex items-center gap-1.5 mb-1">
             <TrendingUp size={11} style={{ color: 'var(--accent)' }} />
             <span className="text-[9px] font-mono text-white/30 uppercase tracking-widest">ROAS</span>
           </div>
           <div className="font-mono font-bold text-2xl gradient-text">+{roas}%</div>
         </div>
-        <div className="rounded-2xl p-4" style={{ background: 'rgba(10,10,10,0.9)', border: '1px solid rgb(var(--success-rgb) / 0.2)' }}>
+        <div className="rounded-2xl p-4" style={{ background: 'var(--bg-elev)', border: '1px solid rgb(var(--success-rgb) / 0.2)' }}>
           <div className="flex items-center gap-1.5 mb-1">
             <span className="text-[9px] font-mono text-white/30 uppercase tracking-widest">Revenue</span>
           </div>
@@ -386,7 +387,6 @@ export default function ScrollStory() {
               style={{ background: 'radial-gradient(ellipse at center, rgb(var(--accent-rgb) / 0.05) 0%, transparent 70%)' }} />
             {/* Slides use absolute positioning so translateX(100%) reliably equals container width */}
             <div
-              data-theme="dark"
               className="relative overflow-hidden rounded-3xl"
               onTouchStart={(e) => { touchStartX.current = e.touches[0].clientX; }}
               onTouchEnd={(e) => {

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 
-const accentColors = ['var(--accent)', 'var(--accent)', 'var(--accent)'] as const;
+const formats = ['Static', 'Video', 'UGC', 'Story', 'Email', 'Store'];
 
 const truths = [
   {
@@ -13,7 +13,7 @@ const truths = [
   },
   {
     label: 'Foundation that scales',
-    body: 'Build the message once. Deploy it everywhere — ads, store, email, content. All from the same root.',
+    body: 'Build the message once. Deploy it everywhere: ads, store, email, content. All from the same root.',
   },
 ];
 
@@ -29,7 +29,7 @@ export default function MessageFirst() {
           if (entry.isIntersecting) {
             setSectionVisible(true);
             entry.target.querySelectorAll('.reveal, .reveal-scale, .reveal-clip').forEach((el, i) => {
-              setTimeout(() => el.classList.add('visible'), i * 80);
+              setTimeout(() => el.classList.add('visible'), i * 70);
             });
             setTimeout(() => setScanLineActive(true), 720);
           }
@@ -48,16 +48,16 @@ export default function MessageFirst() {
       id="message"
       style={{ background: 'transparent' }}
     >
-      {/* Single subtle spotlight — behind the focal line only */}
+      {/* Subtle spotlight behind the focal line */}
       <div
         className="absolute pointer-events-none animate-orb-drift"
         style={{
-          width: '640px',
-          height: '260px',
+          width: '680px',
+          height: '280px',
           borderRadius: '50%',
-          background: 'radial-gradient(ellipse, rgb(var(--accent-rgb) / 0.07) 0%, transparent 70%)',
-          top: '12%',
-          left: '-6%',
+          background: 'radial-gradient(ellipse, rgb(var(--accent-rgb) / 0.08) 0%, transparent 70%)',
+          top: '8%',
+          left: '-8%',
           zIndex: 0,
           opacity: sectionVisible ? 1 : 0,
           transition: 'opacity 1.6s ease',
@@ -67,143 +67,137 @@ export default function MessageFirst() {
       <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
 
         {/* Eyebrow */}
-        <div className="reveal eyebrow-pill mb-12">
-          <span className="w-1 h-1 rounded-full bg-brand-purple" />
+        <div className="reveal eyebrow-pill mb-10 sm:mb-12">
+          <span className="w-1 h-1 rounded-full" style={{ background: 'var(--accent)' }} />
           The Philosophy
         </div>
 
-        {/* Headline block — size-contrast approach */}
-        <div className="mb-16 md:mb-20">
-
-          {/* Line 1 — supporting, small, dim */}
+        {/* ── Manifesto ─────────────────────────────────────────── */}
+        <div className="mb-16 md:mb-24">
           <div
-            className="reveal-clip font-heading leading-[1.1] tracking-[-0.02em] block mb-2"
-            style={{
-              fontSize: 'clamp(1.5rem, 3vw, 2.2rem)',
-              fontWeight: 300,
-              color: 'rgb(var(--white-rgb) / 0.30)',
-              transitionDelay: '0ms',
-            }}
+            className="reveal-clip font-heading font-light leading-[1.1] tracking-[-0.02em]"
+            style={{ fontSize: 'clamp(1.4rem, 2.8vw, 2.1rem)', color: 'var(--ink-dim)', transitionDelay: '0ms' }}
           >
             It's not about the ad.
           </div>
 
-          {/* Line 2 — focal, dominant, word-by-word reveal */}
-          <div
-            className="font-heading leading-[1.03] tracking-[-0.04em] block my-1"
-            style={{
-              fontSize: 'clamp(3rem, 7.5vw, 6rem)',
-              fontWeight: 800,
-              fontStyle: 'italic',
-            }}
+          <h2
+            className="font-heading font-extrabold leading-[0.98] tracking-[-0.035em] my-1"
+            style={{ fontSize: 'clamp(2.75rem, 8.5vw, 6rem)', color: 'var(--ink)', textWrap: 'balance' }}
           >
-            {["It's", 'about', 'the', 'message.'].map((word, wi) => (
-              <span
-                key={wi}
-                className="reveal-clip inline-block gradient-text-warm"
-                style={{
-                  transitionDelay: `${100 + wi * 80}ms`,
-                  marginRight: wi < 3 ? '0.2em' : 0,
-                  paddingRight: '0.08em', // italic glyph overhang bleed
-                }}
-              >
-                {word}
+            {["It's", 'about', 'the'].map((w, i) => (
+              <span key={i} className="reveal-clip inline-block" style={{ transitionDelay: `${100 + i * 70}ms`, marginRight: '0.22em' }}>
+                {w}
               </span>
             ))}
-          </div>
+            <span className="reveal-clip inline-block" style={{ transitionDelay: '310ms', color: 'var(--accent)' }}>
+              message.
+            </span>
+          </h2>
 
-          {/* Scan line — fires after words reveal */}
-          <div className="relative overflow-hidden" style={{ height: '2px', marginTop: '6px', marginBottom: '8px', borderRadius: '1px' }}>
-            <div
-              className="absolute inset-0 rounded-full"
-              style={{ background: 'rgb(var(--white-rgb) / 0.05)' }}
-            />
+          {/* Scan line */}
+          <div className="relative overflow-hidden" style={{ height: '2px', marginTop: '10px', marginBottom: '12px', borderRadius: '1px', maxWidth: '32rem' }}>
+            <div className="absolute inset-0 rounded-full" style={{ background: 'rgb(var(--white-rgb) / 0.06)' }} />
             {scanLineActive && (
               <div
                 className="animate-scan-line absolute inset-0 rounded-full"
-                style={{
-                  background: 'linear-gradient(90deg, transparent 0%, var(--accent) 30%, var(--accent-ink) 60%, var(--accent) 85%, transparent 100%)',
-                }}
+                style={{ background: 'linear-gradient(90deg, transparent 0%, var(--accent) 30%, var(--accent-ink) 60%, var(--accent) 85%, transparent 100%)' }}
               />
             )}
           </div>
 
-          {/* Line 3 — receding, smaller still */}
           <div
-            className="reveal-clip font-heading leading-[1.1] tracking-[-0.02em] block mt-2"
-            style={{
-              fontSize: 'clamp(1.5rem, 3vw, 2.2rem)',
-              fontWeight: 300,
-              color: 'rgb(var(--white-rgb) / 0.18)',
-              transitionDelay: '500ms',
-            }}
+            className="reveal-clip font-heading font-light leading-[1.1] tracking-[-0.02em]"
+            style={{ fontSize: 'clamp(1.4rem, 2.8vw, 2.1rem)', color: 'var(--ink-dim)', transitionDelay: '460ms' }}
           >
             The ad is just the vehicle.
           </div>
         </div>
 
-        {/* Thin divider before quote */}
+        {/* ── Format diagram: one message → every format ────────── */}
         <div
-          className="reveal mb-12"
-          style={{
-            height: '1px',
-            background: 'linear-gradient(90deg, rgb(var(--accent-rgb) / 0.35) 0%, rgb(var(--accent-rgb) / 0.2) 40%, transparent 80%)',
-          }}
-        />
-
-        {/* Pull-quote — clean blockquote with left-border accent */}
-        <div
-          className="reveal mb-16 md:mb-20 pl-6 sm:pl-8"
-          style={{ borderLeft: '2px solid rgb(var(--accent-rgb) / 0.5)' }}
+          className="reveal mb-16 md:mb-24 rounded-3xl overflow-hidden"
+          style={{ border: '1px solid var(--border)', background: 'var(--surface)', boxShadow: 'var(--shadow-card)' }}
         >
-          <p
-            className="text-ink-body font-semibold leading-[1.6] italic mb-4"
-            style={{ fontSize: 'clamp(1.1rem, 2.2vw, 1.45rem)', maxWidth: '42rem' }}
-          >
-            "A winning message can be translated into{' '}
-            <em className="not-italic gradient-text">anything.</em>"
+          <div className="grid md:grid-cols-[minmax(0,0.9fr)_auto_minmax(0,1.4fr)] items-stretch">
+            {/* The message node */}
+            <div className="relative p-6 sm:p-8 flex flex-col justify-center">
+              <div
+                className="inline-flex self-start items-center gap-2 rounded-full px-3 py-1 mb-4 font-mono text-[10px] font-semibold uppercase tracking-[0.14em]"
+                style={{ background: 'var(--accent)', color: 'var(--accent-contrast)' }}
+              >
+                <span className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--accent-contrast)' }} />
+                The message
+              </div>
+              <div className="font-heading font-extrabold leading-[1.05] tracking-[-0.02em]" style={{ fontSize: 'clamp(1.5rem, 2.6vw, 2rem)', color: 'var(--ink)' }}>
+                One root idea.
+              </div>
+              <p className="mt-2 text-sm leading-relaxed" style={{ color: 'var(--ink-muted)', maxWidth: '18rem' }}>
+                Engineered once, before a single pixel is placed.
+              </p>
+            </div>
+
+            {/* Connector */}
+            <div className="hidden md:flex items-center justify-center px-2" aria-hidden>
+              <svg width="72" height="180" viewBox="0 0 72 180" fill="none" className="overflow-visible">
+                <path d="M0 90 H36" stroke="var(--accent)" strokeWidth="1.5" />
+                <circle cx="36" cy="90" r="3" fill="var(--accent)" />
+                {[16, 54, 90, 126, 164].map((y) => (
+                  <path key={y} d={`M36 90 C 54 90, 54 ${y}, 72 ${y}`} stroke="rgb(var(--accent-rgb) / 0.35)" strokeWidth="1.5" />
+                ))}
+              </svg>
+            </div>
+
+            {/* Formats */}
+            <div
+              className="p-6 sm:p-8 flex flex-col justify-center"
+              style={{ borderTop: '1px solid var(--border-subtle)' }}
+            >
+              <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.14em] mb-4" style={{ color: 'var(--ink-dim)' }}>
+                Every format
+              </div>
+              <div className="flex flex-wrap gap-2.5">
+                {formats.map((f) => (
+                  <span
+                    key={f}
+                    className="inline-flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium font-heading transition-colors duration-200"
+                    style={{ border: '1px solid var(--border)', background: 'var(--bg-elev)', color: 'var(--ink-body)' }}
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--accent)' }} />
+                    {f}
+                  </span>
+                ))}
+              </div>
+              <p className="mt-5 text-sm leading-relaxed" style={{ color: 'var(--ink-muted)' }}>
+                Same message. Different container. Same conversion engine underneath.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Pull-quote ────────────────────────────────────────── */}
+        <div className="reveal mb-16 md:mb-20 max-w-3xl">
+          <div className="h-px mb-7" style={{ background: 'linear-gradient(90deg, var(--accent) 0%, rgb(var(--accent-rgb) / 0.25) 45%, transparent 85%)' }} />
+          <p className="font-heading font-bold leading-[1.25] tracking-[-0.02em]" style={{ fontSize: 'clamp(1.4rem, 3.4vw, 2.4rem)', color: 'var(--ink)' }}>
+            A winning message can be translated into <span style={{ color: 'var(--accent)' }}>anything.</span>
           </p>
-          <p className="text-white/30 text-sm leading-relaxed not-italic max-w-sm">
-            The message is the foundation. The format is the container. CloutKart builds the message first — everything else scales from there.
+          <p className="mt-4 text-sm sm:text-base leading-relaxed" style={{ color: 'var(--ink-muted)', maxWidth: '34rem' }}>
+            The message is the foundation. The format is the container. CloutKart builds the message first; everything else scales from there.
           </p>
         </div>
 
-        {/* Three truths — accent border + faint background number */}
-        <div
-          className="reveal grid sm:grid-cols-3 gap-px"
-          style={{ borderTop: '1px solid rgb(var(--white-rgb) / 0.06)' }}
-        >
+        {/* ── Three truths — rule-topped trio, gap-separated (no side-stripes) ── */}
+        <div className="reveal grid sm:grid-cols-3 gap-x-10 gap-y-8" style={{ borderTop: '1px solid var(--border)' }}>
           {truths.map((item, i) => (
-            <div
-              key={i}
-              className="reveal relative pt-8 pb-6 overflow-hidden transition-colors duration-300"
-              style={{
-                transitionDelay: `${(i + 4) * 80}ms`,
-                borderLeft: `2px solid ${accentColors[i]}`,
-                paddingLeft: '1.5rem',
-                paddingRight: i < 2 ? '2rem' : '0',
-              }}
-            >
-              {/* Faint background number */}
-              <span
-                className="absolute -top-1 right-2 font-mono font-bold pointer-events-none select-none leading-none"
-                aria-hidden
-                style={{ fontSize: '4.5rem', color: accentColors[i], opacity: 0.04 }}
-              >
-                {String(i + 1).padStart(2, '0')}
-              </span>
-
-              {/* Label with small accent dot */}
-              <div className="flex items-center gap-2 mb-2 relative z-10">
-                <div
-                  className="w-1 h-1 rounded-full flex-shrink-0"
-                  style={{ background: accentColors[i] }}
-                />
-                <div className="text-white font-semibold font-heading text-sm sm:text-base leading-snug">
-                  {item.label}
-                </div>
+            <div key={i} className="pt-7">
+              <div className="flex items-center gap-2.5 mb-3">
+                <span className="w-2 h-2 rounded-sm flex-shrink-0" style={{ background: 'var(--accent)' }} />
+                <span className="h-px flex-1" style={{ background: 'var(--border)' }} />
               </div>
-              <p className="text-white/30 text-sm leading-relaxed relative z-10">{item.body}</p>
+              <div className="font-heading font-bold text-base leading-snug mb-2" style={{ color: 'var(--ink)' }}>
+                {item.label}
+              </div>
+              <p className="text-sm leading-relaxed" style={{ color: 'var(--ink-muted)' }}>{item.body}</p>
             </div>
           ))}
         </div>

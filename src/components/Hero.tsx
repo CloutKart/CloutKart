@@ -33,8 +33,8 @@ function VisionPreview() {
   ];
 
   return (
-    // Product mockup: pinned dark in both themes (reads as a dark-app screenshot)
-    <div className="relative" data-theme="dark">
+    // Product mockup: theme-aware — renders as light UI on the light page, dark on dark.
+    <div className="relative">
       {/* Brief pill — floats above */}
       <div
         className="absolute -top-5 left-6 z-10 flex items-center gap-2.5 rounded-full px-4 py-2 animate-float-delayed"
@@ -57,10 +57,10 @@ function VisionPreview() {
       <div
         className="rounded-2xl animate-float"
         style={{
-          background: 'rgba(12,12,12,0.9)',
-          border: '1px solid rgb(var(--white-rgb) / 0.09)',
+          background: 'var(--bg-elev)',
+          border: '1px solid var(--border)',
           backdropFilter: 'blur(24px)',
-          boxShadow: '0 24px 80px rgba(0,0,0,0.7), 0 0 0 1px rgb(var(--white-rgb) / 0.04) inset',
+          boxShadow: 'var(--shadow-card-hover)',
         }}
       >
         {/* Card header */}
@@ -85,7 +85,7 @@ function VisionPreview() {
             <div className="flex items-center gap-3">
               <span
                 className="px-3 py-1 rounded-full text-[11px] font-bold"
-                style={{ background: 'rgb(var(--accent-rgb) / 0.15)', border: '1px solid rgb(var(--accent-rgb) / 0.3)', color: '#E9D5FF' }}
+                style={{ background: 'rgb(var(--accent-rgb) / 0.15)', border: '1px solid rgb(var(--accent-rgb) / 0.3)', color: 'var(--accent-ink)' }}
               >
                 Brewed Awakening
               </span>

@@ -70,33 +70,44 @@
 [data-theme="light"] {
   color-scheme: light;
 
-  --white-rgb: 24 22 32;             /* overlays + text-white become near-black on light */
-  --bg-rgb: 251 251 253;
+  --white-rgb: 20 19 26;             /* overlays + text-white become near-black on light */
+  /* Crisp near-neutral canvas; cards separate via borders + shadow, not tint. */
+  --bg-rgb: 242 242 246;
   --bg-elev-rgb: 255 255 255;
-  --ink-rgb: 22 21 26;
-  --ink-strong-rgb: 11 10 15;
-  --ink-body-rgb: 58 56 68;          /* ~10:1 on #FBFBFD */
-  --ink-muted-rgb: 99 95 112;        /* ~5.2:1 on #FBFBFD */
-  --ink-dim-rgb: 132 128 145;
+  --ink-rgb: 17 16 22;               /* near-black headings — high contrast */
+  --ink-strong-rgb: 8 7 12;
+  --ink-body-rgb: 44 42 53;          /* ~13:1 on the canvas */
+  --ink-muted-rgb: 92 88 105;        /* ~5.4:1 on the canvas */
+  --ink-dim-rgb: 130 126 142;
   --accent-rgb: 109 40 217;          /* violet-700, holds contrast on near-white */
   --accent-strong-rgb: 91 33 182;
-  --accent-ink-rgb: 91 33 182;       /* accent text on light = dark violet */
+  --accent-ink-rgb: 91 31 176;       /* accent text on light = dark violet */
   --accent-contrast-rgb: 255 255 255;
-  --success-rgb: 5 150 105;
+  --success-rgb: 4 137 96;
 
-  --shadow-card: 0 8px 30px rgb(24 22 32 / 0.10);
-  --shadow-card-hover: 0 16px 44px rgb(24 22 32 / 0.16);
-  --shadow-lift: 0 20px 44px rgb(24 22 32 / 0.16);
-  --dot-color: rgb(24 22 32 / 0.05);
-  --top-glow: rgb(var(--accent-rgb) / 0.08);
-  --glass-bg: rgb(255 255 255 / 0.72);
-  --glass-border: rgb(24 22 32 / 0.10);
+  /* Cards are pure white — separation comes from crisp borders + defined shadow. */
+  --surface: rgb(255 255 255);
+  --surface-strong: rgb(255 255 255);
+  --surface-hover: rgb(20 19 26 / 0.05);
+  --border: rgb(20 19 26 / 0.14);
+  --border-subtle: rgb(20 19 26 / 0.09);
+  --border-strong: rgb(20 19 26 / 0.20);
+  --accent-soft: rgb(var(--accent-rgb) / 0.10);
+  --accent-border: rgb(var(--accent-rgb) / 0.35);
+
+  --shadow-card: 0 1px 2px rgb(20 19 26 / 0.06), 0 10px 24px -10px rgb(20 19 26 / 0.20);
+  --shadow-card-hover: 0 2px 6px rgb(20 19 26 / 0.08), 0 20px 44px -12px rgb(46 20 92 / 0.30);
+  --shadow-lift: 0 16px 36px -12px rgb(46 20 92 / 0.26);
+  --dot-color: rgb(58 30 120 / 0.07);
+  --top-glow: rgb(var(--accent-rgb) / 0.12);
+  --glass-bg: rgb(255 255 255);
+  --glass-border: rgb(20 19 26 / 0.14);
   --glass-highlight: rgb(255 255 255 / 0.90);
-  --glass-mobile-bg: rgb(255 255 255 / 0.95);
-  --glass-nav-mobile-bg: rgb(251 251 253 / 0.97);
-  --nav-bg: rgb(251 251 253 / 0.80);
-  --scrollbar-thumb: #cfcdd6;
-  --scrollbar-thumb-hover: #b3b0be;
+  --glass-mobile-bg: rgb(255 255 255);
+  --glass-nav-mobile-bg: rgb(255 255 255 / 0.94);
+  --nav-bg: rgb(255 255 255 / 0.82);
+  --scrollbar-thumb: #c6c3d2;
+  --scrollbar-thumb-hover: #a8a4ba;
   --selection-bg: rgb(var(--accent-rgb) / 0.16);
   --selection-fg: #ffffff;
 }
@@ -106,7 +117,7 @@
 
   html {
     scroll-behavior: smooth;
-    scroll-padding-top: 68px;
+    scroll-padding-top: 92px; /* clears the floating pill nav */
   }
 
   body {

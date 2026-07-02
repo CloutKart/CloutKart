@@ -37,7 +37,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       /* storage may be unavailable (private mode) — non-fatal */
     }
     const meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute('content', theme === 'light' ? '#FBFBFD' : '#080808');
+    if (meta) meta.setAttribute('content', theme === 'light' ? '#F2F2F6' : '#080808');
   }, [theme]);
 
   // Follow the OS preference only while the user hasn't made an explicit choice.
