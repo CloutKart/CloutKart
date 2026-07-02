@@ -53,7 +53,7 @@ export default function About() {
               <span className="text-white">Brands</span>
             </h2>
 
-            <p className="reveal delay-200 text-[#D1D5DB] text-sm sm:text-lg leading-[1.75] mb-5 sm:mb-7">
+            <p className="reveal delay-200 text-ink-body text-sm sm:text-lg leading-[1.75] mb-5 sm:mb-7">
               CloutKart is a creative advertising studio that helps brands sell more with scroll-stopping ads, strategic messaging, AI-powered design, and high-conversion creative systems.
             </p>
 
@@ -61,7 +61,7 @@ export default function About() {
               {features.map((feature) => (
                 <div key={feature} className="flex items-center gap-3">
                   <CheckCircle2 size={16} className="text-brand-cyan flex-shrink-0" />
-                  <span className="text-[#D1D5DB] text-sm sm:text-base">{feature}</span>
+                  <span className="text-ink-body text-sm sm:text-base">{feature}</span>
                 </div>
               ))}
             </div>
@@ -78,7 +78,7 @@ export default function About() {
           <div className="reveal-scale delay-200">
             <div className="glass-card rounded-3xl p-6 sm:p-8">
               <div className="relative z-10">
-                <div className="text-[11px] text-[#9CA3AF] font-mono font-medium uppercase tracking-widest mb-6">Creative Workflow</div>
+                <div className="text-[11px] text-ink-muted font-mono font-medium uppercase tracking-widest mb-6">Creative Workflow</div>
 
                 {/* Steps */}
                 {[
@@ -89,14 +89,14 @@ export default function About() {
                 ].map((item, i, arr) => (
                   <div key={item.step} className="relative">
                     <div className="flex items-center gap-4 py-3">
-                      <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 font-mono text-xs font-bold text-brand-purple" style={{ background: 'rgba(168,85,247,0.12)', border: '1px solid rgba(168,85,247,0.25)' }}>
+                      <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 font-mono text-xs font-bold text-brand-purple" style={{ background: 'rgb(var(--accent-rgb) / 0.12)', border: '1px solid rgb(var(--accent-rgb) / 0.25)' }}>
                         {item.step}
                       </div>
                       <div className="flex-1">
                         <div className="text-sm font-semibold text-white font-heading">{item.label}</div>
-                        <div className="text-xs text-[#9CA3AF] font-mono mt-0.5">{item.sub}</div>
+                        <div className="text-xs text-ink-muted font-mono mt-0.5">{item.sub}</div>
                       </div>
-                      <div className="w-2 h-2 rounded-full" style={{ background: 'linear-gradient(135deg, #A855F7, #06B6D4)' }} />
+                      <div className="w-2 h-2 rounded-full" style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent))' }} />
                     </div>
                     {i < arr.length - 1 && (
                       <div className="ml-[18px] w-px h-4 bg-gradient-to-b from-brand-purple/30 to-brand-cyan/20" />
@@ -106,7 +106,7 @@ export default function About() {
 
                 <div className="mt-6 pt-5 border-t border-white/[0.07]">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-[#9CA3AF] font-mono">Avg delivery time</span>
+                    <span className="text-xs text-ink-muted font-mono">Avg delivery time</span>
                     <span className="font-mono text-lg font-bold gradient-text">48h</span>
                   </div>
                 </div>
@@ -125,7 +125,7 @@ export default function About() {
                       <item.icon size={18} className="text-brand-purple" />
                     </div>
                     <h3 className="text-sm sm:text-base font-semibold font-heading text-white mb-1">{item.label}</h3>
-                    <p className="text-xs sm:text-sm text-[#D1D5DB] leading-relaxed">{item.desc}</p>
+                    <p className="text-xs sm:text-sm text-ink-body leading-relaxed">{item.desc}</p>
                   </div>
                 </div>
               ))}

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 import LoadingScreen from './components/LoadingScreen';
 import CursorGlow from './components/CursorGlow';
 import Navbar from './components/Navbar';
@@ -56,6 +57,18 @@ function LandingPage({ onSignupOpen }: { onSignupOpen: () => void }) {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
+  // Safety net: never let reveal-gated content stay hidden (headless renderers,
+  // SEO crawlers, background tabs, or a missed IntersectionObserver). Normal
+  // scrolling still triggers the staggered reveal first; this only catches strays.
+  useEffect(() => {
+    const t = window.setTimeout(() => {
+      document
+        .querySelectorAll('.reveal, .reveal-scale, .reveal-clip')
+        .forEach((el) => el.classList.add('visible'));
+    }, 2500);
+    return () => window.clearTimeout(t);
+  }, []);
+
   return (
     <>
       <LoadingScreen />
@@ -95,8 +108,8 @@ function AppRoutes() {
         <Route path="/signup" element={<Signup />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
-        <Route path="/dashboard" element={<ProtectedDashboard />} />
-        <Route path="/admin" element={<ProtectedAdmin />} />
+        <Route path="/dashboard" element={<div data-theme="dark"><ProtectedDashboard /></div>} />
+        <Route path="/admin" element={<div data-theme="dark"><ProtectedAdmin /></div>} />
       </Routes>
     </>
   );
@@ -105,9 +118,11 @@ function AppRoutes() {
 export default function App() {
   return (
     <BrowserRouter>
-      <AuthProvider>
-        <AppRoutes />
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <AppRoutes />
+        </AuthProvider>
+      </ThemeProvider>
     </BrowserRouter>
   );
 }

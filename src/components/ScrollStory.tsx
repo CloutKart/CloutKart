@@ -12,9 +12,9 @@ function BriefScene({ localProg }: { localProg: number }) {
   return (
     <div
       className="w-full max-w-md rounded-2xl overflow-hidden"
-      style={{ background: 'rgba(10,10,10,0.9)', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}
+      style={{ background: 'rgba(10,10,10,0.9)', border: '1px solid rgb(var(--white-rgb) / 0.08)', boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}
     >
-      <div className="px-5 py-3.5 flex items-center gap-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+      <div className="px-5 py-3.5 flex items-center gap-2" style={{ borderBottom: '1px solid rgb(var(--white-rgb) / 0.06)' }}>
         <div className="text-[11px] font-bold text-white/50 font-mono uppercase tracking-widest">New Creative Brief</div>
       </div>
       <div className="p-5 space-y-3.5">
@@ -26,7 +26,7 @@ function BriefScene({ localProg }: { localProg: number }) {
           <div key={f.label}>
             <div className="text-[9px] uppercase tracking-widest text-white/25 mb-1.5 font-mono">{f.label}</div>
             <div className="rounded-lg px-3 py-2 text-[12px] text-white/70"
-              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
+              style={{ background: 'rgb(var(--white-rgb) / 0.04)', border: '1px solid rgb(var(--white-rgb) / 0.07)' }}>
               {f.val}
             </div>
           </div>
@@ -34,7 +34,7 @@ function BriefScene({ localProg }: { localProg: number }) {
         <div>
           <div className="text-[9px] uppercase tracking-widest text-white/25 mb-1.5 font-mono">Brief Description</div>
           <div className="rounded-lg px-3 py-2.5 text-[11px] text-white/55 leading-relaxed min-h-[72px]"
-            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
+            style={{ background: 'rgb(var(--white-rgb) / 0.04)', border: '1px solid rgb(var(--white-rgb) / 0.07)' }}>
             {lines.map((line, li) => {
               const lineText = line.split('').map((ch, ci) => {
                 const globalIdx = shown++;
@@ -46,12 +46,12 @@ function BriefScene({ localProg }: { localProg: number }) {
               });
               return <span key={li}>{lineText}{li < lines.length - 1 ? ' ' : ''}</span>;
             })}
-            {localProg < 0.95 && <span className="inline-block w-0.5 h-3 ml-0.5 align-middle animate-pulse" style={{ background: '#A855F7' }} />}
+            {localProg < 0.95 && <span className="inline-block w-0.5 h-3 ml-0.5 align-middle animate-pulse" style={{ background: 'var(--accent)' }} />}
           </div>
         </div>
         <div
           className="flex items-center justify-center gap-2 rounded-xl py-2.5 text-[11px] font-bold text-white"
-          style={{ background: 'linear-gradient(135deg, rgba(168,85,247,0.7), rgba(99,102,241,0.7))', opacity: localProg > 0.7 ? 1 : 0, transition: 'opacity 0.5s' }}
+          style={{ background: 'linear-gradient(135deg, rgb(var(--accent-rgb) / 0.7), rgb(var(--accent-rgb) / 0.7))', opacity: localProg > 0.7 ? 1 : 0, transition: 'opacity 0.5s' }}
         >
           <Sparkles size={10} />
           See Our Vision
@@ -74,16 +74,16 @@ function VisionScene({ localProg }: { localProg: number }) {
   return (
     <div
       className="w-full max-w-md rounded-2xl overflow-hidden"
-      style={{ background: 'rgba(10,10,10,0.9)', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}
+      style={{ background: 'rgba(10,10,10,0.9)', border: '1px solid rgb(var(--white-rgb) / 0.08)', boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}
     >
       <div style={vis(sections[0].delay)}>
-        <div className="flex items-center justify-between px-5 py-3.5" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+        <div className="flex items-center justify-between px-5 py-3.5" style={{ borderBottom: '1px solid rgb(var(--white-rgb) / 0.06)' }}>
           <div className="flex items-center gap-2">
-            <Sparkles size={11} style={{ color: '#A855F7' }} />
+            <Sparkles size={11} style={{ color: 'var(--accent)' }} />
             <span className="text-sm font-bold text-white font-heading">Our vision</span>
           </div>
           <span className="flex items-center gap-1 text-[8px] font-semibold px-2 py-0.5 rounded-full"
-            style={{ background: 'rgba(168,85,247,0.1)', border: '1px solid rgba(168,85,247,0.2)', color: '#C084FC' }}>
+            style={{ background: 'rgb(var(--accent-rgb) / 0.1)', border: '1px solid rgb(var(--accent-rgb) / 0.2)', color: 'var(--accent-ink)' }}>
             <Sparkles size={7} /> Pixie · AI Creative Intelligence
           </span>
         </div>
@@ -93,7 +93,7 @@ function VisionScene({ localProg }: { localProg: number }) {
           <div className="text-[9px] uppercase tracking-widest text-white/25 mb-2 font-mono">Creative Vibe</div>
           <div className="flex items-center gap-2.5">
             <span className="px-3 py-1 rounded-full text-[10px] font-bold"
-              style={{ background: 'rgba(168,85,247,0.15)', border: '1px solid rgba(168,85,247,0.3)', color: '#E9D5FF' }}>
+              style={{ background: 'rgb(var(--accent-rgb) / 0.15)', border: '1px solid rgb(var(--accent-rgb) / 0.3)', color: '#E9D5FF' }}>
               Brewed Awakening
             </span>
             <span className="text-[10px] text-white/35 leading-snug">Raw, earthy, unapologetically effective.</span>
@@ -101,7 +101,7 @@ function VisionScene({ localProg }: { localProg: number }) {
         </div>
         <div style={vis(sections[2].delay)}>
           <div className="text-[9px] uppercase tracking-widest text-white/25 mb-2 font-mono">Hook</div>
-          <div className="px-4 py-2.5 rounded-xl" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+          <div className="px-4 py-2.5 rounded-xl" style={{ background: 'rgb(var(--white-rgb) / 0.04)', border: '1px solid rgb(var(--white-rgb) / 0.08)' }}>
             <span className="text-[17px] font-bold font-heading text-white">Tan lines are so last season</span>
           </div>
         </div>
@@ -109,7 +109,7 @@ function VisionScene({ localProg }: { localProg: number }) {
           <div className="text-[9px] uppercase tracking-widest text-white/25 mb-2 font-mono">Color Story</div>
           <div className="grid grid-cols-3 gap-2">
             {[{ name: 'Mocha Morning', hex: '#9B5B1A' }, { name: 'Coconut Cream', hex: '#EDE8D8' }, { name: 'Fresh Brew', hex: '#3A2010' }].map(c => (
-              <div key={c.name} className="rounded-lg px-2.5 py-2" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
+              <div key={c.name} className="rounded-lg px-2.5 py-2" style={{ background: 'rgb(var(--white-rgb) / 0.04)', border: '1px solid rgb(var(--white-rgb) / 0.07)' }}>
                 <div className="flex items-center gap-1.5 mb-1">
                   <div className="w-3 h-3 rounded-full" style={{ background: c.hex }} />
                   <span className="text-[9px] text-white/50">{c.name}</span>
@@ -123,15 +123,15 @@ function VisionScene({ localProg }: { localProg: number }) {
           <div className="space-y-1.5">
             {['Static image — Instagram feed 1080×1080px', 'Static image — Facebook feed 1080×1080px', 'Story format — 1080×1920px full-bleed'].map((d, i) => (
               <div key={i} className="flex items-center gap-2">
-                <CheckCircle size={10} style={{ color: '#10B981', flexShrink: 0 }} />
+                <CheckCircle size={10} style={{ color: 'var(--success)', flexShrink: 0 }} />
                 <span className="text-[10px] text-white/35">{d}</span>
               </div>
             ))}
           </div>
         </div>
       </div>
-      <div className="flex items-center justify-end px-5 py-3.5" style={{ borderTop: '1px solid rgba(255,255,255,0.06)', ...vis(sections[4].delay) }}>
-        <button className="text-[10px] font-bold px-3.5 py-1.5 rounded-lg text-white" style={{ background: 'linear-gradient(135deg,#A855F7,#6366F1)' }}>Approve vision</button>
+      <div className="flex items-center justify-end px-5 py-3.5" style={{ borderTop: '1px solid rgb(var(--white-rgb) / 0.06)', ...vis(sections[4].delay) }}>
+        <button className="text-[10px] font-bold px-3.5 py-1.5 rounded-lg text-white" style={{ background: 'linear-gradient(135deg,var(--accent),var(--accent))' }}>Approve vision</button>
       </div>
     </div>
   );
@@ -144,8 +144,8 @@ function AdScene({ localProg }: { localProg: number }) {
     <div className="flex flex-col sm:flex-row items-center justify-center gap-5">
       <div className="relative flex-shrink-0" style={{ width: 180, ...vis(0) }}>
         <div className="rounded-[28px] overflow-hidden"
-          style={{ background: '#0f0f0f', border: '2px solid rgba(255,255,255,0.12)', boxShadow: '0 8px 32px rgba(0,0,0,0.7)' }}>
-          <div className="px-3 py-2 flex items-center gap-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+          style={{ background: '#0f0f0f', border: '2px solid rgb(var(--white-rgb) / 0.12)', boxShadow: '0 8px 32px rgba(0,0,0,0.7)' }}>
+          <div className="px-3 py-2 flex items-center gap-2" style={{ borderBottom: '1px solid rgb(var(--white-rgb) / 0.07)' }}>
             <div className="w-5 h-5 rounded-full" style={{ background: 'linear-gradient(135deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888)' }} />
             <span className="text-[9px] font-bold text-white/70">brewora</span>
             <span className="ml-auto text-[8px] text-white/30 font-mono">Sponsored</span>
@@ -154,7 +154,7 @@ function AdScene({ localProg }: { localProg: number }) {
             <div className="absolute inset-0" style={{ background: 'linear-gradient(145deg, #3a1a08 0%, #7a3510 40%, #1a0a02 100%)' }} />
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="relative">
-                <div className="rounded-full flex items-center justify-center" style={{ width: 90, height: 90, background: 'linear-gradient(135deg, #9B5B1A, #C4772A, #7A3510)', boxShadow: '0 8px 32px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.15)' }}>
+                <div className="rounded-full flex items-center justify-center" style={{ width: 90, height: 90, background: 'linear-gradient(135deg, #9B5B1A, #C4772A, #7A3510)', boxShadow: '0 8px 32px rgba(0,0,0,0.5), inset 0 1px 0 rgb(var(--white-rgb) / 0.15)' }}>
                   <div className="text-center">
                     <div className="text-[8px] font-bold text-white/80 font-mono">mC</div>
                     <div className="text-[6px] text-white/50">COFFEE</div>
@@ -172,9 +172,9 @@ function AdScene({ localProg }: { localProg: number }) {
             <p className="text-[9px] text-white/55 leading-relaxed mb-2">
               <span className="text-white/80 font-semibold">brewora</span> Your tan doesn't have to be permanent. Our coffee scrub buffs it out in 4 washes — tested, proven, loved by 1M+ Indians.
             </p>
-            <span className="text-[9px] font-bold" style={{ color: '#A855F7' }}>Shop Now →</span>
+            <span className="text-[9px] font-bold" style={{ color: 'var(--accent)' }}>Shop Now →</span>
           </div>
-          <div className="h-6 flex items-center justify-center gap-1" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+          <div className="h-6 flex items-center justify-center gap-1" style={{ borderTop: '1px solid rgb(var(--white-rgb) / 0.05)' }}>
             <div className="w-12 h-1 rounded-full bg-white/20" />
           </div>
         </div>
@@ -182,9 +182,9 @@ function AdScene({ localProg }: { localProg: number }) {
 
       <div className="flex sm:flex-col gap-4 sm:gap-3" style={vis(0.5)}>
         {[
-          { label: 'CTR', val: '8.4%', bar: 0.84, color: '#A855F7' },
-          { label: 'ROAS', val: '10.2×', bar: 0.92, color: '#3B82F6' },
-          { label: 'CVR', val: '4.1%', bar: 0.6, color: '#06B6D4' },
+          { label: 'CTR', val: '8.4%', bar: 0.84, color: 'var(--accent)' },
+          { label: 'ROAS', val: '10.2×', bar: 0.92, color: 'var(--accent)' },
+          { label: 'CVR', val: '4.1%', bar: 0.6, color: 'var(--accent)' },
         ].map(m => (
           <div key={m.label} className="w-28 sm:w-36">
             <div className="flex items-center justify-between mb-1">
@@ -210,9 +210,9 @@ function CartScene({ localProg }: { localProg: number }) {
 
   return (
     <div className="w-full max-w-sm space-y-4">
-      <div className="rounded-2xl overflow-hidden" style={{ background: 'rgba(10,10,10,0.9)', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
-        <div className="flex items-center gap-2.5 px-5 py-3.5" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-          <ShoppingCart size={14} style={{ color: '#10B981' }} />
+      <div className="rounded-2xl overflow-hidden" style={{ background: 'rgba(10,10,10,0.9)', border: '1px solid rgb(var(--white-rgb) / 0.08)', boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
+        <div className="flex items-center gap-2.5 px-5 py-3.5" style={{ borderBottom: '1px solid rgb(var(--white-rgb) / 0.06)' }}>
+          <ShoppingCart size={14} style={{ color: 'var(--success)' }} />
           <span className="text-[12px] font-bold text-white font-heading">Cart</span>
           <span className="ml-auto text-[10px] font-mono text-white/30">{visibleItems} item{visibleItems !== 1 ? 's' : ''}</span>
         </div>
@@ -233,7 +233,7 @@ function CartScene({ localProg }: { localProg: number }) {
         <div className="px-4 pb-4">
           <div
             className="w-full rounded-xl py-2.5 text-center text-[11px] font-bold text-white transition-all duration-500"
-            style={{ background: visibleItems >= 2 ? 'linear-gradient(135deg,#A855F7,#6366F1)' : 'rgba(255,255,255,0.06)', opacity: localProg > 0.3 ? 1 : 0 }}
+            style={{ background: visibleItems >= 2 ? 'linear-gradient(135deg,var(--accent),var(--accent))' : 'rgb(var(--white-rgb) / 0.06)', opacity: localProg > 0.3 ? 1 : 0 }}
           >
             Place Order
           </div>
@@ -241,14 +241,14 @@ function CartScene({ localProg }: { localProg: number }) {
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <div className="rounded-2xl p-4" style={{ background: 'rgba(10,10,10,0.9)', border: '1px solid rgba(168,85,247,0.2)' }}>
+        <div className="rounded-2xl p-4" style={{ background: 'rgba(10,10,10,0.9)', border: '1px solid rgb(var(--accent-rgb) / 0.2)' }}>
           <div className="flex items-center gap-1.5 mb-1">
-            <TrendingUp size={11} style={{ color: '#A855F7' }} />
+            <TrendingUp size={11} style={{ color: 'var(--accent)' }} />
             <span className="text-[9px] font-mono text-white/30 uppercase tracking-widest">ROAS</span>
           </div>
           <div className="font-mono font-bold text-2xl gradient-text">+{roas}%</div>
         </div>
-        <div className="rounded-2xl p-4" style={{ background: 'rgba(10,10,10,0.9)', border: '1px solid rgba(16,185,129,0.2)' }}>
+        <div className="rounded-2xl p-4" style={{ background: 'rgba(10,10,10,0.9)', border: '1px solid rgb(var(--success-rgb) / 0.2)' }}>
           <div className="flex items-center gap-1.5 mb-1">
             <span className="text-[9px] font-mono text-white/30 uppercase tracking-widest">Revenue</span>
           </div>
@@ -340,31 +340,31 @@ export default function ScrollStory() {
                   onClick={() => goTo(i)}
                   className="flex items-start gap-4 p-3.5 rounded-xl transition-all duration-300 text-left w-full"
                   style={{
-                    background: isActive ? 'rgba(168,85,247,0.07)' : 'transparent',
-                    border: isActive ? '1px solid rgba(168,85,247,0.2)' : '1px solid transparent',
+                    background: isActive ? 'rgb(var(--accent-rgb) / 0.07)' : 'transparent',
+                    border: isActive ? '1px solid rgb(var(--accent-rgb) / 0.2)' : '1px solid transparent',
                   }}
                 >
                   <div className="flex flex-col items-center gap-1 flex-shrink-0 mt-0.5">
                     <div className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold font-mono transition-all duration-300"
                       style={{
-                        background: isActive ? 'linear-gradient(135deg,#A855F7,#6366F1)' : isPast ? 'rgba(168,85,247,0.15)' : 'rgba(255,255,255,0.04)',
-                        border: isActive ? 'none' : isPast ? '1px solid rgba(168,85,247,0.3)' : '1px solid rgba(255,255,255,0.07)',
-                        color: isActive ? '#fff' : isPast ? '#A855F7' : 'rgba(255,255,255,0.2)',
+                        background: isActive ? 'linear-gradient(135deg,var(--accent),var(--accent))' : isPast ? 'rgb(var(--accent-rgb) / 0.15)' : 'rgb(var(--white-rgb) / 0.04)',
+                        border: isActive ? 'none' : isPast ? '1px solid rgb(var(--accent-rgb) / 0.3)' : '1px solid rgb(var(--white-rgb) / 0.07)',
+                        color: isActive ? '#fff' : isPast ? 'var(--accent)' : 'rgb(var(--white-rgb) / 0.2)',
                       }}>
                       {isPast ? '✓' : p.num}
                     </div>
                     {i < phases.length - 1 && (
                       <div className="w-px h-4 transition-all duration-300"
-                        style={{ background: isPast ? 'rgba(168,85,247,0.4)' : 'rgba(255,255,255,0.06)' }} />
+                        style={{ background: isPast ? 'rgb(var(--accent-rgb) / 0.4)' : 'rgb(var(--white-rgb) / 0.06)' }} />
                     )}
                   </div>
                   <div>
                     <div className="font-heading font-bold text-sm leading-snug mb-0.5 transition-colors duration-300"
-                      style={{ color: isActive ? '#fff' : isPast ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.18)' }}>
+                      style={{ color: isActive ? '#fff' : isPast ? 'rgb(var(--white-rgb) / 0.4)' : 'rgb(var(--white-rgb) / 0.18)' }}>
                       {p.title}
                     </div>
                     <p className="text-[11px] leading-relaxed transition-colors duration-300 hidden xl:block"
-                      style={{ color: isActive ? 'rgba(255,255,255,0.45)' : 'rgba(255,255,255,0.1)' }}>
+                      style={{ color: isActive ? 'rgb(var(--white-rgb) / 0.45)' : 'rgb(var(--white-rgb) / 0.1)' }}>
                       {p.sub}
                     </p>
                   </div>
@@ -375,7 +375,7 @@ export default function ScrollStory() {
             <div className="mt-3 ml-8">
               <div className="h-px bg-white/[0.06] rounded-full overflow-hidden">
                 <div className="h-full rounded-full transition-all duration-500"
-                  style={{ width: `${progress * 100}%`, background: 'linear-gradient(90deg,#A855F7,#3B82F6,#06B6D4)' }} />
+                  style={{ width: `${progress * 100}%`, background: 'linear-gradient(90deg,var(--accent),var(--accent),var(--accent))' }} />
               </div>
             </div>
           </div>
@@ -383,10 +383,11 @@ export default function ScrollStory() {
           {/* Right: horizontal scene carousel */}
           <div className="relative">
             <div className="absolute -inset-6 rounded-3xl pointer-events-none"
-              style={{ background: 'radial-gradient(ellipse at center, rgba(168,85,247,0.05) 0%, transparent 70%)' }} />
+              style={{ background: 'radial-gradient(ellipse at center, rgb(var(--accent-rgb) / 0.05) 0%, transparent 70%)' }} />
             {/* Slides use absolute positioning so translateX(100%) reliably equals container width */}
             <div
-              className="relative overflow-hidden"
+              data-theme="dark"
+              className="relative overflow-hidden rounded-3xl"
               onTouchStart={(e) => { touchStartX.current = e.touches[0].clientX; }}
               onTouchEnd={(e) => {
                 const delta = touchStartX.current - e.changedTouches[0].clientX;
@@ -432,8 +433,8 @@ export default function ScrollStory() {
               disabled={active === 0}
               className="w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200"
               style={{
-                background: 'rgba(255,255,255,0.05)',
-                border: '1px solid rgba(255,255,255,0.1)',
+                background: 'rgb(var(--white-rgb) / 0.05)',
+                border: '1px solid rgb(var(--white-rgb) / 0.1)',
                 opacity: active === 0 ? 0.3 : 1,
               }}
             >
@@ -449,7 +450,7 @@ export default function ScrollStory() {
                   style={{
                     width: i === active ? 20 : 6,
                     height: 6,
-                    background: i <= active ? 'linear-gradient(90deg,#A855F7,#06B6D4)' : 'rgba(255,255,255,0.1)',
+                    background: i <= active ? 'linear-gradient(90deg,var(--accent),var(--accent))' : 'rgb(var(--white-rgb) / 0.1)',
                   }}
                 />
               ))}
@@ -460,8 +461,8 @@ export default function ScrollStory() {
               disabled={active === phases.length - 1}
               className="w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200"
               style={{
-                background: 'rgba(255,255,255,0.05)',
-                border: '1px solid rgba(255,255,255,0.1)',
+                background: 'rgb(var(--white-rgb) / 0.05)',
+                border: '1px solid rgb(var(--white-rgb) / 0.1)',
                 opacity: active === phases.length - 1 ? 0.3 : 1,
               }}
             >

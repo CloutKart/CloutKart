@@ -95,22 +95,22 @@ export default function Contact() {
     }
   };
 
-  const inputClass = "w-full rounded-xl px-4 py-3.5 text-sm text-white placeholder-[#6B7280] focus:outline-none transition-all duration-200 font-medium"
+  const inputClass = "w-full rounded-xl px-4 py-3.5 text-sm text-white placeholder-[var(--ink-dim)] focus:outline-none transition-all duration-200 font-medium"
     + " bg-white/[0.04] border border-white/[0.10] focus:border-brand-purple/50 focus:bg-white/[0.06]";
-  const labelClass = "block text-[11px] font-semibold text-[#9CA3AF] mb-2 uppercase tracking-[0.08em] font-heading";
+  const labelClass = "block text-[11px] font-semibold text-ink-muted mb-2 uppercase tracking-[0.08em] font-heading";
 
   return (
     <section ref={sectionRef} className="relative py-20 md:py-36 [overflow-x:clip]" id="contact" style={{ background: 'transparent' }}>
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* CTA Banner */}
         <div className="reveal mb-12 md:mb-16 gradient-border-wrap">
-          <div className="glass-card rounded-[20px] p-8 sm:p-12 text-center" style={{ background: 'rgba(8,8,8,0.95)' }}>
+          <div className="glass-card rounded-[20px] p-8 sm:p-12 text-center" style={{ background: 'var(--bg-elev)' }}>
             <div className="relative z-10">
               <h2 className="font-heading font-bold leading-tight tracking-tight mb-4" style={{ fontSize: 'clamp(2rem, 5vw, 3.5rem)' }}>
                 <span className="text-white">Ready to Build Ads That </span>
-                <span style={{ color: '#F5F0EB' }}>Actually Convert?</span>
+                <span style={{ color: 'var(--ink)' }}>Actually Convert?</span>
               </h2>
-              <p className="text-[#D1D5DB] text-sm sm:text-lg max-w-lg mx-auto leading-relaxed">
+              <p className="text-ink-body text-sm sm:text-lg max-w-lg mx-auto leading-relaxed">
                 For enterprise deals, custom briefs, partnership inquiries, or anything else — reach out here. Free creative requests are handled inside your dashboard after signing up.
               </p>
             </div>
@@ -183,7 +183,7 @@ export default function Contact() {
                     <CheckCircle size={18} className="text-brand-cyan" />
                     <div>
                       <div className="text-white font-semibold font-heading text-sm">Message Received!</div>
-                      <div className="text-[#9CA3AF] text-xs mt-0.5">We'll be in touch within 24 hours.</div>
+                      <div className="text-ink-muted text-xs mt-0.5">We'll be in touch within 24 hours.</div>
                     </div>
                   </div>
                 ) : (
@@ -206,9 +206,9 @@ export default function Contact() {
           </form>
         </div>
 
-        <p className="reveal delay-400 text-center text-[#6B7280] text-sm mt-7">
+        <p className="reveal delay-400 text-center text-ink-dim text-sm mt-7">
           Prefer email?{' '}
-          <a href="mailto:inquiry@clout-kart.com" className="text-[#9CA3AF] hover:text-white transition-colors underline underline-offset-2">
+          <a href="mailto:inquiry@clout-kart.com" className="text-ink-muted hover:text-white transition-colors underline underline-offset-2">
             inquiry@clout-kart.com
           </a>
         </p>

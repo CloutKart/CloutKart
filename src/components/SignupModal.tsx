@@ -69,7 +69,7 @@ export default function SignupModal({ open, onClose, defaultMode = 'signup' }: P
     await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + '/dashboard' } });
   };
 
-  const inputClass = "w-full rounded-xl px-4 py-3.5 text-sm text-white placeholder-[#6B7280] focus:outline-none transition-all duration-200 font-medium bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(168,85,247,0.5)] focus:bg-white/[0.07]";
+  const inputClass = "w-full rounded-xl px-4 py-3.5 text-sm text-white placeholder-[var(--ink-dim)] focus:outline-none transition-all duration-200 font-medium bg-white/[0.05] border border-white/[0.10] focus:border-accent/50 focus:bg-white/[0.07]";
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center px-4" onClick={onClose}>
@@ -77,7 +77,7 @@ export default function SignupModal({ open, onClose, defaultMode = 'signup' }: P
       <div
         className="relative w-full max-w-md glass-card rounded-3xl p-8"
         onClick={e => e.stopPropagation()}
-        style={{ background: 'rgba(12,12,12,0.98)', border: '1px solid rgba(255,255,255,0.1)' }}
+        style={{ background: 'rgba(12,12,12,0.98)', border: '1px solid rgb(var(--white-rgb) / 0.1)' }}
       >
         <button
           onClick={onClose}
@@ -92,13 +92,13 @@ export default function SignupModal({ open, onClose, defaultMode = 'signup' }: P
             {mode === 'signup' ? 'Get Started Free' : 'Welcome Back'}
           </h2>
           {mode === 'signup' && (
-            <p className="text-[#9CA3AF] text-sm">Your first creative is free. No credit card required.</p>
+            <p className="text-ink-muted text-sm">Your first creative is free. No credit card required.</p>
           )}
         </div>
 
         <button
           onClick={handleGoogle}
-          className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-xl border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] text-[#D1D5DB] text-sm font-medium transition-all duration-200 mb-4"
+          className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-xl border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] text-ink-body text-sm font-medium transition-all duration-200 mb-4"
         >
           <GoogleIcon />
           Continue with Google
@@ -106,7 +106,7 @@ export default function SignupModal({ open, onClose, defaultMode = 'signup' }: P
 
         <div className="flex items-center gap-3 mb-4">
           <div className="flex-1 h-px bg-white/[0.08]" />
-          <span className="text-[#6B7280] text-xs">or continue with email</span>
+          <span className="text-ink-dim text-xs">or continue with email</span>
           <div className="flex-1 h-px bg-white/[0.08]" />
         </div>
 
@@ -144,7 +144,7 @@ export default function SignupModal({ open, onClose, defaultMode = 'signup' }: P
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-[#6B7280] hover:text-white/60 transition-colors"
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-ink-dim hover:text-white/60 transition-colors"
             >
               {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
             </button>
@@ -152,7 +152,7 @@ export default function SignupModal({ open, onClose, defaultMode = 'signup' }: P
 
           {mode === 'login' && (
             <div className="text-right">
-              <a href="/forgot-password" className="text-xs text-[#9CA3AF] hover:text-white transition-colors">
+              <a href="/forgot-password" className="text-xs text-ink-muted hover:text-white transition-colors">
                 Forgot password?
               </a>
             </div>
@@ -175,16 +175,16 @@ export default function SignupModal({ open, onClose, defaultMode = 'signup' }: P
           </button>
         </form>
 
-        <p className="text-center text-[#6B7280] text-sm mt-5">
+        <p className="text-center text-ink-dim text-sm mt-5">
           {mode === 'signup' ? (
             <>Already have an account?{' '}
-              <button onClick={() => setMode('login')} className="text-[#9CA3AF] hover:text-white transition-colors underline underline-offset-2">
+              <button onClick={() => setMode('login')} className="text-ink-muted hover:text-white transition-colors underline underline-offset-2">
                 Log in
               </button>
             </>
           ) : (
             <>Don't have an account?{' '}
-              <button onClick={() => setMode('signup')} className="text-[#9CA3AF] hover:text-white transition-colors underline underline-offset-2">
+              <button onClick={() => setMode('signup')} className="text-ink-muted hover:text-white transition-colors underline underline-offset-2">
                 Sign up
               </button>
             </>

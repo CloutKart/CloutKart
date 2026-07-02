@@ -61,7 +61,7 @@ export default function FAQ() {
           </div>
           <h2 className="reveal delay-100 font-heading font-bold leading-[1.06] tracking-tight" style={{ fontSize: 'clamp(2rem, 5vw, 4.5rem)' }}>
             Common{' '}
-            <span style={{ color: '#F5F0EB' }}>Questions.</span>
+            <span style={{ color: 'var(--ink)' }}>Questions.</span>
           </h2>
         </div>
 
@@ -74,7 +74,7 @@ export default function FAQ() {
                 className="reveal-scale glass-card rounded-2xl overflow-hidden transition-all duration-300"
                 style={{
                   transitionDelay: `${i * 60}ms`,
-                  borderColor: isOpen ? 'rgba(168,85,247,0.3)' : undefined,
+                  borderColor: isOpen ? 'rgb(var(--accent-rgb) / 0.3)' : undefined,
                 }}
               >
                 <button
@@ -86,12 +86,12 @@ export default function FAQ() {
                   </span>
                   <span className="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center transition-all duration-200"
                     style={{
-                      background: isOpen ? 'linear-gradient(135deg, rgba(168,85,247,0.2), rgba(59,130,246,0.2))' : 'rgba(255,255,255,0.05)',
-                      border: isOpen ? '1px solid rgba(168,85,247,0.3)' : '1px solid rgba(255,255,255,0.1)',
+                      background: isOpen ? 'linear-gradient(135deg, rgb(var(--accent-rgb) / 0.2), rgb(var(--accent-rgb) / 0.2))' : 'rgb(var(--white-rgb) / 0.05)',
+                      border: isOpen ? '1px solid rgb(var(--accent-rgb) / 0.3)' : '1px solid rgb(var(--white-rgb) / 0.1)',
                     }}>
                     {isOpen
-                      ? <Minus size={13} className="gradient-text" style={{ color: '#A855F7' }} />
-                      : <Plus size={13} className="text-[#9CA3AF]" />
+                      ? <Minus size={13} className="gradient-text" style={{ color: 'var(--accent)' }} />
+                      : <Plus size={13} className="text-ink-muted" />
                     }
                   </span>
                 </button>
@@ -103,7 +103,7 @@ export default function FAQ() {
                     transition: 'max-height 300ms ease',
                   }}
                 >
-                  <p className="px-6 pb-5 text-[#D1D5DB] leading-relaxed" style={{ fontSize: 16 }}>
+                  <p className="px-6 pb-5 text-ink-body leading-relaxed" style={{ fontSize: 16 }}>
                     {faq.a}
                   </p>
                 </div>

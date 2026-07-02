@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 
-const accentColors = ['#A855F7', '#6366F1', '#06B6D4'] as const;
+const accentColors = ['var(--accent)', 'var(--accent)', 'var(--accent)'] as const;
 
 const truths = [
   {
@@ -55,7 +55,7 @@ export default function MessageFirst() {
           width: '640px',
           height: '260px',
           borderRadius: '50%',
-          background: 'radial-gradient(ellipse, rgba(168,85,247,0.07) 0%, transparent 70%)',
+          background: 'radial-gradient(ellipse, rgb(var(--accent-rgb) / 0.07) 0%, transparent 70%)',
           top: '12%',
           left: '-6%',
           zIndex: 0,
@@ -81,7 +81,7 @@ export default function MessageFirst() {
             style={{
               fontSize: 'clamp(1.5rem, 3vw, 2.2rem)',
               fontWeight: 300,
-              color: 'rgba(255,255,255,0.30)',
+              color: 'rgb(var(--white-rgb) / 0.30)',
               transitionDelay: '0ms',
             }}
           >
@@ -116,13 +116,13 @@ export default function MessageFirst() {
           <div className="relative overflow-hidden" style={{ height: '2px', marginTop: '6px', marginBottom: '8px', borderRadius: '1px' }}>
             <div
               className="absolute inset-0 rounded-full"
-              style={{ background: 'rgba(255,255,255,0.05)' }}
+              style={{ background: 'rgb(var(--white-rgb) / 0.05)' }}
             />
             {scanLineActive && (
               <div
                 className="animate-scan-line absolute inset-0 rounded-full"
                 style={{
-                  background: 'linear-gradient(90deg, transparent 0%, #A855F7 30%, #818CF8 60%, #06B6D4 85%, transparent 100%)',
+                  background: 'linear-gradient(90deg, transparent 0%, var(--accent) 30%, var(--accent-ink) 60%, var(--accent) 85%, transparent 100%)',
                 }}
               />
             )}
@@ -134,7 +134,7 @@ export default function MessageFirst() {
             style={{
               fontSize: 'clamp(1.5rem, 3vw, 2.2rem)',
               fontWeight: 300,
-              color: 'rgba(255,255,255,0.18)',
+              color: 'rgb(var(--white-rgb) / 0.18)',
               transitionDelay: '500ms',
             }}
           >
@@ -147,17 +147,17 @@ export default function MessageFirst() {
           className="reveal mb-12"
           style={{
             height: '1px',
-            background: 'linear-gradient(90deg, rgba(168,85,247,0.35) 0%, rgba(99,102,241,0.2) 40%, transparent 80%)',
+            background: 'linear-gradient(90deg, rgb(var(--accent-rgb) / 0.35) 0%, rgb(var(--accent-rgb) / 0.2) 40%, transparent 80%)',
           }}
         />
 
         {/* Pull-quote — clean blockquote with left-border accent */}
         <div
           className="reveal mb-16 md:mb-20 pl-6 sm:pl-8"
-          style={{ borderLeft: '2px solid rgba(168,85,247,0.5)' }}
+          style={{ borderLeft: '2px solid rgb(var(--accent-rgb) / 0.5)' }}
         >
           <p
-            className="text-[#E5E7EB] font-semibold leading-[1.6] italic mb-4"
+            className="text-ink-body font-semibold leading-[1.6] italic mb-4"
             style={{ fontSize: 'clamp(1.1rem, 2.2vw, 1.45rem)', maxWidth: '42rem' }}
           >
             "A winning message can be translated into{' '}
@@ -171,7 +171,7 @@ export default function MessageFirst() {
         {/* Three truths — accent border + faint background number */}
         <div
           className="reveal grid sm:grid-cols-3 gap-px"
-          style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}
+          style={{ borderTop: '1px solid rgb(var(--white-rgb) / 0.06)' }}
         >
           {truths.map((item, i) => (
             <div

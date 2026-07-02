@@ -16,14 +16,14 @@ function hexToRgb(hex: string) {
 
 function DemoMock() {
   const [c0, c1, c2] = PALETTE.map(c => hexToRgb(c.hex));
-  const visionBg = `linear-gradient(145deg, rgba(${c0},0.13) 0%, rgba(${c1},0.03) 35%, rgba(${c2},0.09) 55%, rgba(255,255,255,0.015) 100%)`;
+  const visionBg = `linear-gradient(145deg, rgba(${c0},0.13) 0%, rgba(${c1},0.03) 35%, rgba(${c2},0.09) 55%, rgb(var(--white-rgb) / 0.015) 100%)`;
   const visionBorder = `rgba(${c0},0.30)`;
 
   return (
-    <div className="w-full rounded-2xl overflow-hidden border border-white/[0.08] shadow-2xl" style={{ background: '#111111' }}>
+    <div data-theme="dark" className="w-full rounded-2xl overflow-hidden border border-white/[0.08] shadow-2xl" style={{ background: '#111111' }}>
       {/* top bar */}
-      <div className="flex items-center gap-1.5 px-4 py-3 border-b border-white/[0.06]" style={{ background: 'rgba(255,255,255,0.02)' }}>
-        {['#EF4444','#F59E0B','#10B981'].map(c => (
+      <div className="flex items-center gap-1.5 px-4 py-3 border-b border-white/[0.06]" style={{ background: 'rgb(var(--white-rgb) / 0.02)' }}>
+        {['#EF4444','#F59E0B','var(--success)'].map(c => (
           <div key={c} className="w-2.5 h-2.5 rounded-full" style={{ background: c, opacity: 0.7 }} />
         ))}
         <span className="ml-2 text-[10px] text-white/20 font-mono">clout-kart.com/dashboard</span>
@@ -41,7 +41,7 @@ function DemoMock() {
             <div key={f.label} className="mb-2.5">
               <div className="text-[9px] text-white/35 uppercase tracking-wider mb-1 font-mono">{f.label}</div>
               <div className="rounded-lg px-2.5 py-1.5 text-[11px] text-white/70"
-                style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                style={{ background: 'rgb(var(--white-rgb) / 0.04)', border: '1px solid rgb(var(--white-rgb) / 0.07)' }}>
                 {f.value}
               </div>
             </div>
@@ -49,12 +49,12 @@ function DemoMock() {
           <div className="mb-3">
             <div className="text-[9px] text-white/35 uppercase tracking-wider mb-1 font-mono">Brief Description</div>
             <div className="rounded-lg px-2.5 py-2 text-[10px] text-white/50 leading-relaxed"
-              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
+              style={{ background: 'rgb(var(--white-rgb) / 0.04)', border: '1px solid rgb(var(--white-rgb) / 0.07)' }}>
               100% vegan, dermatologist-tested coffee body scrub. Exfoliates dead skin, reduces tan, leaves skin visibly glowing…
             </div>
           </div>
           <button className="w-full flex items-center justify-center gap-1.5 rounded-xl py-2 text-[11px] font-semibold text-white"
-            style={{ background: 'linear-gradient(135deg,#A855F7,#6366F1)' }}>
+            style={{ background: 'linear-gradient(135deg,var(--accent),var(--accent))' }}>
             <Sparkles size={9} />
             Regenerate Vision
           </button>
@@ -65,11 +65,11 @@ function DemoMock() {
           {/* header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.06]">
             <div className="flex items-center gap-1.5">
-              <Sparkles size={10} style={{ color: '#A855F7' }} />
+              <Sparkles size={10} style={{ color: 'var(--accent)' }} />
               <span className="text-[11px] font-bold text-white font-heading">Our vision</span>
             </div>
             <span className="hidden sm:flex items-center gap-1 text-[8px] font-semibold px-2 py-0.5 rounded-full"
-              style={{ background: 'rgba(168,85,247,0.1)', border: '1px solid rgba(168,85,247,0.2)', color: '#C084FC' }}>
+              style={{ background: 'rgb(var(--accent-rgb) / 0.1)', border: '1px solid rgb(var(--accent-rgb) / 0.2)', color: 'var(--accent-ink)' }}>
               <Sparkles size={7} />
               Pixie · AI Creative Intelligence
             </span>
@@ -80,7 +80,7 @@ function DemoMock() {
             <div className="text-[8px] font-semibold text-white/30 uppercase tracking-widest mb-1.5 font-mono">Creative Vibe</div>
             <div className="flex items-start gap-2">
               <span className="px-2 py-0.5 rounded-full text-[9px] font-bold flex-shrink-0"
-                style={{ background: 'rgba(168,85,247,0.2)', border: '1px solid rgba(168,85,247,0.35)', color: '#E9D5FF' }}>
+                style={{ background: 'rgb(var(--accent-rgb) / 0.2)', border: '1px solid rgb(var(--accent-rgb) / 0.35)', color: '#E9D5FF' }}>
                 Brewed Awakening
               </span>
               <span className="text-[9px] text-white/40 leading-relaxed">
@@ -95,7 +95,7 @@ function DemoMock() {
             <div className="grid grid-cols-3 gap-1.5">
               {PALETTE.map(c => (
                 <div key={c.name} className="rounded-lg px-2 py-1.5"
-                  style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                  style={{ background: 'rgb(var(--white-rgb) / 0.04)', border: '1px solid rgb(var(--white-rgb) / 0.07)' }}>
                   <div className="flex items-center gap-1.5 mb-1">
                     <div className="w-3 h-3 rounded-full flex-shrink-0 border border-white/20" style={{ background: c.hex }} />
                     <span className="text-[8px] text-white/60 font-medium leading-tight">{c.name}</span>
@@ -110,7 +110,7 @@ function DemoMock() {
           <div className="px-4 py-2.5 border-b border-white/[0.05]">
             <div className="text-[8px] font-semibold text-white/30 uppercase tracking-widest mb-1.5 font-mono">Hook</div>
             <div className="rounded-lg px-3 py-2"
-              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+              style={{ background: 'rgb(var(--white-rgb) / 0.04)', border: '1px solid rgb(var(--white-rgb) / 0.08)' }}>
               <span className="text-[13px] font-bold text-white font-heading leading-tight">
                 Tan lines are so last season
               </span>
@@ -128,7 +128,7 @@ function DemoMock() {
                 'Static image ad — Amazon listing 1000×1000px',
               ].map((item, i) => (
                 <div key={i} className="flex items-center gap-1.5">
-                  <CheckCircle size={9} style={{ color: '#10B981', flexShrink: 0 }} />
+                  <CheckCircle size={9} style={{ color: 'var(--success)', flexShrink: 0 }} />
                   <span className="text-[9px] text-white/50 leading-tight">{item}</span>
                 </div>
               ))}
@@ -138,7 +138,7 @@ function DemoMock() {
           {/* Footer */}
           <div className="px-4 py-2.5 flex items-center justify-end mt-auto">
             <button className="text-[9px] font-bold px-3 py-1.5 rounded-lg text-white"
-              style={{ background: 'linear-gradient(135deg,#A855F7,#6366F1)' }}>
+              style={{ background: 'linear-gradient(135deg,var(--accent),var(--accent))' }}>
               Approve vision
             </button>
           </div>
@@ -176,7 +176,7 @@ export default function PixieSection({ onSignupOpen }: Props) {
     <section ref={sectionRef} className="relative py-20 md:py-36 [overflow-x:clip]" id="pixie" style={{ background: 'transparent' }}>
       {/* purple ambient glow */}
       <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[400px] rounded-full pointer-events-none"
-        style={{ background: 'radial-gradient(ellipse at center, rgba(168,85,247,0.07) 0%, transparent 70%)' }} />
+        style={{ background: 'radial-gradient(ellipse at center, rgb(var(--accent-rgb) / 0.07) 0%, transparent 70%)' }} />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section header */}
@@ -191,7 +191,7 @@ export default function PixieSection({ onSignupOpen }: Props) {
             <br />
             <span className="gradient-text">AI creative director</span>
           </h2>
-          <p className="reveal delay-200 text-[#D1D5DB] text-sm sm:text-lg max-w-2xl mx-auto leading-relaxed">
+          <p className="reveal delay-200 text-ink-body text-sm sm:text-lg max-w-2xl mx-auto leading-relaxed">
             Submit a brief. Upload a product photo. Pixie generates your entire creative vision in seconds —
             vibe, color story, hook, caption, and deliverables.{' '}
             <span className="text-white font-medium">Your team starts at 80% instead of zero.</span>
@@ -211,12 +211,12 @@ export default function PixieSection({ onSignupOpen }: Props) {
                 <div key={i} className="reveal flex items-start gap-3.5"
                   style={{ transitionDelay: `${i * 80}ms` }}>
                   <div className="w-5 h-5 rounded-full flex-shrink-0 mt-0.5 flex items-center justify-center"
-                    style={{ background: 'rgba(168,85,247,0.15)', border: '1px solid rgba(168,85,247,0.3)' }}>
+                    style={{ background: 'rgb(var(--accent-rgb) / 0.15)', border: '1px solid rgb(var(--accent-rgb) / 0.3)' }}>
                     <CheckCircle size={11} className="text-brand-purple" />
                   </div>
                   <div>
                     <div className="text-white font-semibold text-sm leading-snug mb-0.5">{item.headline}</div>
-                    <div className="text-[#9CA3AF] text-xs leading-relaxed">{item.sub}</div>
+                    <div className="text-ink-muted text-xs leading-relaxed">{item.sub}</div>
                   </div>
                 </div>
               ))}
@@ -237,7 +237,7 @@ export default function PixieSection({ onSignupOpen }: Props) {
 
         {/* Closer */}
         <div className="reveal text-center">
-          <p className="text-sm sm:text-base max-w-xl mx-auto" style={{ color: '#9CA3AF' }}>
+          <p className="text-sm sm:text-base max-w-xl mx-auto" style={{ color: 'var(--ink-muted)' }}>
             Pixie isn't a chatbot.{' '}
             <span className="text-white font-medium">
               It's a creative engine built specifically for ad production.

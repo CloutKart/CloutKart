@@ -1,24 +1,48 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
+  darkMode: ['selector', '[data-theme="dark"]'],
   theme: {
     extend: {
       fontFamily: {
-        sans:    ['Inter', 'system-ui', 'sans-serif'],
-        heading: ['Montserrat', 'system-ui', 'sans-serif'],
-        mono:    ['DM Mono', 'monospace'],
+        sans:    ['Hanken Grotesk', 'system-ui', 'sans-serif'],
+        heading: ['Archivo Expanded', 'Hanken Grotesk', 'system-ui', 'sans-serif'],
+        mono:    ['DM Mono', 'ui-monospace', 'monospace'],
       },
       colors: {
+        // `white` is remapped to a theme token so the ~360 existing
+        // text-white / bg-white / border-white utilities flip automatically.
+        white: 'rgb(var(--white-rgb) / <alpha-value>)',
+        bg: {
+          DEFAULT: 'rgb(var(--bg-rgb) / <alpha-value>)',
+          elev:    'rgb(var(--bg-elev-rgb) / <alpha-value>)',
+        },
+        ink: {
+          DEFAULT: 'rgb(var(--ink-rgb) / <alpha-value>)',
+          strong:  'rgb(var(--ink-strong-rgb) / <alpha-value>)',
+          body:    'rgb(var(--ink-body-rgb) / <alpha-value>)',
+          muted:   'rgb(var(--ink-muted-rgb) / <alpha-value>)',
+          dim:     'rgb(var(--ink-dim-rgb) / <alpha-value>)',
+        },
+        accent: {
+          DEFAULT:  'rgb(var(--accent-rgb) / <alpha-value>)',
+          strong:   'rgb(var(--accent-strong-rgb) / <alpha-value>)',
+          ink:      'rgb(var(--accent-ink-rgb) / <alpha-value>)',
+          contrast: 'rgb(var(--accent-contrast-rgb) / <alpha-value>)',
+        },
+        success: 'rgb(var(--success-rgb) / <alpha-value>)',
+        // Back-compat: the old 4-colour rainbow now all resolve to the one
+        // committed violet, so `from-brand-purple to-brand-cyan` = solid accent.
         brand: {
-          purple: '#A855F7',
-          blue:   '#3B82F6',
-          cyan:   '#06B6D4',
-          indigo: '#6366F1',
+          purple: 'rgb(var(--accent-rgb) / <alpha-value>)',
+          blue:   'rgb(var(--accent-rgb) / <alpha-value>)',
+          cyan:   'rgb(var(--accent-rgb) / <alpha-value>)',
+          indigo: 'rgb(var(--accent-ink-rgb) / <alpha-value>)',
         },
       },
       backgroundImage: {
-        'brand-gradient': 'linear-gradient(135deg, #A855F7, #3B82F6, #06B6D4)',
-        'dot-grid': 'radial-gradient(circle, rgba(255,255,255,0.07) 1px, transparent 1px)',
+        'brand-gradient': 'linear-gradient(135deg, rgb(var(--accent-strong-rgb)), rgb(var(--accent-rgb)))',
+        'dot-grid': 'radial-gradient(circle, var(--dot-color) 1px, transparent 1px)',
       },
       backgroundSize: {
         'dot-grid': '28px 28px',
@@ -78,8 +102,8 @@ export default {
           '66%':      { transform: 'translate(18px, -14px) scale(0.96)' },
         },
         borderPulse: {
-          '0%, 100%': { boxShadow: '0 0 0 1px rgba(168,85,247,0.35), 0 8px 32px rgba(0,0,0,0.45)' },
-          '50%':      { boxShadow: '0 0 0 1px rgba(168,85,247,0.7), 0 8px 32px rgba(0,0,0,0.45), 0 0 24px rgba(168,85,247,0.12)' },
+          '0%, 100%': { boxShadow: '0 0 0 1px rgb(var(--accent-rgb) / 0.35), var(--shadow-card)' },
+          '50%':      { boxShadow: '0 0 0 1px rgb(var(--accent-rgb) / 0.70), var(--shadow-card), 0 0 24px rgb(var(--accent-rgb) / 0.12)' },
         },
         countUp: {
           from: { opacity: '0', transform: 'translateY(10px)' },

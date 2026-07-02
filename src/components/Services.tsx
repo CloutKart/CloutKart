@@ -71,7 +71,7 @@ export default function Services() {
             >
               <span className="text-white">One message.</span>
               <br />
-              <span style={{ color: '#F5F0EB' }}>Every format that converts.</span>
+              <span style={{ color: 'var(--ink)' }}>Every format that converts.</span>
             </h2>
           </div>
           <p className="reveal delay-200 text-white/35 text-sm leading-relaxed max-w-xs md:text-right">
@@ -80,20 +80,20 @@ export default function Services() {
         </div>
 
         {/* Service list */}
-        <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+        <div style={{ borderTop: '1px solid rgb(var(--white-rgb) / 0.06)' }}>
           {services.map((service, i) => (
             <div
               key={service.title}
               className="reveal group flex flex-col sm:flex-row sm:items-start gap-4 sm:gap-12 py-7 transition-colors duration-300 cursor-default"
               style={{
-                borderBottom: '1px solid rgba(255,255,255,0.06)',
+                borderBottom: '1px solid rgb(var(--white-rgb) / 0.06)',
                 transitionDelay: `${i * 60}ms`,
               }}
             >
               {/* Number */}
               <div
                 className="font-mono text-[13px] font-bold flex-shrink-0 mt-0.5 transition-colors duration-300"
-                style={{ color: 'rgba(255,255,255,0.12)', minWidth: '2rem' }}
+                style={{ color: 'rgb(var(--white-rgb) / 0.12)', minWidth: '2rem' }}
               >
                 {String(i + 1).padStart(2, '0')}
               </div>
@@ -105,7 +105,7 @@ export default function Services() {
                 </span>
                 <div
                   className="absolute bottom-0 left-0 h-px w-0 group-hover:w-full transition-all duration-500"
-                  style={{ background: 'linear-gradient(90deg, #A855F7, #6366F1)' }}
+                  style={{ background: 'linear-gradient(90deg, var(--accent), var(--accent))' }}
                 />
               </div>
 
@@ -124,7 +124,7 @@ export default function Services() {
                 <ArrowUpRight
                   size={14}
                   className="opacity-0 group-hover:opacity-40 transition-opacity duration-300 flex-shrink-0"
-                  style={{ color: '#A855F7' }}
+                  style={{ color: 'var(--accent)' }}
                 />
               </div>
             </div>

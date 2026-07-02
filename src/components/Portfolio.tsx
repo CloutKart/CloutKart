@@ -19,12 +19,12 @@ interface PortfolioImage {
 const LIKE_COUNTS = [2847, 5312, 1634, 7891, 3256, 4478];
 const COMMENT_COUNTS = [43, 118, 29, 201, 67, 89];
 const AVATAR_GRADIENTS = [
-  'from-purple-500 to-pink-500',
-  'from-blue-500 to-cyan-500',
+  'from-rose-500 to-pink-500',
+  'from-amber-500 to-orange-400',
   'from-orange-500 to-yellow-400',
   'from-green-500 to-emerald-400',
   'from-rose-500 to-red-400',
-  'from-indigo-500 to-violet-500',
+  'from-lime-500 to-emerald-400',
 ];
 
 function InstagramCard({
@@ -95,7 +95,7 @@ function InstagramCard({
         transform: isVisible ? 'translateY(0)' : 'translateY(24px)',
         transition: `opacity 0.55s ease ${index * 90}ms, transform 0.55s ease ${index * 90}ms`,
       }}
-      className="bg-[#1a1a1a] rounded-2xl overflow-hidden border border-white/[0.07]"
+      className="bg-bg-elev rounded-2xl overflow-hidden border border-white/[0.07]"
     >
       {/* Post header */}
       <div className="flex items-center justify-between px-4 py-3">
@@ -111,7 +111,7 @@ function InstagramCard({
             />
             <div className="min-w-0">
               <p className="text-white text-[13px] font-semibold leading-none truncate group-hover:text-white/80 transition-colors">{section.title}</p>
-              <p className="text-white/40 text-[11px] mt-0.5 leading-none group-hover:text-[#818CF8] transition-colors">
+              <p className="text-white/40 text-[11px] mt-0.5 leading-none group-hover:text-accent-ink transition-colors">
                 {section.instagram_handle || '@cloutkart'}
               </p>
             </div>
@@ -158,7 +158,7 @@ function InstagramCard({
           <button
             onClick={handlePrev}
             className="absolute left-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full flex items-center justify-center z-10 transition-transform duration-150 hover:scale-110 active:scale-95"
-            style={{ background: 'rgba(255,255,255,0.88)', color: '#000' }}
+            style={{ background: 'rgb(var(--white-rgb) / 0.88)', color: '#000' }}
           >
             <ChevronLeft size={15} strokeWidth={2.5} />
           </button>
@@ -169,7 +169,7 @@ function InstagramCard({
           <button
             onClick={handleNext}
             className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full flex items-center justify-center z-10 transition-transform duration-150 hover:scale-110 active:scale-95"
-            style={{ background: 'rgba(255,255,255,0.88)', color: '#000' }}
+            style={{ background: 'rgb(var(--white-rgb) / 0.88)', color: '#000' }}
           >
             <ChevronRight size={15} strokeWidth={2.5} />
           </button>
@@ -185,7 +185,7 @@ function InstagramCard({
                 style={{
                   width: i === currentIdx ? 6 : 5,
                   height: i === currentIdx ? 6 : 5,
-                  background: i === currentIdx ? '#4f9eed' : 'rgba(255,255,255,0.45)',
+                  background: i === currentIdx ? '#4f9eed' : 'rgb(var(--white-rgb) / 0.45)',
                   boxShadow: i === currentIdx ? '0 0 4px rgba(79,158,237,0.7)' : 'none',
                 }}
               />
@@ -212,20 +212,20 @@ function InstagramCard({
             <Heart
               size={24}
               fill={liked ? '#ef4444' : 'none'}
-              stroke={liked ? '#ef4444' : 'rgba(255,255,255,0.85)'}
+              stroke={liked ? '#ef4444' : 'rgb(var(--white-rgb) / 0.85)'}
               className="transition-colors duration-150"
             />
           </button>
           <button
             onClick={onOpen}
             className="transition-colors duration-150"
-            style={{ color: 'rgba(255,255,255,0.85)' }}
+            style={{ color: 'rgb(var(--white-rgb) / 0.85)' }}
           >
             <MessageCircle size={23} />
           </button>
           <button
             className="transition-colors duration-150"
-            style={{ color: 'rgba(255,255,255,0.6)' }}
+            style={{ color: 'rgb(var(--white-rgb) / 0.6)' }}
           >
             <Send size={21} />
           </button>
@@ -233,8 +233,8 @@ function InstagramCard({
         <button onClick={handleSave}>
           <Bookmark
             size={22}
-            fill={saved ? 'rgba(255,255,255,0.9)' : 'none'}
-            stroke={saved ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.85)'}
+            fill={saved ? 'rgb(var(--white-rgb) / 0.9)' : 'none'}
+            stroke={saved ? 'rgb(var(--white-rgb) / 0.9)' : 'rgb(var(--white-rgb) / 0.85)'}
             className="transition-colors duration-150"
           />
         </button>
@@ -352,9 +352,9 @@ export default function Portfolio() {
           >
             Results That
             <br />
-            <span style={{ color: '#F5F0EB' }}>Speak For Themselves.</span>
+            <span style={{ color: 'var(--ink)' }}>Speak For Themselves.</span>
           </h2>
-          <p className="reveal delay-200 text-[#D1D5DB] text-sm sm:text-lg max-w-xl mx-auto leading-relaxed">
+          <p className="reveal delay-200 text-ink-body text-sm sm:text-lg max-w-xl mx-auto leading-relaxed">
             A showcase of premium ad creatives, campaign visuals, and performance-focused content.
           </p>
         </div>
@@ -385,7 +385,7 @@ export default function Portfolio() {
           </div>
         ) : sections.length === 0 ? (
           <div className="text-center py-16">
-            <p className="text-[#6B7280] text-sm">Portfolio coming soon.</p>
+            <p className="text-ink-dim text-sm">Portfolio coming soon.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -412,7 +412,7 @@ export default function Portfolio() {
           <button
             onClick={() => setLightboxOpen(false)}
             className="absolute top-4 right-4 sm:top-6 sm:right-6 w-10 h-10 rounded-full flex items-center justify-center text-white/70 hover:text-white transition-colors z-10"
-            style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)' }}
+            style={{ background: 'rgb(var(--white-rgb) / 0.08)', border: '1px solid rgb(var(--white-rgb) / 0.15)' }}
           >
             <X size={18} />
           </button>
@@ -422,14 +422,14 @@ export default function Portfolio() {
               <button
                 onClick={() => setActiveIndex((p) => (p - 1 + lightboxImages.length) % lightboxImages.length)}
                 className="absolute left-3 sm:left-6 w-10 h-10 rounded-full flex items-center justify-center text-white/70 hover:text-white transition-colors z-10"
-                style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)' }}
+                style={{ background: 'rgb(var(--white-rgb) / 0.08)', border: '1px solid rgb(var(--white-rgb) / 0.15)' }}
               >
                 <ChevronLeft size={20} />
               </button>
               <button
                 onClick={() => setActiveIndex((p) => (p + 1) % lightboxImages.length)}
                 className="absolute right-3 sm:right-6 w-10 h-10 rounded-full flex items-center justify-center text-white/70 hover:text-white transition-colors z-10"
-                style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)' }}
+                style={{ background: 'rgb(var(--white-rgb) / 0.08)', border: '1px solid rgb(var(--white-rgb) / 0.15)' }}
               >
                 <ChevronRight size={20} />
               </button>

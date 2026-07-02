@@ -31,9 +31,10 @@ export default function Footer() {
 
   return (
     <footer
+      data-theme="dark"
       className="relative border-t border-white/[0.06] [overflow-x:clip]"
       style={{
-        background: 'rgba(0,0,0,0.6)',
+        background: 'var(--bg)',
         backdropFilter: 'blur(8px)',
         WebkitBackdropFilter: 'blur(8px)',
       }}
@@ -48,7 +49,7 @@ export default function Footer() {
               alt="CloutKart"
               className="h-10 sm:h-12 w-auto object-contain mb-4 sm:mb-5 opacity-80"
             />
-            <p className="text-[#9CA3AF] text-sm leading-relaxed max-w-xs mb-5 sm:mb-6">
+            <p className="text-ink-muted text-sm leading-relaxed max-w-xs mb-5 sm:mb-6">
               Modern advertising for modern brands. We build the winning message first — everything else scales from there.
             </p>
             <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
@@ -57,7 +58,7 @@ export default function Footer() {
                   key={s.label}
                   href={s.href}
                   aria-label={s.label}
-                  className="w-9 h-9 glass-card rounded-lg flex items-center justify-center text-[#9CA3AF] hover:text-white transition-all duration-200 group touch-manipulation"
+                  className="w-9 h-9 glass-card rounded-lg flex items-center justify-center text-ink-muted hover:text-white transition-all duration-200 group touch-manipulation"
                   style={{ borderRadius: '10px' }}
                 >
                   <s.icon size={15} className="group-hover:scale-110 transition-transform relative z-10" />
@@ -76,7 +77,7 @@ export default function Footer() {
                     <li key={item.label}>
                       <a
                         href={item.href}
-                        className="text-xs sm:text-sm text-[#9CA3AF] hover:text-white transition-colors duration-200 flex items-center gap-1 group"
+                        className="text-xs sm:text-sm text-ink-muted hover:text-white transition-colors duration-200 flex items-center gap-1 group"
                       >
                         <span className="break-all">{item.label}</span>
                         {item.href.startsWith('mailto') && (
@@ -91,13 +92,13 @@ export default function Footer() {
           </div>
         </div>
 
-        <div className="h-px mb-6 sm:mb-8" style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent)' }} />
+        <div className="h-px mb-6 sm:mb-8" style={{ background: 'linear-gradient(90deg, transparent, rgb(var(--white-rgb) / 0.06), transparent)' }} />
 
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
-          <p className="text-[#6B7280] text-xs font-mono">
+          <p className="text-ink-dim text-xs font-mono">
             © {new Date().getFullYear()} CloutKart. All rights reserved.
           </p>
-          <p className="text-[#6B7280] text-xs font-mono">
+          <p className="text-ink-dim text-xs font-mono">
             AI Creatives That Drive Results
           </p>
         </div>

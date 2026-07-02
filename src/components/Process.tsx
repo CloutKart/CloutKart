@@ -43,7 +43,7 @@ export default function Process() {
             <br />
             <span className="gradient-text">Engineering Process</span>
           </h2>
-          <p className="reveal delay-200 text-[#D1D5DB] text-sm sm:text-lg max-w-xl mx-auto leading-relaxed">
+          <p className="reveal delay-200 text-ink-body text-sm sm:text-lg max-w-xl mx-auto leading-relaxed">
             Every CloutKart project follows a proven six-step process that consistently produces high-converting creative.
           </p>
         </div>
@@ -64,9 +64,9 @@ export default function Process() {
                 </div>
 
                 <h3 className="text-xs sm:text-base font-semibold font-heading text-white mb-1.5 sm:mb-2.5">{step.title}</h3>
-                <p className="text-[11px] sm:text-sm text-[#D1D5DB] leading-relaxed hidden sm:block">{step.desc}</p>
+                <p className="text-[11px] sm:text-sm text-ink-body leading-relaxed hidden sm:block">{step.desc}</p>
 
-                <div className="absolute top-4 right-4 w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: 'linear-gradient(135deg, #A855F7, #06B6D4)' }} />
+                <div className="absolute top-4 right-4 w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent))' }} />
               </div>
             </div>
           ))}

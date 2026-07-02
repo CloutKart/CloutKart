@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Menu, X, ArrowRight, LayoutDashboard, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import ThemeToggle from './ThemeToggle';
 
 interface Props {
   onSignupOpen: () => void;
@@ -70,7 +71,7 @@ export default function Navbar({ onSignupOpen }: Props) {
           scrolled ? 'border-b border-white/[0.08] shadow-2xl shadow-black/60' : ''
         }`}
         style={{
-          background: scrolled ? 'rgba(8, 8, 8, 0.72)' : 'transparent',
+          background: scrolled ? 'var(--nav-bg)' : 'transparent',
           backdropFilter: scrolled ? 'blur(20px)' : 'none',
           WebkitBackdropFilter: scrolled ? 'blur(20px)' : 'none',
         }}
@@ -86,7 +87,7 @@ export default function Navbar({ onSignupOpen }: Props) {
                 <a
                   key={link.label}
                   href={link.href}
-                  className="text-sm font-medium text-[#D1D5DB] hover:text-white transition-colors duration-200 relative group font-heading"
+                  className="text-sm font-medium text-ink-body hover:text-white transition-colors duration-200 relative group font-heading"
                 >
                   {link.label}
                   <span className="absolute -bottom-0.5 left-0 w-0 h-px bg-gradient-to-r from-brand-purple to-brand-cyan group-hover:w-full transition-all duration-300" />
@@ -94,17 +95,21 @@ export default function Navbar({ onSignupOpen }: Props) {
               ))}
             </div>
 
-            <div className="hidden md:flex items-center">
+            <div className="hidden md:flex items-center gap-3">
+              <ThemeToggle />
               <AuthButtons />
             </div>
 
-            <button
-              className="md:hidden text-[#D1D5DB] hover:text-white transition-colors p-2 -mr-2 touch-manipulation"
-              onClick={() => setMenuOpen(!menuOpen)}
-              aria-label="Toggle menu"
-            >
-              {menuOpen ? <X size={22} /> : <Menu size={22} />}
-            </button>
+            <div className="md:hidden flex items-center gap-1.5">
+              <ThemeToggle />
+              <button
+                className="text-ink-body hover:text-white transition-colors p-2 -mr-2 touch-manipulation"
+                onClick={() => setMenuOpen(!menuOpen)}
+                aria-label="Toggle menu"
+              >
+                {menuOpen ? <X size={22} /> : <Menu size={22} />}
+              </button>
+            </div>
           </div>
         </div>
       </nav>
@@ -122,8 +127,8 @@ export default function Navbar({ onSignupOpen }: Props) {
           menuOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
         style={{
-          background: '#0c0c0c',
-          borderLeft: '1px solid rgba(255,255,255,0.08)',
+          background: 'var(--bg-elev)',
+          borderLeft: '1px solid var(--border)',
           borderTopLeftRadius: '20px',
           borderBottomLeftRadius: '20px',
         }}
@@ -145,7 +150,7 @@ export default function Navbar({ onSignupOpen }: Props) {
             <a
               key={link.label}
               href={link.href}
-              className="flex items-center gap-3 px-4 py-3.5 rounded-xl text-base font-medium text-[#D1D5DB] hover:text-white hover:bg-white/[0.04] transition-all duration-200 touch-manipulation font-heading"
+              className="flex items-center gap-3 px-4 py-3.5 rounded-xl text-base font-medium text-ink-body hover:text-white hover:bg-white/[0.04] transition-all duration-200 touch-manipulation font-heading"
               onClick={() => setMenuOpen(false)}
             >
               {link.label}

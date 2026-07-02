@@ -35,18 +35,18 @@ export default function LoadingScreen() {
         />
 
         {/* Shimmer gradient progress bar */}
-        <div className="relative w-44 h-0.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
+        <div className="relative w-44 h-0.5 rounded-full overflow-hidden" style={{ background: 'rgb(var(--white-rgb) / 0.06)' }}>
           <div
             className="h-full rounded-full relative overflow-hidden"
             style={{
               width: `${pct}%`,
-              background: 'linear-gradient(90deg, #A855F7 0%, #818CF8 60%, #06B6D4 100%)',
+              background: 'linear-gradient(90deg, var(--accent) 0%, var(--accent-ink) 60%, var(--accent) 100%)',
               transition: 'width 0.25s ease',
             }}
           >
             <div
               className="absolute inset-0 animate-shimmer"
-              style={{ background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.45) 50%, transparent 100%)' }}
+              style={{ background: 'linear-gradient(90deg, transparent 0%, rgb(var(--white-rgb) / 0.45) 50%, transparent 100%)' }}
             />
           </div>
         </div>

@@ -2,76 +2,99 @@
 
 ## Theme
 
-Dark mode only. Background: `#080808` (near-black with a 28px dot grid texture). The overall aesthetic is glass-on-dark: semi-transparent surfaces with backdrop blur floating on the deep background. Brand accent is a purple-blue-cyan gradient (current) — used for interactive elements and key emphasis moments.
+Light and dark, user-toggleable. Dark is the default; the choice follows the OS
+`prefers-color-scheme` on first visit and is then remembered in `localStorage`
+(`ck-theme`). The theme is applied to `<html data-theme="light|dark">` by a tiny
+blocking script in `index.html` before first paint (no flash), and managed at
+runtime by `src/context/ThemeContext.tsx` with a toggle in the navbar
+(`src/components/ThemeToggle.tsx`).
+
+Colors are driven entirely by CSS custom properties (semantic tokens) declared in
+`src/index.css`. Channel vars (space-separated RGB) are the single source of
+truth; light mode re-declares only the channels and every composed token
+re-resolves automatically. Tailwind's `white` is remapped to `--white-rgb`, so
+the many existing `text-white` / `bg-white/[x]` / `border-white/[x]` utilities
+flip with the theme for free.
+
+Overall aesthetic is glass-on-surface: semi-transparent cards with backdrop blur.
+**Product mockups** (Hero "Our Vision" card, the Pixie dashboard preview, the
+ScrollStory ad phone) and the **footer** are pinned to dark in both themes via a
+nested `data-theme="dark"` scope, so they read as dark-app screenshots regardless
+of page theme. The `/dashboard` and `/admin` app routes are likewise pinned dark.
 
 ## Color Palette
 
-| Role | Value | Notes |
-|---|---|---|
-| Background | `#080808` | Base canvas |
-| Surface | `rgba(255,255,255,0.04)` | Glass card fill |
-| Border | `rgba(255,255,255,0.10)` | Default card border |
-| Border subtle | `rgba(255,255,255,0.06)` | Section dividers |
-| Ink primary | `#FFFFFF` | Headings |
-| Ink body | `#D1D5DB` | Body text |
-| Ink muted | `#9CA3AF` | Supporting text |
-| Ink dim | `rgba(255,255,255,0.20)` | Tertiary / disabled |
-| Brand purple | `#A855F7` | Primary accent |
-| Brand blue | `#3B82F6` | Secondary accent |
-| Brand cyan | `#06B6D4` | Tertiary accent / data |
-| Brand gradient | `135deg, #A855F7 → #3B82F6 → #06B6D4` | Buttons, gradient text |
-| Success | `#10B981` | Status indicators |
+Brand accent is a single **committed violet** (no more purple→blue→cyan rainbow).
+Tokens (dark / light):
 
-**Current problem**: Brand gradient is applied to gradient-text in 19+ instances across all sections. It should be a rare, intentional accent — not a default text treatment.
+| Role | Token | Dark | Light |
+|---|---|---|---|
+| Canvas | `--bg` | `#080808` | `#FBFBFD` |
+| Elevated surface | `--bg-elev` | `#0E0E10` | `#FFFFFF` |
+| Overlay base (`white`) | `--white-rgb` | `255 255 255` | `24 22 32` |
+| Surface fill | `--surface` | white 4% | ink 4% |
+| Border | `--border` | white 10% | ink 10% |
+| Ink (headings) | `--ink` | `#F5F0EB` | `#16151A` |
+| Ink body | `--ink-body` | `#D1D5DB` | `#3A3844` |
+| Ink muted | `--ink-muted` | `#9CA3AF` | `#635F70` |
+| Accent | `--accent` | `#7C3AED` | `#6D28D9` |
+| Accent (as text) | `--accent-ink` | `#C084FC` | `#5B21B6` |
+| On-accent | `--accent-contrast` | `#FFFFFF` | `#FFFFFF` |
+| Success | `--success` | `#10B981` | `#059669` |
+
+All foreground/background pairs meet WCAG AA (body ≥ 4.5:1, large ≥ 3:1) in both
+themes.
+
+**Resolved:** the brand gradient is no longer a default text treatment. The
+`.gradient-text*` classes now render a single solid `--accent-ink`; the rainbow
+gradient is gone from buttons, borders, cursor, and scroll bar. Portfolio avatar
+gradients were moved off the purple/blue/cyan tells.
 
 ## Typography
 
-| Role | Font | Weight | Size |
+Reflex-reject fonts (Inter, Montserrat) replaced with a distinctive pairing:
+
+| Role | Font | Weight | Notes |
 |---|---|---|---|
-| Display / H1 | Sora | 700 | clamp(2.6rem, 6vw, 4.75rem) |
-| H2 | Sora | 700 | clamp(2.2rem, 5vw, 4rem) |
-| H3 | Sora | 700 | 1.5rem |
-| Body | DM Sans | 400–500 | 1rem (16px) |
-| Label / mono | DM Mono | 400–500 | 10–13px |
-| Button | Sora | 600 | 14px |
+| Display / headings | **Archivo Expanded** | 600–800 | Wide, industrial, motorsport-signage confidence. `letter-spacing: -0.02em`. |
+| Body | **Hanken Grotesk** | 400–600 | Refined, legible workhorse. |
+| Labels / metrics | **DM Mono** | 400–500 | Eyebrow pills + tabular figures for numbers (`font-variant-numeric: tabular-nums`). |
+| Buttons | Hanken Grotesk | 600 | (Removed the never-loaded `Bricolage Grotesque` reference.) |
 
-**Current problem**: Both Sora and DM Sans are on the impeccable reflex-reject list. Font replacements are determined by `/impeccable typeset`.
-
-**Line height**: Body 1.8, headings 1.04–1.06, labels 1.0.
-**Letter spacing**: Headings −0.03em, labels +0.08–0.16em.
+Loaded via one Google Fonts `@import` in `src/index.css`.
 
 ## Components
 
-**glass-card**: `bg rgba(255,255,255,0.04)`, `backdrop-filter blur(24px) saturate(180%)`, `border rgba(255,255,255,0.10)`, `border-radius 20px`, `box-shadow: 0 0 0 1px rgba(255,255,255,0.04) inset, 0 8px 32px rgba(0,0,0,0.45)`.
+**glass-card**: `--glass-bg`, `backdrop-filter blur(24px) saturate(180%)`,
+`--glass-border`, radius 20px, `--shadow-card`. Noise texture and the `::after`
+grain are hidden in light mode.
 
-**btn-primary**: Gradient background (purple→blue→cyan), white text, 100px border-radius, 14px Sora, hover lift (-4px translateY + shadow).
+**btn-primary**: single-hue vertical violet gradient (`--accent-strong` →
+`--accent`), `--accent-contrast` text, 100px radius, hover lift + brightness.
 
-**btn-secondary**: Ghost, `backdrop-filter blur(12px)`, white border/text, same radius.
+**btn-secondary**: ghost — `--surface-strong` fill, `--border-strong`, `--ink` text.
 
-**eyebrow-pill**: `background rgba(168,85,247,0.1)`, `border rgba(168,85,247,0.2)`, `border-radius 100px`, uppercase 11px, color `#C084FC`.
+**eyebrow-pill**: `--accent-soft` bg, `--accent-border`, uppercase 11px **DM Mono**,
+`--accent-ink`.
 
-**gradient-border-wrap**: Gradient border wrapper using `::before` pseudo-element with gradient background and 1px inset.
+**ThemeToggle**: 44×44 round button, Sun/Moon crossfade + rotate, `role="switch"`.
 
 ## Animations
 
-**Scroll-triggered entrance**: `.reveal` (translateY 22px → 0, opacity 0→1, 0.6s ease) and `.reveal-scale` (scale 0.94→1) — triggered by IntersectionObserver adding `.visible` class. **Current problem**: Applied to every element in every section, creating the "uniform AI reflex" pattern.
+Scroll-triggered `.reveal` / `.reveal-scale` / `.reveal-clip` (IntersectionObserver
+adds `.visible`). **Hardened:** a safety net in `App.tsx` force-reveals any strays
+after 2.5s, so content can never ship blank to headless renderers, SEO crawlers, or
+background tabs.
 
-**Float**: `.animate-float` (5s, −8px vertical), `.animate-float-slow` (7s, −12px) — used on VisionPreview floating cards.
+`prefers-reduced-motion: reduce` is fully respected: a global rule collapses
+transitions/animations to instant, and reveals default to visible.
 
-**Marquee**: Single row, 40s linear — `animate-marquee`.
-
-**Custom cursor**: 3-layer (dot 8px, ring 32–56px, aura) with 5 states, RAF-driven lerp.
-
-**Loading screen**: Progress bar fill + logo + "Loading" text.
-
-**Missing**: `prefers-reduced-motion` support. No reduced-motion fallbacks anywhere.
+Float, marquee, orb-drift (disabled on mobile), custom 3-layer cursor, loading
+screen. Accent-dependent effects (cursor, glows, border-pulse) use `--accent` and
+adapt per theme.
 
 ## Layout
 
-Max width: `max-w-7xl` (1280px) with `px-4 sm:px-6 lg:px-8`.
-
-Section rhythm: `py-20 md:py-36` for most sections.
-
-Grid: `lg:grid-cols-2` for hero, `sm:grid-cols-3` for feature grids, `md:grid-cols-[1fr_auto_1fr]` for pricing.
-
-Z-index scale: `z-0` (orbs) → `z-10` (relative content) → `z-50` (navbar) → `z-9999` (loading screen). **Problem**: `z-9999` is an arbitrary value; should be a semantic token.
+Max width `max-w-7xl` (1280px), `px-4 sm:px-6 lg:px-8`. Section rhythm
+`py-20 md:py-36`. Z-index scale: content `z-10` → navbar `z-50` → scroll-progress
+`z-90` → loading screen `z-100` (cursor layers sit above as an overlay system).

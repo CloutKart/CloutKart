@@ -40,8 +40,8 @@ export function NotificationBell({ isAdmin, userId }: NotificationBellProps) {
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const accentRgb = isAdmin ? '99,102,241' : '168,85,247';
-  const accentColor = isAdmin ? '#818CF8' : '#A855F7';
-  const badgeColor = isAdmin ? '#EF4444' : '#A855F7';
+  const accentColor = isAdmin ? 'var(--accent-ink)' : 'var(--accent)';
+  const badgeColor = isAdmin ? '#EF4444' : 'var(--accent)';
 
   // ── Fetch ───────────────────────────────────────────────────────────────────
   const loadNotifications = useCallback(async () => {
@@ -222,15 +222,15 @@ export function NotificationBell({ isAdmin, userId }: NotificationBellProps) {
               {unreadCount > 0 && (
                 <button
                   onClick={markAllRead}
-                  className="flex items-center gap-1 text-[10px] text-[#9CA3AF] hover:text-white transition-colors px-2 py-1 rounded-lg"
-                  style={{ background: 'rgba(255,255,255,0.04)' }}
+                  className="flex items-center gap-1 text-[10px] text-ink-muted hover:text-white transition-colors px-2 py-1 rounded-lg"
+                  style={{ background: 'rgb(var(--white-rgb) / 0.04)' }}
                 >
                   <CheckCheck size={11} /> All read
                 </button>
               )}
               <button
                 onClick={() => setOpen(false)}
-                className="w-6 h-6 rounded-lg flex items-center justify-center text-[#6B7280] hover:text-white transition-colors"
+                className="w-6 h-6 rounded-lg flex items-center justify-center text-ink-dim hover:text-white transition-colors"
               >
                 <X size={12} />
               </button>
@@ -241,8 +241,8 @@ export function NotificationBell({ isAdmin, userId }: NotificationBellProps) {
           <div className="overflow-y-auto" style={{ maxHeight: 380 }}>
             {notifications.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12">
-                <Bell size={20} className="text-[#4B5563] mb-2" />
-                <p className="text-[#6B7280] text-xs">No notifications yet</p>
+                <Bell size={20} className="text-ink-dim mb-2" />
+                <p className="text-ink-dim text-xs">No notifications yet</p>
               </div>
             ) : (
               notifications.map(n => (
@@ -252,7 +252,7 @@ export function NotificationBell({ isAdmin, userId }: NotificationBellProps) {
                   className="flex items-start gap-3 px-4 py-3 cursor-pointer transition-all border-b"
                   style={{
                     background: n.is_read ? 'transparent' : `rgba(${accentRgb},0.07)`,
-                    borderColor: 'rgba(255,255,255,0.04)',
+                    borderColor: 'rgb(var(--white-rgb) / 0.04)',
                   }}
                   onMouseEnter={e => (e.currentTarget.style.background = `rgba(${accentRgb},0.1)`)}
                   onMouseLeave={e => (e.currentTarget.style.background = n.is_read ? 'transparent' : `rgba(${accentRgb},0.07)`)}
@@ -262,7 +262,7 @@ export function NotificationBell({ isAdmin, userId }: NotificationBellProps) {
                   </span>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
-                      <p className={`text-xs font-semibold leading-tight ${n.is_read ? 'text-[#9CA3AF]' : 'text-white'}`}>
+                      <p className={`text-xs font-semibold leading-tight ${n.is_read ? 'text-ink-muted' : 'text-white'}`}>
                         {n.title}
                       </p>
                       {!n.is_read && (
@@ -272,8 +272,8 @@ export function NotificationBell({ isAdmin, userId }: NotificationBellProps) {
                         />
                       )}
                     </div>
-                    <p className="text-[11px] text-[#6B7280] mt-0.5 leading-relaxed">{n.body}</p>
-                    <p className="text-[10px] text-[#4B5563] mt-1">
+                    <p className="text-[11px] text-ink-dim mt-0.5 leading-relaxed">{n.body}</p>
+                    <p className="text-[10px] text-ink-dim mt-1">
                       {new Date(n.created_at).toLocaleString('en-IN', {
                         day: 'numeric',
                         month: 'short',

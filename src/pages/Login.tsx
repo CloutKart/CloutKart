@@ -44,12 +44,12 @@ export default function Login() {
     });
   };
 
-  const inputClass = "w-full rounded-xl px-4 py-3.5 text-sm text-white placeholder-[#6B7280] focus:outline-none transition-all duration-200 font-medium bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(168,85,247,0.5)] focus:bg-white/[0.07]";
+  const inputClass = "w-full rounded-xl px-4 py-3.5 text-sm text-white placeholder-[var(--ink-dim)] focus:outline-none transition-all duration-200 font-medium bg-white/[0.05] border border-white/[0.10] focus:border-accent/50 focus:bg-white/[0.07]";
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4" style={{ background: '#080808', backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.07) 1px, transparent 1px)', backgroundSize: '28px 28px' }}>
+    <div className="min-h-screen flex items-center justify-center px-4" style={{ background: 'var(--bg)', backgroundImage: 'radial-gradient(circle, rgb(var(--white-rgb) / 0.07) 1px, transparent 1px)', backgroundSize: '28px 28px' }}>
       <div className="w-full max-w-md">
-        <div className="relative glass-card rounded-3xl p-8 sm:p-10" style={{ background: 'rgba(12,12,12,0.97)' }}>
+        <div className="relative glass-card rounded-3xl p-8 sm:p-10" style={{ background: 'var(--bg-elev)' }}>
           <Link
             to="/"
             className="absolute top-5 right-5 w-8 h-8 rounded-lg flex items-center justify-center border border-white/10 hover:border-white/20 text-white/40 hover:text-white/70 transition-all"
@@ -61,13 +61,13 @@ export default function Login() {
               <img src="/logo.png" alt="CloutKart" className="h-9 w-auto object-contain mb-6 opacity-80" />
             </Link>
             <h2 className="font-heading font-bold text-3xl gradient-text mb-1">Welcome Back</h2>
-            <p className="text-[#9CA3AF] text-sm">Log in to your CloutKart account.</p>
+            <p className="text-ink-muted text-sm">Log in to your CloutKart account.</p>
           </div>
 
           <button
             onClick={handleGoogle}
             className="w-full flex items-center justify-center gap-3 rounded-xl py-3.5 mb-5 text-sm font-semibold text-white transition-all duration-200 hover:bg-white/[0.08]"
-            style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.10)' }}
+            style={{ background: 'rgb(var(--white-rgb) / 0.05)', border: '1px solid rgb(var(--white-rgb) / 0.10)' }}
           >
             <GoogleIcon />
             Continue with Google
@@ -75,7 +75,7 @@ export default function Login() {
 
           <div className="flex items-center gap-3 mb-5">
             <div className="h-px flex-1 bg-white/[0.08]" />
-            <span className="text-[#6B7280] text-xs">or continue with email</span>
+            <span className="text-ink-dim text-xs">or continue with email</span>
             <div className="h-px flex-1 bg-white/[0.08]" />
           </div>
 
@@ -100,14 +100,14 @@ export default function Login() {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-[#6B7280] hover:text-white/60 transition-colors"
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-ink-dim hover:text-white/60 transition-colors"
               >
                 {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
               </button>
             </div>
 
             <div className="text-right">
-              <Link to="/forgot-password" className="text-xs text-[#9CA3AF] hover:text-white transition-colors">
+              <Link to="/forgot-password" className="text-xs text-ink-muted hover:text-white transition-colors">
                 Forgot password?
               </Link>
             </div>
@@ -129,9 +129,9 @@ export default function Login() {
             </button>
           </form>
 
-          <p className="text-center text-[#6B7280] text-sm mt-6">
+          <p className="text-center text-ink-dim text-sm mt-6">
             Don't have an account?{' '}
-            <Link to="/signup" className="text-[#9CA3AF] hover:text-white transition-colors underline underline-offset-2">
+            <Link to="/signup" className="text-ink-muted hover:text-white transition-colors underline underline-offset-2">
               Sign up
             </Link>
           </p>

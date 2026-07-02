@@ -30,18 +30,18 @@ export default function ResetPassword() {
     }
   };
 
-  const inputClass = "w-full rounded-xl px-4 py-3.5 text-sm text-white placeholder-[#6B7280] focus:outline-none transition-all duration-200 font-medium bg-white/[0.05] border border-white/[0.10] focus:border-[rgba(168,85,247,0.5)] focus:bg-white/[0.07] pr-12";
+  const inputClass = "w-full rounded-xl px-4 py-3.5 text-sm text-white placeholder-[var(--ink-dim)] focus:outline-none transition-all duration-200 font-medium bg-white/[0.05] border border-white/[0.10] focus:border-accent/50 focus:bg-white/[0.07] pr-12";
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4" style={{ background: '#080808', backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.07) 1px, transparent 1px)', backgroundSize: '28px 28px' }}>
+    <div className="min-h-screen flex items-center justify-center px-4" style={{ background: 'var(--bg)', backgroundImage: 'radial-gradient(circle, rgb(var(--white-rgb) / 0.07) 1px, transparent 1px)', backgroundSize: '28px 28px' }}>
       <div className="w-full max-w-md">
-        <div className="glass-card rounded-3xl p-8 sm:p-10" style={{ background: 'rgba(12,12,12,0.97)' }}>
+        <div className="glass-card rounded-3xl p-8 sm:p-10" style={{ background: 'var(--bg-elev)' }}>
           <div className="mb-8">
             <Link to="/">
               <img src="/logo.png" alt="CloutKart" className="h-9 w-auto object-contain mb-6 opacity-80" />
             </Link>
             <h2 className="font-heading font-bold text-3xl gradient-text mb-1">Set New Password</h2>
-            <p className="text-[#9CA3AF] text-sm">Choose a strong password for your account.</p>
+            <p className="text-ink-muted text-sm">Choose a strong password for your account.</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-3">
@@ -57,7 +57,7 @@ export default function ResetPassword() {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-[#6B7280] hover:text-white/60 transition-colors"
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-ink-dim hover:text-white/60 transition-colors"
               >
                 {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
               </button>

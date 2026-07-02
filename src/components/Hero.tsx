@@ -33,23 +33,24 @@ function VisionPreview() {
   ];
 
   return (
-    <div className="relative">
+    // Product mockup: pinned dark in both themes (reads as a dark-app screenshot)
+    <div className="relative" data-theme="dark">
       {/* Brief pill — floats above */}
       <div
         className="absolute -top-5 left-6 z-10 flex items-center gap-2.5 rounded-full px-4 py-2 animate-float-delayed"
-        style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.10)', backdropFilter: 'blur(12px)' }}
+        style={{ background: 'rgb(var(--white-rgb) / 0.05)', border: '1px solid rgb(var(--white-rgb) / 0.10)', backdropFilter: 'blur(12px)' }}
       >
-        <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: '#A855F7' }} />
+        <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: 'var(--accent)' }} />
         <span className="text-[11px] font-medium text-white/60 font-mono">Brief submitted · Brewora Coffee Scrub</span>
       </div>
 
       {/* Status pill — floats top right */}
       <div
         className="absolute -top-5 right-2 z-10 flex items-center gap-2 rounded-full px-3 py-1.5 animate-float"
-        style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)', backdropFilter: 'blur(12px)' }}
+        style={{ background: 'rgb(var(--success-rgb) / 0.1)', border: '1px solid rgb(var(--success-rgb) / 0.25)', backdropFilter: 'blur(12px)' }}
       >
-        <div className="w-1.5 h-1.5 rounded-full" style={{ background: '#10B981' }} />
-        <span className="text-[10px] font-semibold font-mono" style={{ color: '#10B981' }}>In Review</span>
+        <div className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--success)' }} />
+        <span className="text-[10px] font-semibold font-mono" style={{ color: 'var(--success)' }}>In Review</span>
       </div>
 
       {/* Main vision card */}
@@ -57,20 +58,20 @@ function VisionPreview() {
         className="rounded-2xl animate-float"
         style={{
           background: 'rgba(12,12,12,0.9)',
-          border: '1px solid rgba(255,255,255,0.09)',
+          border: '1px solid rgb(var(--white-rgb) / 0.09)',
           backdropFilter: 'blur(24px)',
-          boxShadow: '0 24px 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.04) inset',
+          boxShadow: '0 24px 80px rgba(0,0,0,0.7), 0 0 0 1px rgb(var(--white-rgb) / 0.04) inset',
         }}
       >
         {/* Card header */}
-        <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+        <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: '1px solid rgb(var(--white-rgb) / 0.06)' }}>
           <div className="flex items-center gap-2">
-            <Sparkles size={12} style={{ color: '#A855F7' }} />
+            <Sparkles size={12} style={{ color: 'var(--accent)' }} />
             <span className="text-sm font-bold text-white font-heading tracking-tight">Our vision</span>
           </div>
           <span
             className="flex items-center gap-1 text-[9px] font-semibold px-2.5 py-1 rounded-full"
-            style={{ background: 'rgba(168,85,247,0.1)', border: '1px solid rgba(168,85,247,0.2)', color: '#C084FC' }}
+            style={{ background: 'rgb(var(--accent-rgb) / 0.1)', border: '1px solid rgb(var(--accent-rgb) / 0.2)', color: 'var(--accent-ink)' }}
           >
             <Sparkles size={7} />
             Pixie · AI Creative Intelligence
@@ -84,7 +85,7 @@ function VisionPreview() {
             <div className="flex items-center gap-3">
               <span
                 className="px-3 py-1 rounded-full text-[11px] font-bold"
-                style={{ background: 'rgba(168,85,247,0.15)', border: '1px solid rgba(168,85,247,0.3)', color: '#E9D5FF' }}
+                style={{ background: 'rgb(var(--accent-rgb) / 0.15)', border: '1px solid rgb(var(--accent-rgb) / 0.3)', color: '#E9D5FF' }}
               >
                 Brewed Awakening
               </span>
@@ -97,7 +98,7 @@ function VisionPreview() {
             <div className="text-[9px] font-semibold uppercase tracking-[0.14em] text-white/25 mb-2 font-mono">Hook</div>
             <div
               className="px-4 py-3 rounded-xl"
-              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
+              style={{ background: 'rgb(var(--white-rgb) / 0.04)', border: '1px solid rgb(var(--white-rgb) / 0.08)' }}
             >
               <span className="text-[18px] font-bold font-heading text-white leading-tight">
                 Tan lines are so last season
@@ -122,7 +123,7 @@ function VisionPreview() {
           <div className="space-y-1.5">
             {deliverables.map((d, i) => (
               <div key={i} className="flex items-center gap-2">
-                <CheckCircle size={10} style={{ color: '#10B981', flexShrink: 0 }} />
+                <CheckCircle size={10} style={{ color: 'var(--success)', flexShrink: 0 }} />
                 <span className="text-[10px] text-white/40">{d}</span>
               </div>
             ))}
@@ -132,11 +133,11 @@ function VisionPreview() {
         {/* Footer */}
         <div
           className="flex items-center justify-end px-5 py-3.5"
-          style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}
+          style={{ borderTop: '1px solid rgb(var(--white-rgb) / 0.06)' }}
         >
           <button
             className="text-[11px] font-bold px-4 py-2 rounded-xl text-white"
-            style={{ background: 'linear-gradient(135deg, #A855F7, #6366F1)' }}
+            style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent))' }}
           >
             Approve vision
           </button>
@@ -146,16 +147,16 @@ function VisionPreview() {
       {/* Deliverable ready pill — floats bottom left */}
       <div
         className="absolute -bottom-5 left-4 z-10 flex items-center gap-2 rounded-full px-3.5 py-2 animate-float-slow"
-        style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.10)', backdropFilter: 'blur(12px)' }}
+        style={{ background: 'rgb(var(--white-rgb) / 0.05)', border: '1px solid rgb(var(--white-rgb) / 0.10)', backdropFilter: 'blur(12px)' }}
       >
-        <CheckCircle size={11} style={{ color: '#10B981', flexShrink: 0 }} />
+        <CheckCircle size={11} style={{ color: 'var(--success)', flexShrink: 0 }} />
         <span className="text-[10px] font-medium text-white/55 font-mono">Creatives delivered · 48h</span>
       </div>
 
       {/* ROAS pill — floats bottom right */}
       <div
         className="absolute -bottom-5 right-2 z-10 flex items-center gap-2.5 rounded-full px-4 py-2 animate-float-delayed"
-        style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.10)', backdropFilter: 'blur(12px)' }}
+        style={{ background: 'rgb(var(--white-rgb) / 0.05)', border: '1px solid rgb(var(--white-rgb) / 0.10)', backdropFilter: 'blur(12px)' }}
       >
         <span className="font-mono text-sm font-bold gradient-text-warm">+284%</span>
         <span className="text-[11px] text-white/40">avg ROAS lift</span>
@@ -244,7 +245,7 @@ export default function Hero({ onSignupOpen }: Props) {
         className="absolute pointer-events-none animate-orb-drift"
         style={{
           width: '600px', height: '600px', borderRadius: '50%',
-          background: 'radial-gradient(ellipse, rgba(168,85,247,0.08) 0%, transparent 70%)',
+          background: 'radial-gradient(ellipse, rgb(var(--accent-rgb) / 0.08) 0%, transparent 70%)',
           top: '-8%', left: '-12%', zIndex: 0,
         }}
       />
@@ -252,7 +253,7 @@ export default function Hero({ onSignupOpen }: Props) {
         className="absolute pointer-events-none animate-orb-drift-alt"
         style={{
           width: '480px', height: '480px', borderRadius: '50%',
-          background: 'radial-gradient(ellipse, rgba(59,130,246,0.06) 0%, transparent 70%)',
+          background: 'radial-gradient(ellipse, rgb(var(--accent-rgb) / 0.06) 0%, transparent 70%)',
           top: '35%', right: '-8%', zIndex: 0,
           animationDelay: '-10s',
         }}
@@ -261,7 +262,7 @@ export default function Hero({ onSignupOpen }: Props) {
         className="absolute pointer-events-none animate-orb-drift"
         style={{
           width: '360px', height: '360px', borderRadius: '50%',
-          background: 'radial-gradient(ellipse, rgba(99,102,241,0.05) 0%, transparent 70%)',
+          background: 'radial-gradient(ellipse, rgb(var(--accent-rgb) / 0.05) 0%, transparent 70%)',
           bottom: '8%', left: '28%', zIndex: 0,
           animationDelay: '-16s',
         }}
@@ -284,13 +285,13 @@ export default function Hero({ onSignupOpen }: Props) {
             >
               <span
                 className="reveal-clip block overflow-hidden"
-                style={{ color: '#F5F0EB', transitionDelay: '0ms' }}
+                style={{ color: 'var(--ink)', transitionDelay: '0ms' }}
               >
                 AI-Powered Ads
               </span>
               <span
                 className="reveal-clip block overflow-hidden"
-                style={{ color: '#F5F0EB', transitionDelay: '120ms' }}
+                style={{ color: 'var(--ink)', transitionDelay: '120ms' }}
               >
                 That Actually
               </span>
@@ -313,9 +314,9 @@ export default function Hero({ onSignupOpen }: Props) {
                 >
                   <defs>
                     <linearGradient id="convertGrad" x1="0" y1="0" x2="1" y2="0">
-                      <stop offset="0%" stopColor="#C084FC" />
-                      <stop offset="50%" stopColor="#A855F7" />
-                      <stop offset="100%" stopColor="#818CF8" />
+                      <stop offset="0%" style={{ stopColor: 'var(--accent-ink)' }} />
+                      <stop offset="50%" style={{ stopColor: 'var(--accent)' }} />
+                      <stop offset="100%" style={{ stopColor: 'var(--accent-ink)' }} />
                     </linearGradient>
                   </defs>
                   {CONVERT_PATHS.map((d, i) => (
@@ -325,7 +326,7 @@ export default function Hero({ onSignupOpen }: Props) {
               </span>
             </h1>
 
-            <p className="text-[#9CA3AF] text-base sm:text-lg leading-[1.8] mb-9 max-w-md animate-fade-up delay-200">
+            <p className="text-ink-muted text-base sm:text-lg leading-[1.8] mb-9 max-w-md animate-fade-up delay-200">
               A complete creative operations platform — submit briefs, manage requests, review deliverables, and collaborate with your team in one place. Powered by <span className="text-white font-semibold">Pixie</span>, our AI engine that turns product info into campaign-ready hooks, color stories, and visual direction before production begins.
             </p>
 
@@ -343,7 +344,7 @@ export default function Hero({ onSignupOpen }: Props) {
             <div
               ref={statsRef}
               className="grid grid-cols-3 gap-4 mt-12 pt-10 animate-fade-up delay-400"
-              style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}
+              style={{ borderTop: '1px solid rgb(var(--white-rgb) / 0.07)' }}
             >
               <div className={statsVisible ? 'animate-count-up' : ''}>
                 <div className="font-mono text-2xl sm:text-3xl font-bold gradient-text-warm mb-1 tracking-tight">
@@ -373,7 +374,7 @@ export default function Hero({ onSignupOpen }: Props) {
         </div>
       </div>
 
-      <div className="absolute bottom-0 left-0 right-0 h-24 pointer-events-none" style={{ background: 'linear-gradient(to top, #080808, transparent)' }} />
+      <div className="absolute bottom-0 left-0 right-0 h-24 pointer-events-none" style={{ background: 'linear-gradient(to top, var(--bg), transparent)' }} />
     </section>
   );
 }
