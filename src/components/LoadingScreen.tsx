@@ -51,7 +51,7 @@ export default function LoadingScreen() {
           </div>
         </div>
 
-        <div className="font-mono text-[11px] text-white/25 tracking-[0.25em]">
+        <div className="font-mono text-[11px] text-ink-dim tracking-[0.25em]">
           {pct}%
         </div>
       </div>

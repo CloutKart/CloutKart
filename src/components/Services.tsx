@@ -74,7 +74,7 @@ export default function Services() {
               <span style={{ color: 'var(--ink)' }}>Every format that converts.</span>
             </h2>
           </div>
-          <p className="reveal delay-200 text-white/35 text-sm leading-relaxed max-w-xs md:text-right">
+          <p className="reveal delay-200 text-ink-dim text-sm leading-relaxed max-w-xs md:text-right">
             We translate your core message into every format, on every platform, at every stage of the funnel.
           </p>
         </div>
@@ -111,14 +111,14 @@ export default function Services() {
 
               {/* Desc */}
               <div className="flex-1">
-                <p className="text-white/45 text-sm leading-relaxed group-hover:text-white/60 transition-colors duration-300">
+                <p className="text-ink-muted text-sm leading-relaxed group-hover:text-white/60 transition-colors duration-300">
                   {service.desc}
                 </p>
               </div>
 
               {/* Formats + arrow */}
               <div className="flex items-center gap-3 flex-shrink-0">
-                <span className="text-[11px] font-mono text-white/20 group-hover:text-white/35 transition-colors duration-300 hidden sm:block">
+                <span className="text-[11px] font-mono text-ink-dim group-hover:text-ink-dim transition-colors duration-300 hidden sm:block">
                   {service.formats}
                 </span>
                 <ArrowUpRight

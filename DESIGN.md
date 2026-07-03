@@ -45,7 +45,8 @@ Tokens (dark / light):
 | Border | `--border` | white 10% | ink 14% (crisp) |
 | Ink (headings) | `--ink` | `#F5F0EB` | `#111016` (near-black) |
 | Ink body | `--ink-body` | `#D1D5DB` | `#2C2A35` |
-| Ink muted | `--ink-muted` | `#9CA3AF` | `#5C5869` |
+| Ink muted | `--ink-muted` | `#9CA3AF` | `#52505F` (~7:1) |
+| Ink dim | `--ink-dim` | `#6B7280` | `#6C6A79` (~4.7:1) |
 | Accent | `--accent` | `#7C3AED` | `#6D28D9` |
 | Accent (as text) | `--accent-ink` | `#C084FC` | `#5B1FB0` |
 | On-accent | `--accent-contrast` | `#FFFFFF` | `#FFFFFF` |
@@ -87,6 +88,20 @@ grain are hidden in light mode.
 `--accent-ink`.
 
 **ThemeToggle**: 44×44 round button, Sun/Moon crossfade + rotate, `role="switch"`.
+
+**Navbar** (`src/components/Navbar.tsx`): a **notch → pill**. At the hero it's flush
+to the top edge (square top, rounded bottom = a notch); on scroll it detaches into a
+floating rounded pill (`margin-top`, `border-radius`, `border-top-color`, shadow all
+animate together, ~480ms ease-out-quint — no `border-width` jump). Desktop shows the
+full bar; **mobile uses a radial fan**: a round FAB whose links cascade out from it
+(vertical spacing + gentle leftward drift so labels never overlap), staggered, with a
+scrim, Esc-to-close, and a `prefers-reduced-motion` fade fallback (`.radial-item`).
+
+**TelemetryFrame** (`src/components/TelemetryFrame.tsx`): the light-theme "surface" —
+an inset hairline rectangle, corner registration crosshairs, edge ruler ticks
+(`repeating-linear-gradient`), and monospace coordinate labels. Token-driven
+(`--frame-line/tick/mark/label`), rendered in both themes; the light dot-grid is
+dropped (`--dot-color: transparent`) so the frame carries the surface.
 
 ## Animations
 

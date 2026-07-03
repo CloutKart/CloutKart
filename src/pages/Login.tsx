@@ -52,7 +52,7 @@ export default function Login() {
         <div className="relative glass-card rounded-3xl p-8 sm:p-10" style={{ background: 'var(--bg-elev)' }}>
           <Link
             to="/"
-            className="absolute top-5 right-5 w-8 h-8 rounded-lg flex items-center justify-center border border-white/10 hover:border-white/20 text-white/40 hover:text-white/70 transition-all"
+            className="absolute top-5 right-5 w-8 h-8 rounded-lg flex items-center justify-center border border-white/10 hover:border-white/20 text-ink-muted hover:text-white/70 transition-all"
           >
             <X size={15} />
           </Link>

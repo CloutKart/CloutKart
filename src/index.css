@@ -55,6 +55,10 @@
   --shadow-lift: 0 20px 48px rgba(0, 0, 0, 0.60);
   --dot-color: rgb(var(--white-rgb) / 0.07);
   --top-glow: rgb(var(--accent-rgb) / 0.10);
+  --frame-line: rgb(var(--white-rgb) / 0.07);
+  --frame-tick: rgb(var(--white-rgb) / 0.11);
+  --frame-mark: rgb(var(--accent-strong-rgb) / 0.55);
+  --frame-label: rgb(var(--white-rgb) / 0.28);
   --glass-bg: rgb(var(--white-rgb) / 0.04);
   --glass-border: rgb(var(--white-rgb) / 0.10);
   --glass-highlight: rgb(var(--white-rgb) / 0.35);
@@ -77,8 +81,8 @@
   --ink-rgb: 17 16 22;               /* near-black headings — high contrast */
   --ink-strong-rgb: 8 7 12;
   --ink-body-rgb: 44 42 53;          /* ~13:1 on the canvas */
-  --ink-muted-rgb: 92 88 105;        /* ~5.4:1 on the canvas */
-  --ink-dim-rgb: 130 126 142;
+  --ink-muted-rgb: 82 80 95;         /* ~7:1 on the canvas */
+  --ink-dim-rgb: 108 106 121;        /* ~4.7:1 — readable tertiary, no longer blends */
   --accent-rgb: 109 40 217;          /* violet-700, holds contrast on near-white */
   --accent-strong-rgb: 91 33 182;
   --accent-ink-rgb: 91 31 176;       /* accent text on light = dark violet */
@@ -98,8 +102,12 @@
   --shadow-card: 0 1px 2px rgb(20 19 26 / 0.06), 0 10px 24px -10px rgb(20 19 26 / 0.20);
   --shadow-card-hover: 0 2px 6px rgb(20 19 26 / 0.08), 0 20px 44px -12px rgb(46 20 92 / 0.30);
   --shadow-lift: 0 16px 36px -12px rgb(46 20 92 / 0.26);
-  --dot-color: rgb(58 30 120 / 0.07);
-  --top-glow: rgb(var(--accent-rgb) / 0.12);
+  --dot-color: transparent;          /* the telemetry frame carries the light surface */
+  --top-glow: rgb(var(--accent-rgb) / 0.10);
+  --frame-line: rgb(20 19 26 / 0.10);
+  --frame-tick: rgb(20 19 26 / 0.17);
+  --frame-mark: rgb(var(--accent-rgb) / 0.60);
+  --frame-label: rgb(20 19 26 / 0.42);
   --glass-bg: rgb(255 255 255);
   --glass-border: rgb(20 19 26 / 0.14);
   --glass-highlight: rgb(255 255 255 / 0.90);
@@ -636,8 +644,17 @@ img { max-width: 100%; height: auto; }
   animation: inkWrite 2s cubic-bezier(0.4, 0, 0.3, 1) forwards;
 }
 
+/* Radial fan mobile menu items */
+.radial-item {
+  transition: transform 440ms cubic-bezier(0.22, 1, 0.36, 1), opacity 260ms ease;
+  will-change: transform, opacity;
+}
+
 /* ─── prefers-reduced-motion (WCAG AA, non-optional) ─────── */
 @media (prefers-reduced-motion: reduce) {
+  /* Keep fan items at their final position; fade only, no travel/scale. */
+  .radial-item { transition: opacity 180ms ease !important; }
+
   *, *::before, *::after {
     transition-duration: 0.01ms !important;
   }

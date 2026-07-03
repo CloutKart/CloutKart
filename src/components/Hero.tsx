@@ -81,7 +81,7 @@ function VisionPreview() {
         <div className="p-5 space-y-4">
           {/* Vibe */}
           <div>
-            <div className="text-[9px] font-semibold uppercase tracking-[0.14em] text-white/25 mb-2 font-mono">Creative Vibe</div>
+            <div className="text-[9px] font-semibold uppercase tracking-[0.14em] text-ink-dim mb-2 font-mono">Creative Vibe</div>
             <div className="flex items-center gap-3">
               <span
                 className="px-3 py-1 rounded-full text-[11px] font-bold"
@@ -89,13 +89,13 @@ function VisionPreview() {
               >
                 Brewed Awakening
               </span>
-              <span className="text-[11px] text-white/40 leading-snug">Raw, earthy, unapologetically effective.</span>
+              <span className="text-[11px] text-ink-muted leading-snug">Raw, earthy, unapologetically effective.</span>
             </div>
           </div>
 
           {/* Hook — the centrepiece */}
           <div>
-            <div className="text-[9px] font-semibold uppercase tracking-[0.14em] text-white/25 mb-2 font-mono">Hook</div>
+            <div className="text-[9px] font-semibold uppercase tracking-[0.14em] text-ink-dim mb-2 font-mono">Hook</div>
             <div
               className="px-4 py-3 rounded-xl"
               style={{ background: 'rgb(var(--white-rgb) / 0.04)', border: '1px solid rgb(var(--white-rgb) / 0.08)' }}
@@ -108,12 +108,12 @@ function VisionPreview() {
 
           {/* Color story */}
           <div>
-            <div className="text-[9px] font-semibold uppercase tracking-[0.14em] text-white/25 mb-2 font-mono">Color Story</div>
+            <div className="text-[9px] font-semibold uppercase tracking-[0.14em] text-ink-dim mb-2 font-mono">Color Story</div>
             <div className="flex items-center gap-3">
               {colors.map((c) => (
                 <div key={c.name} className="flex items-center gap-1.5">
                   <div className="w-4 h-4 rounded-full border border-white/15 flex-shrink-0" style={{ background: c.hex }} />
-                  <span className="text-[10px] text-white/40">{c.name}</span>
+                  <span className="text-[10px] text-ink-muted">{c.name}</span>
                 </div>
               ))}
             </div>
@@ -124,7 +124,7 @@ function VisionPreview() {
             {deliverables.map((d, i) => (
               <div key={i} className="flex items-center gap-2">
                 <CheckCircle size={10} style={{ color: 'var(--success)', flexShrink: 0 }} />
-                <span className="text-[10px] text-white/40">{d}</span>
+                <span className="text-[10px] text-ink-muted">{d}</span>
               </div>
             ))}
           </div>
@@ -159,7 +159,7 @@ function VisionPreview() {
         style={{ background: 'rgb(var(--white-rgb) / 0.05)', border: '1px solid rgb(var(--white-rgb) / 0.10)', backdropFilter: 'blur(12px)' }}
       >
         <span className="font-mono text-sm font-bold gradient-text-warm">+284%</span>
-        <span className="text-[11px] text-white/40">avg ROAS lift</span>
+        <span className="text-[11px] text-ink-muted">avg ROAS lift</span>
       </div>
     </div>
   );
@@ -350,19 +350,19 @@ export default function Hero({ onSignupOpen }: Props) {
                 <div className="font-mono text-2xl sm:text-3xl font-bold gradient-text-warm mb-1 tracking-tight">
                   {statsVisible ? `${counts.brands}+` : '0+'}
                 </div>
-                <div className="text-[10px] sm:text-xs text-white/30 font-medium uppercase tracking-widest">Brands Scaled</div>
+                <div className="text-[10px] sm:text-xs text-ink-dim font-medium uppercase tracking-widest">Brands Scaled</div>
               </div>
               <div className={statsVisible ? 'animate-count-up' : ''} style={{ animationDelay: '60ms' }}>
                 <div className="font-mono text-2xl sm:text-3xl font-bold gradient-text-warm mb-1 tracking-tight">
                   {statsVisible ? (counts.roas >= 10 ? '10×' : `${counts.roas.toFixed(1)}×`) : '0×'}
                 </div>
-                <div className="text-[10px] sm:text-xs text-white/30 font-medium uppercase tracking-widest">Avg ROAS</div>
+                <div className="text-[10px] sm:text-xs text-ink-dim font-medium uppercase tracking-widest">Avg ROAS</div>
               </div>
               <div className={statsVisible ? 'animate-count-up' : ''} style={{ animationDelay: '120ms' }}>
                 <div className="font-mono text-2xl sm:text-3xl font-bold gradient-text-warm mb-1 tracking-tight">
                   {statsVisible ? `${counts.turnaround}h` : '0h'}
                 </div>
-                <div className="text-[10px] sm:text-xs text-white/30 font-medium uppercase tracking-widest">Turnaround</div>
+                <div className="text-[10px] sm:text-xs text-ink-dim font-medium uppercase tracking-widest">Turnaround</div>
               </div>
             </div>
           </div>

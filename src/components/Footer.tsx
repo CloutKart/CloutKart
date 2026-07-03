@@ -70,7 +70,7 @@ export default function Footer() {
           <div className="grid grid-cols-3 sm:grid-cols-3 lg:contents gap-8">
             {Object.entries(links).map(([group, items]) => (
               <div key={group}>
-                <h4 className="text-[10px] font-bold text-white/25 uppercase tracking-widest mb-4 sm:mb-5 font-heading">{group}</h4>
+                <h4 className="text-[10px] font-bold text-ink-dim uppercase tracking-widest mb-4 sm:mb-5 font-heading">{group}</h4>
                 <ul className="space-y-2.5 sm:space-y-3">
                   {items.map((item) => (
                     <li key={item.label}>

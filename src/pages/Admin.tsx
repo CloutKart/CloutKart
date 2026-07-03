@@ -2251,7 +2251,7 @@ export default function Admin() {
                       <div className="relative bg-white/[0.04] h-36 flex items-center justify-center border-b border-white/[0.06]">
                         {sec.thumbnail_url ? <img src={sec.thumbnail_url} alt={sec.title} className="w-full h-full object-cover" /> : <Image size={28} className="text-ink-dim" />}
                         <button onClick={() => toggleSectionVisibility(sec.id, sec.is_visible)} className="absolute top-2 right-2 w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.65)', border: '1px solid rgb(var(--white-rgb) / 0.1)' }}>
-                          {sec.is_visible ? <Eye size={13} className="text-white/60" /> : <EyeOff size={13} className="text-white/30" />}
+                          {sec.is_visible ? <Eye size={13} className="text-white/60" /> : <EyeOff size={13} className="text-ink-dim" />}
                         </button>
                       </div>
                       <div className="p-4">

@@ -25,6 +25,12 @@ export default function Navbar({ onSignupOpen }: Props) {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setMenuOpen(false); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
   const navLinks = [
     { label: 'About', href: '#about' },
     { label: 'Services', href: '#services' },
@@ -32,6 +38,14 @@ export default function Navbar({ onSignupOpen }: Props) {
     { label: 'Portfolio', href: '#portfolio' },
     { label: 'Pricing', href: '#pricing' },
   ];
+
+  type FanItem = { label: string; href?: string; onClick?: () => void; cta?: boolean };
+  const ctaItem: FanItem = !isLoggedIn
+    ? { label: 'Get Started', cta: true, onClick: onSignupOpen }
+    : isAdmin
+      ? { label: 'Admin Panel', cta: true, onClick: () => navigate('/admin') }
+      : { label: 'Dashboard', cta: true, onClick: () => navigate('/dashboard') };
+  const fanItems: FanItem[] = [...navLinks, ctaItem];
 
   const AuthButtons = () => {
     if (!isLoggedIn) {
@@ -68,22 +82,25 @@ export default function Navbar({ onSignupOpen }: Props) {
 
       <div className="fixed top-0 inset-x-0 z-50 px-3 sm:px-4 pointer-events-none">
         <nav
-          className="site-nav pointer-events-auto mx-auto max-w-5xl border transition-all duration-[400ms] ease-[cubic-bezier(0.22,1,0.36,1)]"
+          className="site-nav pointer-events-auto mx-auto max-w-5xl border"
           style={{
             // Hero: a notch flush to the top edge (square top, rounded bottom).
-            // Scroll: detaches into a floating rounded pill.
+            // Scroll: detaches into a floating rounded pill — one continuous motion.
             marginTop: scrolled ? '14px' : '0px',
-            borderRadius: scrolled ? '9999px' : '0 0 22px 22px',
-            borderTopWidth: scrolled ? '1px' : '0px',
+            borderRadius: scrolled ? '30px' : '0px 0px 20px 20px',
             borderColor: 'var(--border)',
+            borderTopColor: scrolled ? 'var(--border)' : 'transparent',
             background: 'var(--nav-bg)',
             backdropFilter: 'blur(20px)',
             WebkitBackdropFilter: 'blur(20px)',
             boxShadow: scrolled ? 'var(--shadow-card-hover)' : 'var(--shadow-card)',
+            transition:
+              'margin-top 480ms cubic-bezier(0.22,1,0.36,1), border-radius 480ms cubic-bezier(0.22,1,0.36,1), border-color 400ms ease, box-shadow 480ms ease',
+            willChange: 'margin-top, border-radius',
           }}
         >
           <div className="px-3 sm:px-4 lg:pl-6 lg:pr-4">
-            <div className={`flex items-center justify-between transition-all duration-300 ${scrolled ? 'h-[52px]' : 'h-[60px]'}`}>
+            <div className={`flex items-center justify-between transition-[height] duration-[480ms] ease-[cubic-bezier(0.22,1,0.36,1)] ${scrolled ? 'h-[52px]' : 'h-[60px]'}`}>
             <a href="/" className="flex items-center gap-3 group flex-shrink-0">
               <img src="/logo.png" alt="CloutKart" className="h-8 sm:h-10 w-auto object-contain" />
             </a>
@@ -106,14 +123,16 @@ export default function Navbar({ onSignupOpen }: Props) {
               <AuthButtons />
             </div>
 
-            <div className="md:hidden flex items-center gap-1.5">
+            <div className="md:hidden flex items-center gap-2">
               <ThemeToggle />
               <button
-                className="text-ink-body hover:text-white transition-colors p-2 -mr-2 touch-manipulation"
+                className="relative grid h-10 w-10 place-items-center rounded-full border touch-manipulation transition-colors duration-200"
+                style={{ borderColor: 'var(--border)', background: 'var(--surface-strong)', color: 'var(--ink)' }}
                 onClick={() => setMenuOpen(!menuOpen)}
-                aria-label="Toggle menu"
+                aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+                aria-expanded={menuOpen}
               >
-                {menuOpen ? <X size={22} /> : <Menu size={22} />}
+                {menuOpen ? <X size={18} /> : <Menu size={18} />}
               </button>
             </div>
           </div>
@@ -121,76 +140,47 @@ export default function Navbar({ onSignupOpen }: Props) {
         </nav>
       </div>
 
+      {/* Radial fan mobile menu — links arc out from the FAB */}
       <div
-        className={`md:hidden fixed inset-0 z-40 transition-opacity duration-300 ${
+        className={`md:hidden fixed inset-0 z-30 transition-opacity duration-300 ${
           menuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
         }`}
-        style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }}
+        style={{ background: 'rgb(8 8 12 / 0.42)', backdropFilter: 'blur(3px)', WebkitBackdropFilter: 'blur(3px)' }}
         onClick={() => setMenuOpen(false)}
+        aria-hidden={!menuOpen}
       />
 
-      <div
-        className={`md:hidden fixed top-0 right-0 z-50 h-full w-[78vw] max-w-[300px] flex flex-col transition-transform duration-300 ease-out ${
-          menuOpen ? 'translate-x-0' : 'translate-x-full'
-        }`}
-        style={{
-          background: 'var(--bg-elev)',
-          borderLeft: '1px solid var(--border)',
-          borderTopLeftRadius: '20px',
-          borderBottomLeftRadius: '20px',
-        }}
-      >
-        <div className="flex items-center justify-between px-6 pt-6 pb-4">
-          <img src="/logo.png" alt="CloutKart" className="h-7 w-auto object-contain" />
-          <button
-            onClick={() => setMenuOpen(false)}
-            className="w-8 h-8 rounded-lg flex items-center justify-center touch-manipulation border border-white/10 hover:border-white/20 transition-colors"
-          >
-            <X size={16} className="text-white/60" />
-          </button>
-        </div>
-
-        <div className="mx-6 h-px mb-4 bg-white/[0.06]" />
-
-        <nav className="flex-1 px-4 flex flex-col gap-1 overflow-y-auto">
-          {navLinks.map((link) => (
+      <div className="md:hidden fixed top-1.5 right-3 z-40 pointer-events-none" aria-hidden={!menuOpen}>
+        {fanItems.map((item, i) => {
+          // Cascade fan: strong vertical spacing (no label overlap) + gentle
+          // leftward drift, so it opens as a fan from the FAB without colliding.
+          const dy = 62 + i * 54;
+          const dx = 14 + i * 22;
+          return (
             <a
-              key={link.label}
-              href={link.href}
-              className="flex items-center gap-3 px-4 py-3.5 rounded-xl text-base font-medium text-ink-body hover:text-white hover:bg-white/[0.04] transition-all duration-200 touch-manipulation font-heading"
-              onClick={() => setMenuOpen(false)}
+              key={item.label}
+              href={item.href ?? '#'}
+              onClick={(e) => {
+                if (item.onClick) { e.preventDefault(); item.onClick(); }
+                setMenuOpen(false);
+              }}
+              className={`radial-item absolute right-0 top-0 whitespace-nowrap rounded-full font-heading font-semibold shadow-[var(--shadow-card)] ${
+                item.cta ? 'text-sm px-5 py-3' : 'text-sm px-4 py-2.5'
+              }`}
+              style={{
+                transform: menuOpen ? `translate(${-dx}px, ${dy}px)` : 'translate(0px, 6px) scale(0.55)',
+                opacity: menuOpen ? 1 : 0,
+                transitionDelay: menuOpen ? `${i * 45}ms` : `${(fanItems.length - i) * 22}ms`,
+                pointerEvents: menuOpen ? 'auto' : 'none',
+                background: item.cta ? 'var(--accent)' : 'var(--bg-elev)',
+                color: item.cta ? 'var(--accent-contrast)' : 'var(--ink-body)',
+                border: item.cta ? '1px solid var(--accent)' : '1px solid var(--border)',
+              }}
             >
-              {link.label}
+              {item.label}
             </a>
-          ))}
-        </nav>
-
-        <div className="px-5 pb-10 pt-4 space-y-3">
-          <div className="h-px mb-2 bg-white/[0.06]" />
-          {!isLoggedIn ? (
-            <button
-              onClick={() => { setMenuOpen(false); onSignupOpen(); }}
-              className="btn-primary w-full justify-center text-sm py-3.5"
-            >
-              Get Started <ArrowRight size={14} />
-            </button>
-          ) : isAdmin ? (
-            <button
-              onClick={() => { setMenuOpen(false); navigate('/admin'); }}
-              className="btn-primary w-full justify-center text-sm py-3.5"
-            >
-              <ShieldCheck size={14} /> Admin Panel <ArrowRight size={14} />
-            </button>
-          ) : (
-            <button
-              onClick={() => { setMenuOpen(false); navigate('/dashboard'); }}
-              className="btn-primary w-full justify-center text-sm py-3.5"
-            >
-              <LayoutDashboard size={14} /> Dashboard <ArrowRight size={14} />
-            </button>
-          )}
-          <p className="text-center text-white/20 text-xs mt-4">clout-kart.com</p>
-        </div>
+          );
+        })}
       </div>
     </>
   );

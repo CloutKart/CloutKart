@@ -26,20 +26,20 @@ function DemoMock() {
         {['#EF4444','#F59E0B','var(--success)'].map(c => (
           <div key={c} className="w-2.5 h-2.5 rounded-full" style={{ background: c, opacity: 0.7 }} />
         ))}
-        <span className="ml-2 text-[10px] text-white/20 font-mono">clout-kart.com/dashboard</span>
+        <span className="ml-2 text-[10px] text-ink-dim font-mono">clout-kart.com/dashboard</span>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-0">
         {/* ── LEFT: Brief form (hidden on mobile — vision panel is the centrepiece) ── */}
         <div className="hidden sm:block p-4 border-r border-white/[0.06]">
-          <div className="text-[10px] font-bold text-white/50 uppercase tracking-widest mb-3 font-mono">New Creative Brief</div>
+          <div className="text-[10px] font-bold text-ink-muted uppercase tracking-widest mb-3 font-mono">New Creative Brief</div>
           {[
             { label: 'Brand Name', value: 'Brewora' },
             { label: 'Industry / Niche', value: 'Coffee Body Scrub · 100g' },
             { label: 'Ad Format', value: 'Static' },
           ].map(f => (
             <div key={f.label} className="mb-2.5">
-              <div className="text-[9px] text-white/35 uppercase tracking-wider mb-1 font-mono">{f.label}</div>
+              <div className="text-[9px] text-ink-dim uppercase tracking-wider mb-1 font-mono">{f.label}</div>
               <div className="rounded-lg px-2.5 py-1.5 text-[11px] text-white/70"
                 style={{ background: 'rgb(var(--white-rgb) / 0.04)', border: '1px solid rgb(var(--white-rgb) / 0.07)' }}>
                 {f.value}
@@ -47,8 +47,8 @@ function DemoMock() {
             </div>
           ))}
           <div className="mb-3">
-            <div className="text-[9px] text-white/35 uppercase tracking-wider mb-1 font-mono">Brief Description</div>
-            <div className="rounded-lg px-2.5 py-2 text-[10px] text-white/50 leading-relaxed"
+            <div className="text-[9px] text-ink-dim uppercase tracking-wider mb-1 font-mono">Brief Description</div>
+            <div className="rounded-lg px-2.5 py-2 text-[10px] text-ink-muted leading-relaxed"
               style={{ background: 'rgb(var(--white-rgb) / 0.04)', border: '1px solid rgb(var(--white-rgb) / 0.07)' }}>
               100% vegan, dermatologist-tested coffee body scrub. Exfoliates dead skin, reduces tan, leaves skin visibly glowing…
             </div>
@@ -77,13 +77,13 @@ function DemoMock() {
 
           {/* Creative vibe */}
           <div className="px-4 py-2.5 border-b border-white/[0.05]">
-            <div className="text-[8px] font-semibold text-white/30 uppercase tracking-widest mb-1.5 font-mono">Creative Vibe</div>
+            <div className="text-[8px] font-semibold text-ink-dim uppercase tracking-widest mb-1.5 font-mono">Creative Vibe</div>
             <div className="flex items-start gap-2">
               <span className="px-2 py-0.5 rounded-full text-[9px] font-bold flex-shrink-0"
                 style={{ background: 'rgb(var(--accent-rgb) / 0.14)', border: '1px solid rgb(var(--accent-rgb) / 0.35)', color: 'var(--accent-ink)' }}>
                 Brewed Awakening
               </span>
-              <span className="text-[9px] text-white/40 leading-relaxed">
+              <span className="text-[9px] text-ink-muted leading-relaxed">
                 Where coffee ritual meets skin transformation — raw, earthy, unapologetically effective.
               </span>
             </div>
@@ -91,7 +91,7 @@ function DemoMock() {
 
           {/* Color story */}
           <div className="px-4 py-2.5 border-b border-white/[0.05]">
-            <div className="text-[8px] font-semibold text-white/30 uppercase tracking-widest mb-1.5 font-mono">Color Story</div>
+            <div className="text-[8px] font-semibold text-ink-dim uppercase tracking-widest mb-1.5 font-mono">Color Story</div>
             <div className="grid grid-cols-3 gap-1.5">
               {PALETTE.map(c => (
                 <div key={c.name} className="rounded-lg px-2 py-1.5"
@@ -100,7 +100,7 @@ function DemoMock() {
                     <div className="w-3 h-3 rounded-full flex-shrink-0 border border-white/20" style={{ background: c.hex }} />
                     <span className="text-[8px] text-white/60 font-medium leading-tight">{c.name}</span>
                   </div>
-                  <span className="text-[8px] font-mono text-white/25">{c.hex}</span>
+                  <span className="text-[8px] font-mono text-ink-dim">{c.hex}</span>
                 </div>
               ))}
             </div>
@@ -108,7 +108,7 @@ function DemoMock() {
 
           {/* Hook — the star */}
           <div className="px-4 py-2.5 border-b border-white/[0.05]">
-            <div className="text-[8px] font-semibold text-white/30 uppercase tracking-widest mb-1.5 font-mono">Hook</div>
+            <div className="text-[8px] font-semibold text-ink-dim uppercase tracking-widest mb-1.5 font-mono">Hook</div>
             <div className="rounded-lg px-3 py-2"
               style={{ background: 'rgb(var(--white-rgb) / 0.04)', border: '1px solid rgb(var(--white-rgb) / 0.08)' }}>
               <span className="text-[13px] font-bold text-white font-heading leading-tight">
@@ -119,7 +119,7 @@ function DemoMock() {
 
           {/* What we will create */}
           <div className="px-4 py-2.5 border-b border-white/[0.05]">
-            <div className="text-[8px] font-semibold text-white/30 uppercase tracking-widest mb-1.5 font-mono">What We Will Create</div>
+            <div className="text-[8px] font-semibold text-ink-dim uppercase tracking-widest mb-1.5 font-mono">What We Will Create</div>
             <div className="space-y-1">
               {[
                 'Static image ad — Instagram feed 1080×1080px',
@@ -129,7 +129,7 @@ function DemoMock() {
               ].map((item, i) => (
                 <div key={i} className="flex items-center gap-1.5">
                   <CheckCircle size={9} style={{ color: 'var(--success)', flexShrink: 0 }} />
-                  <span className="text-[9px] text-white/50 leading-tight">{item}</span>
+                  <span className="text-[9px] text-ink-muted leading-tight">{item}</span>
                 </div>
               ))}
             </div>

@@ -111,7 +111,7 @@ function InstagramCard({
             />
             <div className="min-w-0">
               <p className="text-white text-[13px] font-semibold leading-none truncate group-hover:text-white/80 transition-colors">{section.title}</p>
-              <p className="text-white/40 text-[11px] mt-0.5 leading-none group-hover:text-accent-ink transition-colors">
+              <p className="text-ink-muted text-[11px] mt-0.5 leading-none group-hover:text-accent-ink transition-colors">
                 {section.instagram_handle || '@cloutkart'}
               </p>
             </div>
@@ -123,13 +123,13 @@ function InstagramCard({
             />
             <div className="min-w-0">
               <p className="text-white text-[13px] font-semibold leading-none truncate">{section.title}</p>
-              <p className="text-white/40 text-[11px] mt-0.5 leading-none">
+              <p className="text-ink-muted text-[11px] mt-0.5 leading-none">
                 {section.instagram_handle || '@cloutkart'}
               </p>
             </div>
           </div>
         )}
-        <button className="text-white/40 hover:text-white/70 transition-colors p-1 flex-shrink-0">
+        <button className="text-ink-muted hover:text-white/70 transition-colors p-1 flex-shrink-0">
           <MoreHorizontal size={18} />
         </button>
       </div>
@@ -249,11 +249,11 @@ function InstagramCard({
         </p>
         <button
           onClick={onOpen}
-          className="text-white/30 text-[12px] mt-1 transition-colors duration-150 hover:text-white/50 block"
+          className="text-ink-dim text-[12px] mt-1 transition-colors duration-150 hover:text-ink-muted block"
         >
           View all {COMMENT_COUNTS[index % COMMENT_COUNTS.length]} comments
         </button>
-        <p className="text-white/25 text-[11px] mt-1.5 uppercase tracking-wide">2 days ago</p>
+        <p className="text-ink-dim text-[11px] mt-1.5 uppercase tracking-wide">2 days ago</p>
       </div>
     </div>
   );
@@ -440,16 +440,16 @@ export default function Portfolio() {
             {loadingImages ? (
               <div className="flex flex-col items-center gap-3">
                 <div className="w-8 h-8 rounded-full border-2 border-white/20 border-t-white/60 animate-spin" />
-                <p className="text-white/40 text-sm">Loading images...</p>
+                <p className="text-ink-muted text-sm">Loading images...</p>
               </div>
             ) : lightboxImages.length === 0 ? (
               <div className="text-center">
                 <p className="text-white/60 text-sm font-heading font-semibold mb-1">{lightboxTitle}</p>
-                <p className="text-white/30 text-xs">No images in this section yet.</p>
+                <p className="text-ink-dim text-xs">No images in this section yet.</p>
               </div>
             ) : (
               <>
-                <p className="text-white/50 text-sm font-heading font-semibold self-start">{lightboxTitle}</p>
+                <p className="text-ink-muted text-sm font-heading font-semibold self-start">{lightboxTitle}</p>
                 <div className="relative w-full rounded-2xl overflow-hidden" style={{ maxHeight: '65vh' }}>
                   <img
                     key={activeIndex}
@@ -461,7 +461,7 @@ export default function Portfolio() {
                   />
                 </div>
                 {lightboxImages[activeIndex].caption && (
-                  <p className="text-white/50 text-xs sm:text-sm font-mono text-center">{lightboxImages[activeIndex].caption}</p>
+                  <p className="text-ink-muted text-xs sm:text-sm font-mono text-center">{lightboxImages[activeIndex].caption}</p>
                 )}
                 {lightboxImages.length > 1 && (
                   <>
@@ -477,7 +477,7 @@ export default function Portfolio() {
                         </button>
                       ))}
                     </div>
-                    <p className="text-white/30 text-xs font-mono">{activeIndex + 1} / {lightboxImages.length}</p>
+                    <p className="text-ink-dim text-xs font-mono">{activeIndex + 1} / {lightboxImages.length}</p>
                   </>
                 )}
               </>

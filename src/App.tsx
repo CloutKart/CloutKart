@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import LoadingScreen from './components/LoadingScreen';
 import CursorGlow from './components/CursorGlow';
+import TelemetryFrame from './components/TelemetryFrame';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import About from './components/About';
@@ -74,6 +75,7 @@ function LandingPage({ onSignupOpen }: { onSignupOpen: () => void }) {
       <LoadingScreen />
       <div className="relative">
         <div className="noise-overlay" />
+        <TelemetryFrame />
         <Navbar onSignupOpen={onSignupOpen} />
         <main>
           <Hero onSignupOpen={onSignupOpen} />

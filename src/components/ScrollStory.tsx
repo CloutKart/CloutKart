@@ -15,7 +15,7 @@ function BriefScene({ localProg }: { localProg: number }) {
       style={{ background: 'var(--bg-elev)', border: '1px solid rgb(var(--white-rgb) / 0.08)', boxShadow: 'var(--shadow-card)' }}
     >
       <div className="px-5 py-3.5 flex items-center gap-2" style={{ borderBottom: '1px solid rgb(var(--white-rgb) / 0.06)' }}>
-        <div className="text-[11px] font-bold text-white/50 font-mono uppercase tracking-widest">New Creative Brief</div>
+        <div className="text-[11px] font-bold text-ink-muted font-mono uppercase tracking-widest">New Creative Brief</div>
       </div>
       <div className="p-5 space-y-3.5">
         {[
@@ -24,7 +24,7 @@ function BriefScene({ localProg }: { localProg: number }) {
           { label: 'Ad Format', val: 'Static' },
         ].map(f => (
           <div key={f.label}>
-            <div className="text-[9px] uppercase tracking-widest text-white/25 mb-1.5 font-mono">{f.label}</div>
+            <div className="text-[9px] uppercase tracking-widest text-ink-dim mb-1.5 font-mono">{f.label}</div>
             <div className="rounded-lg px-3 py-2 text-[12px] text-white/70"
               style={{ background: 'rgb(var(--white-rgb) / 0.04)', border: '1px solid rgb(var(--white-rgb) / 0.07)' }}>
               {f.val}
@@ -32,7 +32,7 @@ function BriefScene({ localProg }: { localProg: number }) {
           </div>
         ))}
         <div>
-          <div className="text-[9px] uppercase tracking-widest text-white/25 mb-1.5 font-mono">Brief Description</div>
+          <div className="text-[9px] uppercase tracking-widest text-ink-dim mb-1.5 font-mono">Brief Description</div>
           <div className="rounded-lg px-3 py-2.5 text-[11px] text-white/55 leading-relaxed min-h-[72px]"
             style={{ background: 'rgb(var(--white-rgb) / 0.04)', border: '1px solid rgb(var(--white-rgb) / 0.07)' }}>
             {lines.map((line, li) => {
@@ -90,31 +90,31 @@ function VisionScene({ localProg }: { localProg: number }) {
       </div>
       <div className="p-5 space-y-4">
         <div style={vis(sections[1].delay)}>
-          <div className="text-[9px] uppercase tracking-widest text-white/25 mb-2 font-mono">Creative Vibe</div>
+          <div className="text-[9px] uppercase tracking-widest text-ink-dim mb-2 font-mono">Creative Vibe</div>
           <div className="flex items-center gap-2.5">
             <span className="px-3 py-1 rounded-full text-[10px] font-bold"
               style={{ background: 'rgb(var(--accent-rgb) / 0.15)', border: '1px solid rgb(var(--accent-rgb) / 0.3)', color: 'var(--accent-ink)' }}>
               Brewed Awakening
             </span>
-            <span className="text-[10px] text-white/35 leading-snug">Raw, earthy, unapologetically effective.</span>
+            <span className="text-[10px] text-ink-dim leading-snug">Raw, earthy, unapologetically effective.</span>
           </div>
         </div>
         <div style={vis(sections[2].delay)}>
-          <div className="text-[9px] uppercase tracking-widest text-white/25 mb-2 font-mono">Hook</div>
+          <div className="text-[9px] uppercase tracking-widest text-ink-dim mb-2 font-mono">Hook</div>
           <div className="px-4 py-2.5 rounded-xl" style={{ background: 'rgb(var(--white-rgb) / 0.04)', border: '1px solid rgb(var(--white-rgb) / 0.08)' }}>
             <span className="text-[17px] font-bold font-heading text-white">Tan lines are so last season</span>
           </div>
         </div>
         <div style={vis(sections[3].delay)}>
-          <div className="text-[9px] uppercase tracking-widest text-white/25 mb-2 font-mono">Color Story</div>
+          <div className="text-[9px] uppercase tracking-widest text-ink-dim mb-2 font-mono">Color Story</div>
           <div className="grid grid-cols-3 gap-2">
             {[{ name: 'Mocha Morning', hex: '#9B5B1A' }, { name: 'Coconut Cream', hex: '#EDE8D8' }, { name: 'Fresh Brew', hex: '#3A2010' }].map(c => (
               <div key={c.name} className="rounded-lg px-2.5 py-2" style={{ background: 'rgb(var(--white-rgb) / 0.04)', border: '1px solid rgb(var(--white-rgb) / 0.07)' }}>
                 <div className="flex items-center gap-1.5 mb-1">
                   <div className="w-3 h-3 rounded-full" style={{ background: c.hex }} />
-                  <span className="text-[9px] text-white/50">{c.name}</span>
+                  <span className="text-[9px] text-ink-muted">{c.name}</span>
                 </div>
-                <span className="text-[9px] font-mono text-white/20">{c.hex}</span>
+                <span className="text-[9px] font-mono text-ink-dim">{c.hex}</span>
               </div>
             ))}
           </div>
@@ -124,7 +124,7 @@ function VisionScene({ localProg }: { localProg: number }) {
             {['Static image — Instagram feed 1080×1080px', 'Static image — Facebook feed 1080×1080px', 'Story format — 1080×1920px full-bleed'].map((d, i) => (
               <div key={i} className="flex items-center gap-2">
                 <CheckCircle size={10} style={{ color: 'var(--success)', flexShrink: 0 }} />
-                <span className="text-[10px] text-white/35">{d}</span>
+                <span className="text-[10px] text-ink-dim">{d}</span>
               </div>
             ))}
           </div>
@@ -148,7 +148,7 @@ function AdScene({ localProg }: { localProg: number }) {
           <div className="px-3 py-2 flex items-center gap-2" style={{ borderBottom: '1px solid rgb(var(--white-rgb) / 0.07)' }}>
             <div className="w-5 h-5 rounded-full" style={{ background: 'linear-gradient(135deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888)' }} />
             <span className="text-[9px] font-bold text-white/70">brewora</span>
-            <span className="ml-auto text-[8px] text-white/30 font-mono">Sponsored</span>
+            <span className="ml-auto text-[8px] text-ink-dim font-mono">Sponsored</span>
           </div>
           {/* Ad creative image — intrinsically dark content, so pin dark to keep overlay text white */}
           <div className="relative" data-theme="dark" style={{ height: 200 }}>
@@ -158,8 +158,8 @@ function AdScene({ localProg }: { localProg: number }) {
                 <div className="rounded-full flex items-center justify-center" style={{ width: 90, height: 90, background: 'linear-gradient(135deg, #9B5B1A, #C4772A, #7A3510)', boxShadow: '0 8px 32px rgba(0,0,0,0.5), inset 0 1px 0 rgb(var(--white-rgb) / 0.15)' }}>
                   <div className="text-center">
                     <div className="text-[8px] font-bold text-white/80 font-mono">mC</div>
-                    <div className="text-[6px] text-white/50">COFFEE</div>
-                    <div className="text-[6px] text-white/50">SCRUB</div>
+                    <div className="text-[6px] text-ink-muted">COFFEE</div>
+                    <div className="text-[6px] text-ink-muted">SCRUB</div>
                   </div>
                 </div>
                 <div className="absolute -inset-2 rounded-full" style={{ background: 'radial-gradient(ellipse, rgba(155,91,26,0.3), transparent 70%)' }} />
@@ -189,7 +189,7 @@ function AdScene({ localProg }: { localProg: number }) {
         ].map(m => (
           <div key={m.label} className="w-28 sm:w-36">
             <div className="flex items-center justify-between mb-1">
-              <span className="text-[10px] text-white/30 font-mono">{m.label}</span>
+              <span className="text-[10px] text-ink-dim font-mono">{m.label}</span>
               <span className="text-[11px] font-bold font-mono text-white">{m.val}</span>
             </div>
             <div className="h-1 rounded-full bg-white/[0.06] overflow-hidden">
@@ -215,7 +215,7 @@ function CartScene({ localProg }: { localProg: number }) {
         <div className="flex items-center gap-2.5 px-5 py-3.5" style={{ borderBottom: '1px solid rgb(var(--white-rgb) / 0.06)' }}>
           <ShoppingCart size={14} style={{ color: 'var(--success)' }} />
           <span className="text-[12px] font-bold text-white font-heading">Cart</span>
-          <span className="ml-auto text-[10px] font-mono text-white/30">{visibleItems} item{visibleItems !== 1 ? 's' : ''}</span>
+          <span className="ml-auto text-[10px] font-mono text-ink-dim">{visibleItems} item{visibleItems !== 1 ? 's' : ''}</span>
         </div>
         <div className="p-4 space-y-2.5 min-h-[110px]">
           {items.map((item, i) => (
@@ -245,13 +245,13 @@ function CartScene({ localProg }: { localProg: number }) {
         <div className="rounded-2xl p-4" style={{ background: 'var(--bg-elev)', border: '1px solid rgb(var(--accent-rgb) / 0.2)' }}>
           <div className="flex items-center gap-1.5 mb-1">
             <TrendingUp size={11} style={{ color: 'var(--accent)' }} />
-            <span className="text-[9px] font-mono text-white/30 uppercase tracking-widest">ROAS</span>
+            <span className="text-[9px] font-mono text-ink-dim uppercase tracking-widest">ROAS</span>
           </div>
           <div className="font-mono font-bold text-2xl gradient-text">+{roas}%</div>
         </div>
         <div className="rounded-2xl p-4" style={{ background: 'var(--bg-elev)', border: '1px solid rgb(var(--success-rgb) / 0.2)' }}>
           <div className="flex items-center gap-1.5 mb-1">
-            <span className="text-[9px] font-mono text-white/30 uppercase tracking-widest">Revenue</span>
+            <span className="text-[9px] font-mono text-ink-dim uppercase tracking-widest">Revenue</span>
           </div>
           <div className="font-mono font-bold text-xl text-white">
             ₹{revenue >= 100000 ? `${(revenue / 100000).toFixed(1)}L` : `${Math.round(revenue / 1000)}k`}
@@ -420,7 +420,7 @@ export default function ScrollStory() {
         <div className="flex items-center justify-between mt-8 lg:mt-6 lg:pl-[316px]">
           {/* Mobile phase label */}
           <div className="lg:hidden">
-            <div className="text-[9px] font-mono text-white/25 uppercase tracking-widest">Phase {phases[active].num}</div>
+            <div className="text-[9px] font-mono text-ink-dim uppercase tracking-widest">Phase {phases[active].num}</div>
             <div className="font-heading font-bold text-white text-sm">{phases[active].title}</div>
           </div>
           {/* Desktop spacer */}
