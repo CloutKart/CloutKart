@@ -188,8 +188,9 @@ export default function Hero({ onSignupOpen }: Props) {
 
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
     let frame = 0;
+    let targetProgress = 0;
 
-    const updateScrollAnimation = () => {
+    const renderScrollAnimation = () => {
       frame = 0;
       if (reducedMotion.matches) {
         videoLayer.style.transform = 'translate3d(0, 0, 0) scale(1.06)';
@@ -197,37 +198,44 @@ export default function Hero({ onSignupOpen }: Props) {
         return;
       }
 
-      const bounds = hero.getBoundingClientRect();
-      const travelled = Math.min(Math.max(-bounds.top, 0), bounds.height);
-      const progress = Math.min(travelled / Math.max(bounds.height, 1), 1);
-      const offset = Math.min(travelled * 0.16, 120);
+      const offset = targetProgress * 120;
       videoLayer.style.transform = `translate3d(0, ${offset}px, 0) scale(1.06)`;
 
       if (video.readyState >= HTMLMediaElement.HAVE_METADATA && video.duration) {
-        const targetTime = progress * Math.max(video.duration - 0.04, 0);
-        if (Math.abs(video.currentTime - targetTime) > 1 / 60) {
-          video.currentTime = targetTime;
+        // Quantize to the source's 24fps cadence. This avoids flooding the
+        // media decoder with redundant seeks between actual video frames.
+        const exactTime = targetProgress * Math.max(video.duration - 0.04, 0);
+        const frameTime = Math.round(exactTime * 24) / 24;
+        if (Math.abs(video.currentTime - frameTime) > 1 / 48) {
+          video.currentTime = frameTime;
         }
       }
     };
 
-    const requestUpdate = () => {
-      if (!frame) frame = window.requestAnimationFrame(updateScrollAnimation);
+    const measureScroll = () => {
+      if (reducedMotion.matches) {
+        targetProgress = 0;
+      } else {
+        const bounds = hero.getBoundingClientRect();
+        const runway = Math.max(bounds.height - window.innerHeight, 1);
+        targetProgress = Math.min(Math.max(-bounds.top / runway, 0), 1);
+      }
+      if (!frame) frame = window.requestAnimationFrame(renderScrollAnimation);
     };
 
     video.pause();
-    updateScrollAnimation();
-    window.addEventListener('scroll', requestUpdate, { passive: true });
-    window.addEventListener('resize', requestUpdate);
-    video.addEventListener('loadedmetadata', requestUpdate);
-    reducedMotion.addEventListener('change', requestUpdate);
+    measureScroll();
+    window.addEventListener('scroll', measureScroll, { passive: true });
+    window.addEventListener('resize', measureScroll);
+    video.addEventListener('loadedmetadata', measureScroll);
+    reducedMotion.addEventListener('change', measureScroll);
 
     return () => {
       if (frame) window.cancelAnimationFrame(frame);
-      window.removeEventListener('scroll', requestUpdate);
-      window.removeEventListener('resize', requestUpdate);
-      video.removeEventListener('loadedmetadata', requestUpdate);
-      reducedMotion.removeEventListener('change', requestUpdate);
+      window.removeEventListener('scroll', measureScroll);
+      window.removeEventListener('resize', measureScroll);
+      video.removeEventListener('loadedmetadata', measureScroll);
+      reducedMotion.removeEventListener('change', measureScroll);
     };
   }, []);
 
@@ -291,11 +299,12 @@ export default function Hero({ onSignupOpen }: Props) {
   return (
     <section
       ref={heroRef}
-      className="relative min-h-screen flex items-center justify-center overflow-hidden"
+      className="hero-scroll-scene relative"
       id="hero"
       data-theme="dark"
       style={{ background: 'transparent' }}
     >
+      <div className="hero-scroll-sticky flex items-center justify-center overflow-hidden">
       {/* Cinematic background. The extra height gives the layer room to move
           without revealing an edge during the parallax scroll. */}
       <div
@@ -463,6 +472,7 @@ export default function Hero({ onSignupOpen }: Props) {
       </div>
 
       <div className="absolute bottom-0 left-0 right-0 h-24 pointer-events-none" style={{ background: 'linear-gradient(to top, var(--bg), transparent)' }} />
+      </div>
     </section>
   );
 }
