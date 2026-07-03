@@ -167,6 +167,7 @@ function VisionPreview() {
 
 export default function Hero({ onSignupOpen }: Props) {
   const heroRef = useRef<HTMLDivElement>(null);
+  const videoLayerRef = useRef<HTMLDivElement>(null);
   const statsRef = useRef<HTMLDivElement>(null);
   const { isLoggedIn } = useAuth();
   const navigate = useNavigate();
@@ -175,6 +176,46 @@ export default function Hero({ onSignupOpen }: Props) {
   const [counts, setCounts] = useState({ brands: 0, roas: 0, turnaround: 0 });
   const [convertActive, setConvertActive] = useState(false);
   const convertSvgRef = useRef<SVGSVGElement>(null);
+
+  // Move the oversized video against the page scroll to create depth while
+  // keeping the content layer stationary and readable.
+  useEffect(() => {
+    const hero = heroRef.current;
+    const videoLayer = videoLayerRef.current;
+    if (!hero || !videoLayer) return;
+
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    let frame = 0;
+
+    const updateParallax = () => {
+      frame = 0;
+      if (reducedMotion.matches) {
+        videoLayer.style.transform = 'translate3d(0, 0, 0) scale(1.06)';
+        return;
+      }
+
+      const bounds = hero.getBoundingClientRect();
+      const travelled = Math.min(Math.max(-bounds.top, 0), bounds.height);
+      const offset = Math.min(travelled * 0.16, 120);
+      videoLayer.style.transform = `translate3d(0, ${offset}px, 0) scale(1.06)`;
+    };
+
+    const requestUpdate = () => {
+      if (!frame) frame = window.requestAnimationFrame(updateParallax);
+    };
+
+    updateParallax();
+    window.addEventListener('scroll', requestUpdate, { passive: true });
+    window.addEventListener('resize', requestUpdate);
+    reducedMotion.addEventListener('change', requestUpdate);
+
+    return () => {
+      if (frame) window.cancelAnimationFrame(frame);
+      window.removeEventListener('scroll', requestUpdate);
+      window.removeEventListener('resize', requestUpdate);
+      reducedMotion.removeEventListener('change', requestUpdate);
+    };
+  }, []);
 
   // Scroll-reveal for .reveal, .reveal-scale, and .reveal-clip elements
   useEffect(() => {
@@ -238,15 +279,49 @@ export default function Hero({ onSignupOpen }: Props) {
       ref={heroRef}
       className="relative min-h-screen flex items-center justify-center overflow-hidden"
       id="hero"
+      data-theme="dark"
       style={{ background: 'transparent' }}
     >
+      {/* Cinematic background. The extra height gives the layer room to move
+          without revealing an edge during the parallax scroll. */}
+      <div
+        ref={videoLayerRef}
+        className="absolute -inset-[8%] pointer-events-none"
+        style={{ zIndex: 0, willChange: 'transform', transform: 'translate3d(0, 0, 0) scale(1.06)' }}
+        aria-hidden="true"
+      >
+        <video
+          className="h-full w-full object-cover"
+          src="/cloutkart-hero.mp4"
+          poster="/cloutkart-hero-poster.jpg"
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="metadata"
+        />
+      </div>
+
+      {/* Contrast treatment keeps the headline and product preview legible
+          throughout every frame of the source video. */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          zIndex: 1,
+          background: [
+            'linear-gradient(90deg, rgba(8,8,8,0.9) 0%, rgba(8,8,8,0.7) 43%, rgba(8,8,8,0.48) 72%, rgba(8,8,8,0.62) 100%)',
+            'linear-gradient(180deg, rgba(8,8,8,0.48) 0%, rgba(8,8,8,0.14) 48%, rgba(8,8,8,0.82) 100%)',
+          ].join(','),
+        }}
+      />
+
       {/* Ambient background orbs — pure radial gradients, no filter:blur, GPU-safe */}
       <div
         className="absolute pointer-events-none animate-orb-drift"
         style={{
           width: '600px', height: '600px', borderRadius: '50%',
           background: 'radial-gradient(ellipse, rgb(var(--accent-rgb) / 0.08) 0%, transparent 70%)',
-          top: '-8%', left: '-12%', zIndex: 0,
+          top: '-8%', left: '-12%', zIndex: 2,
         }}
       />
       <div
@@ -254,7 +329,7 @@ export default function Hero({ onSignupOpen }: Props) {
         style={{
           width: '480px', height: '480px', borderRadius: '50%',
           background: 'radial-gradient(ellipse, rgb(var(--accent-rgb) / 0.06) 0%, transparent 70%)',
-          top: '35%', right: '-8%', zIndex: 0,
+          top: '35%', right: '-8%', zIndex: 2,
           animationDelay: '-10s',
         }}
       />
@@ -263,7 +338,7 @@ export default function Hero({ onSignupOpen }: Props) {
         style={{
           width: '360px', height: '360px', borderRadius: '50%',
           background: 'radial-gradient(ellipse, rgb(var(--accent-rgb) / 0.05) 0%, transparent 70%)',
-          bottom: '8%', left: '28%', zIndex: 0,
+          bottom: '8%', left: '28%', zIndex: 2,
           animationDelay: '-16s',
         }}
       />
