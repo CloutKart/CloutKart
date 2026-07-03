@@ -168,6 +168,7 @@ function VisionPreview() {
 export default function Hero({ onSignupOpen }: Props) {
   const heroRef = useRef<HTMLDivElement>(null);
   const videoLayerRef = useRef<HTMLDivElement>(null);
+  const heroVideoRef = useRef<HTMLVideoElement>(null);
   const statsRef = useRef<HTMLDivElement>(null);
   const { isLoggedIn } = useAuth();
   const navigate = useNavigate();
@@ -177,42 +178,55 @@ export default function Hero({ onSignupOpen }: Props) {
   const [convertActive, setConvertActive] = useState(false);
   const convertSvgRef = useRef<SVGSVGElement>(null);
 
-  // Move the oversized video against the page scroll to create depth while
-  // keeping the content layer stationary and readable.
+  // Scrub the video in both directions with the scroll position. The subtle
+  // opposing layer movement adds depth without moving the content itself.
   useEffect(() => {
     const hero = heroRef.current;
     const videoLayer = videoLayerRef.current;
-    if (!hero || !videoLayer) return;
+    const video = heroVideoRef.current;
+    if (!hero || !videoLayer || !video) return;
 
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
     let frame = 0;
 
-    const updateParallax = () => {
+    const updateScrollAnimation = () => {
       frame = 0;
       if (reducedMotion.matches) {
         videoLayer.style.transform = 'translate3d(0, 0, 0) scale(1.06)';
+        if (video.readyState >= HTMLMediaElement.HAVE_METADATA) video.currentTime = 0;
         return;
       }
 
       const bounds = hero.getBoundingClientRect();
       const travelled = Math.min(Math.max(-bounds.top, 0), bounds.height);
+      const progress = Math.min(travelled / Math.max(bounds.height, 1), 1);
       const offset = Math.min(travelled * 0.16, 120);
       videoLayer.style.transform = `translate3d(0, ${offset}px, 0) scale(1.06)`;
+
+      if (video.readyState >= HTMLMediaElement.HAVE_METADATA && video.duration) {
+        const targetTime = progress * Math.max(video.duration - 0.04, 0);
+        if (Math.abs(video.currentTime - targetTime) > 1 / 60) {
+          video.currentTime = targetTime;
+        }
+      }
     };
 
     const requestUpdate = () => {
-      if (!frame) frame = window.requestAnimationFrame(updateParallax);
+      if (!frame) frame = window.requestAnimationFrame(updateScrollAnimation);
     };
 
-    updateParallax();
+    video.pause();
+    updateScrollAnimation();
     window.addEventListener('scroll', requestUpdate, { passive: true });
     window.addEventListener('resize', requestUpdate);
+    video.addEventListener('loadedmetadata', requestUpdate);
     reducedMotion.addEventListener('change', requestUpdate);
 
     return () => {
       if (frame) window.cancelAnimationFrame(frame);
       window.removeEventListener('scroll', requestUpdate);
       window.removeEventListener('resize', requestUpdate);
+      video.removeEventListener('loadedmetadata', requestUpdate);
       reducedMotion.removeEventListener('change', requestUpdate);
     };
   }, []);
@@ -291,14 +305,13 @@ export default function Hero({ onSignupOpen }: Props) {
         aria-hidden="true"
       >
         <video
+          ref={heroVideoRef}
           className="h-full w-full object-cover"
           src="/cloutkart-hero.mp4"
           poster="/cloutkart-hero-poster.jpg"
-          autoPlay
           muted
-          loop
           playsInline
-          preload="metadata"
+          preload="auto"
         />
       </div>
 
