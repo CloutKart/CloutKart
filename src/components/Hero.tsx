@@ -7,6 +7,10 @@ interface Props {
   onSignupOpen: () => void;
 }
 
+const HERO_FRAME_COUNT = 180;
+const heroFrameSrc = (index: number) =>
+  `/hero-frames/frame-${String(index).padStart(3, '0')}.webp`;
+
 // Borel font glyphs for "Convert." — pre-extracted SVG paths, Y-flipped, x-cumulative
 // viewBox: 0 0 4643 830  (50px top padding above tallest ascender)
 const CONVERT_PATHS = [
@@ -168,7 +172,7 @@ function VisionPreview() {
 export default function Hero({ onSignupOpen }: Props) {
   const heroRef = useRef<HTMLDivElement>(null);
   const videoLayerRef = useRef<HTMLDivElement>(null);
-  const heroVideoRef = useRef<HTMLVideoElement>(null);
+  const heroCanvasRef = useRef<HTMLCanvasElement>(null);
   const statsRef = useRef<HTMLDivElement>(null);
   const { isLoggedIn } = useAuth();
   const navigate = useNavigate();
@@ -178,37 +182,125 @@ export default function Hero({ onSignupOpen }: Props) {
   const [convertActive, setConvertActive] = useState(false);
   const convertSvgRef = useRef<SVGSVGElement>(null);
 
-  // Scrub the video in both directions with the scroll position. The subtle
-  // opposing layer movement adds depth without moving the content itself.
+  // Apple-style scroll sequence: preloaded still frames are painted to canvas,
+  // while an eased playhead catches up to scroll input in either direction.
   useEffect(() => {
     const hero = heroRef.current;
     const videoLayer = videoLayerRef.current;
-    const video = heroVideoRef.current;
-    if (!hero || !videoLayer || !video) return;
+    const canvas = heroCanvasRef.current;
+    const context = canvas?.getContext('2d', { alpha: false });
+    if (!hero || !videoLayer || !canvas || !context) return;
 
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const images: HTMLImageElement[] = [];
+    const loaded = new Set<number>();
     let frame = 0;
+    let preloadTimer = 0;
+    let preloadCursor = 0;
     let targetProgress = 0;
+    let renderedProgress = 0;
+    let wantedFrame = 0;
+    let drawnFrame = -1;
+    let previousTime = performance.now();
+    let disposed = false;
 
-    const renderScrollAnimation = () => {
+    const drawFrame = (index: number) => {
+      const image = images[index];
+      if (!image || !loaded.has(index) || !image.naturalWidth) return false;
+
+      const scale = Math.max(
+        canvas.width / image.naturalWidth,
+        canvas.height / image.naturalHeight,
+      );
+      const width = image.naturalWidth * scale;
+      const height = image.naturalHeight * scale;
+      context.drawImage(
+        image,
+        (canvas.width - width) / 2,
+        (canvas.height - height) / 2,
+        width,
+        height,
+      );
+      drawnFrame = index;
+      return true;
+    };
+
+    const drawClosestLoadedFrame = (index: number) => {
+      if (drawFrame(index)) return;
+      for (let distance = 1; distance < HERO_FRAME_COUNT; distance += 1) {
+        const before = index - distance;
+        const after = index + distance;
+        if (before >= 0 && drawFrame(before)) return;
+        if (after < HERO_FRAME_COUNT && drawFrame(after)) return;
+      }
+    };
+
+    const loadFrame = (index: number, priority: 'high' | 'low' = 'low') => {
+      if (images[index]) return;
+      const image = new Image();
+      image.decoding = 'async';
+      image.fetchPriority = priority;
+      image.onload = () => {
+        if (disposed) return;
+        loaded.add(index);
+        if (index === wantedFrame || drawnFrame < 0) {
+          drawClosestLoadedFrame(wantedFrame);
+        }
+      };
+      image.src = heroFrameSrc(index);
+      images[index] = image;
+    };
+
+    const preloadBatch = () => {
+      const end = Math.min(preloadCursor + 18, HERO_FRAME_COUNT);
+      for (; preloadCursor < end; preloadCursor += 1) {
+        loadFrame(preloadCursor, preloadCursor < 12 ? 'high' : 'low');
+      }
+      if (preloadCursor < HERO_FRAME_COUNT) {
+        preloadTimer = window.setTimeout(preloadBatch, 45);
+      }
+    };
+
+    const resizeCanvas = () => {
+      const bounds = canvas.getBoundingClientRect();
+      const pixelRatio = Math.min(window.devicePixelRatio || 1, 1.5);
+      const width = Math.max(1, Math.round(bounds.width * pixelRatio));
+      const height = Math.max(1, Math.round(bounds.height * pixelRatio));
+      if (canvas.width !== width || canvas.height !== height) {
+        canvas.width = width;
+        canvas.height = height;
+        drawnFrame = -1;
+        drawClosestLoadedFrame(wantedFrame);
+      }
+    };
+
+    const renderScrollAnimation = (time: number) => {
       frame = 0;
+      const elapsed = Math.min(Math.max((time - previousTime) / 1000, 0), 0.05);
+      previousTime = time;
+
       if (reducedMotion.matches) {
-        videoLayer.style.transform = 'translate3d(0, 0, 0) scale(1.06)';
-        if (video.readyState >= HTMLMediaElement.HAVE_METADATA) video.currentTime = 0;
-        return;
+        targetProgress = 0;
+        renderedProgress = 0;
+      } else {
+        // Time-based damping gives the playhead a natural 350–500ms glide
+        // after the wheel/touch gesture ends, independent of refresh rate.
+        const smoothing = 1 - Math.exp(-elapsed / 0.16);
+        renderedProgress += (targetProgress - renderedProgress) * smoothing;
+        if (Math.abs(targetProgress - renderedProgress) < 0.00035) {
+          renderedProgress = targetProgress;
+        }
       }
 
-      const offset = targetProgress * 120;
+      wantedFrame = Math.round(renderedProgress * (HERO_FRAME_COUNT - 1));
+      loadFrame(wantedFrame, 'high');
+      if (wantedFrame !== drawnFrame) drawClosestLoadedFrame(wantedFrame);
+
+      const offset = renderedProgress * 120;
       videoLayer.style.transform = `translate3d(0, ${offset}px, 0) scale(1.06)`;
 
-      if (video.readyState >= HTMLMediaElement.HAVE_METADATA && video.duration) {
-        // Quantize to the source's 24fps cadence. This avoids flooding the
-        // media decoder with redundant seeks between actual video frames.
-        const exactTime = targetProgress * Math.max(video.duration - 0.04, 0);
-        const frameTime = Math.round(exactTime * 24) / 24;
-        if (Math.abs(video.currentTime - frameTime) > 1 / 48) {
-          video.currentTime = frameTime;
-        }
+      if (renderedProgress !== targetProgress) {
+        frame = window.requestAnimationFrame(renderScrollAnimation);
       }
     };
 
@@ -220,22 +312,32 @@ export default function Hero({ onSignupOpen }: Props) {
         const runway = Math.max(bounds.height - window.innerHeight, 1);
         targetProgress = Math.min(Math.max(-bounds.top / runway, 0), 1);
       }
-      if (!frame) frame = window.requestAnimationFrame(renderScrollAnimation);
+      if (!frame) {
+        previousTime = performance.now();
+        frame = window.requestAnimationFrame(renderScrollAnimation);
+      }
     };
 
-    video.pause();
+    resizeCanvas();
+    loadFrame(0, 'high');
+    preloadBatch();
     measureScroll();
     window.addEventListener('scroll', measureScroll, { passive: true });
+    window.addEventListener('resize', resizeCanvas);
     window.addEventListener('resize', measureScroll);
-    video.addEventListener('loadedmetadata', measureScroll);
     reducedMotion.addEventListener('change', measureScroll);
 
     return () => {
+      disposed = true;
       if (frame) window.cancelAnimationFrame(frame);
+      if (preloadTimer) window.clearTimeout(preloadTimer);
       window.removeEventListener('scroll', measureScroll);
+      window.removeEventListener('resize', resizeCanvas);
       window.removeEventListener('resize', measureScroll);
-      video.removeEventListener('loadedmetadata', measureScroll);
       reducedMotion.removeEventListener('change', measureScroll);
+      images.forEach((image) => {
+        image.onload = null;
+      });
     };
   }, []);
 
@@ -313,14 +415,15 @@ export default function Hero({ onSignupOpen }: Props) {
         style={{ zIndex: 0, willChange: 'transform', transform: 'translate3d(0, 0, 0) scale(1.06)' }}
         aria-hidden="true"
       >
-        <video
-          ref={heroVideoRef}
-          className="h-full w-full object-cover"
-          src="/cloutkart-hero.mp4"
-          poster="/cloutkart-hero-poster.jpg"
-          muted
-          playsInline
-          preload="auto"
+        <canvas
+          ref={heroCanvasRef}
+          className="h-full w-full"
+          role="presentation"
+          style={{
+            backgroundImage: 'url(/cloutkart-hero-poster.jpg)',
+            backgroundPosition: 'center',
+            backgroundSize: 'cover',
+          }}
         />
       </div>
 
