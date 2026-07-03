@@ -86,7 +86,8 @@ export default function Navbar({ onSignupOpen }: Props) {
           style={{
             // Hero: a notch flush to the top edge (square top, rounded bottom).
             // Scroll: detaches into a floating rounded pill — one continuous motion.
-            marginTop: scrolled ? '14px' : '0px',
+            // Uses transform (GPU-composited, no reflow) so it stays smooth on phones.
+            transform: scrolled ? 'translateY(14px)' : 'translateY(0px)',
             borderRadius: scrolled ? '30px' : '0px 0px 20px 20px',
             borderColor: 'var(--border)',
             borderTopColor: scrolled ? 'var(--border)' : 'transparent',
@@ -95,8 +96,8 @@ export default function Navbar({ onSignupOpen }: Props) {
             WebkitBackdropFilter: 'blur(20px)',
             boxShadow: scrolled ? 'var(--shadow-card-hover)' : 'var(--shadow-card)',
             transition:
-              'margin-top 480ms cubic-bezier(0.22,1,0.36,1), border-radius 480ms cubic-bezier(0.22,1,0.36,1), border-color 400ms ease, box-shadow 480ms ease',
-            willChange: 'margin-top, border-radius',
+              'transform 480ms cubic-bezier(0.22,1,0.36,1), border-radius 480ms cubic-bezier(0.22,1,0.36,1), border-color 400ms ease, box-shadow 480ms ease',
+            willChange: 'transform, border-radius',
           }}
         >
           <div className="px-3 sm:px-4 lg:pl-6 lg:pr-4">
