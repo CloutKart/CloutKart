@@ -135,7 +135,7 @@ function InstagramCard({
       </div>
 
       {/* Image area */}
-      <div className="relative bg-black" style={{ aspectRatio: '1/1' }}>
+      <div className="relative bg-black" data-theme="dark" style={{ aspectRatio: '1/1' }}>
         {images.length > 0 ? (
           <img
             key={`${section.id}-${currentIdx}`}
@@ -405,6 +405,7 @@ export default function Portfolio() {
       {/* Lightbox */}
       {lightboxOpen && (
         <div
+          data-theme="dark"
           className="fixed inset-0 z-[100] flex items-center justify-center"
           style={{ background: 'rgba(0,0,0,0.92)', backdropFilter: 'blur(12px)' }}
           onClick={(e) => { if (e.target === e.currentTarget) setLightboxOpen(false); }}
