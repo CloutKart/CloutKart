@@ -218,7 +218,7 @@ export default function Hero({ onSignupOpen }: Props) {
 
         <div
           ref={statsRef}
-          className="grid grid-cols-3 gap-6 sm:gap-12 mt-9 pt-7 animate-fade-up delay-400"
+          className="grid grid-cols-3 gap-6 sm:gap-12 mt-4 pt-5 sm:mt-9 sm:pt-7 animate-fade-up delay-400"
           style={{ borderTop: '1px solid var(--border)' }}
         >
           <div className={statsVisible ? 'animate-count-up' : ''}>
