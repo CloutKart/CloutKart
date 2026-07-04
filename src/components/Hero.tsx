@@ -21,28 +21,86 @@ export default function Hero({ onSignupOpen }: Props) {
   const [statsVisible, setStatsVisible] = useState(false);
   const [counts, setCounts] = useState({ brands: 0, roas: 0, turnaround: 0 });
 
-  // Scroll parallax — publish hero progress as a CSS var (no React re-render).
+  // Scroll parallax → --hero-p (inertially smoothed so a fast scroll GLIDES instead of
+  // snapping). On DESKTOP the climax is also scroll-driven, so --hero-a tracks the same
+  // eased scroll value; on MOBILE the climax autoplays (below). No React re-render.
   useEffect(() => {
     const hero = heroRef.current;
     if (!hero) return;
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
-    let frame = 0;
-    const update = () => {
-      frame = 0;
-      if (reduced.matches) { hero.style.setProperty('--hero-p', '0'); return; }
+    const isMobile = window.matchMedia('(max-width: 640px)').matches;
+    let target = 0, current = 0, raf = 0;
+    const measure = () => {
       const rect = hero.getBoundingClientRect();
-      const p = Math.min(Math.max(-rect.top / (hero.offsetHeight || 1), 0), 1);
-      hero.style.setProperty('--hero-p', p.toFixed(4));
+      target = Math.min(Math.max(-rect.top / (hero.offsetHeight || 1), 0), 1);
     };
-    const onScroll = () => { if (!frame) frame = requestAnimationFrame(update); };
-    update();
+    const tick = () => {
+      current += (target - current) * 0.12;               // inertial ease toward scroll
+      if (Math.abs(target - current) < 0.0006) { current = target; raf = 0; }
+      else raf = requestAnimationFrame(tick);
+      const v = current.toFixed(4);
+      hero.style.setProperty('--hero-p', v);
+      if (!isMobile) hero.style.setProperty('--hero-a', v); // desktop: climax follows scroll
+    };
+    const onScroll = () => {
+      if (reduced.matches) { hero.style.setProperty('--hero-p', '0'); return; }
+      measure();
+      if (!raf) raf = requestAnimationFrame(tick);
+    };
+    measure(); current = target;
+    if (!reduced.matches) {
+      hero.style.setProperty('--hero-p', current.toFixed(4));
+      if (!isMobile) hero.style.setProperty('--hero-a', current.toFixed(4));
+    } else {
+      hero.style.setProperty('--hero-p', '0');
+    }
     window.addEventListener('scroll', onScroll, { passive: true });
     window.addEventListener('resize', onScroll);
     return () => {
-      if (frame) cancelAnimationFrame(frame);
+      if (raf) cancelAnimationFrame(raf);
       window.removeEventListener('scroll', onScroll);
       window.removeEventListener('resize', onScroll);
     };
+  }, []);
+
+  // Climax → --hero-a. MOBILE autoplays it (0→1 once over ~2s on view) so the full
+  // approach + vine-bloom + glow always plays; DESKTOP drives it from scroll (above).
+  useEffect(() => {
+    const hero = heroRef.current;
+    if (!hero) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      hero.style.setProperty('--hero-a', '1');             // show the resolved state
+      return;
+    }
+    if (!window.matchMedia('(max-width: 640px)').matches) return; // desktop → scroll-driven
+    hero.style.setProperty('--hero-a', '0');
+    let raf = 0, started = false;
+    const ease = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+    const play = () => {
+      const dur = 2000;
+      let start: number | null = null;
+      const step = (ts: number) => {
+        if (start === null) start = ts;
+        const t = Math.min((ts - start) / dur, 1);
+        hero.style.setProperty('--hero-a', ease(t).toFixed(4));
+        if (t < 1) raf = requestAnimationFrame(step);
+      };
+      raf = requestAnimationFrame(step);
+    };
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((e) => {
+          if (e.isIntersecting && !started) {
+            started = true;
+            window.setTimeout(play, 350);                   // let the page settle first
+            io.disconnect();
+          }
+        });
+      },
+      { threshold: 0.25 }
+    );
+    io.observe(hero);
+    return () => { io.disconnect(); if (raf) cancelAnimationFrame(raf); };
   }, []);
 
   // Reveal the headline lines once the hero is in view.
