@@ -69,45 +69,44 @@ export default function SignupModal({ open, onClose, defaultMode = 'signup' }: P
     await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + '/dashboard' } });
   };
 
-  const inputClass = "w-full rounded-xl px-4 py-3.5 text-sm text-white placeholder-[var(--ink-dim)] focus:outline-none transition-all duration-200 font-medium bg-white/[0.05] border border-white/[0.10] focus:border-accent/50 focus:bg-white/[0.07]";
+  const inputClass = "auth-field rounded-xl px-4 py-3.5 text-sm font-medium";
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center px-4" onClick={onClose}>
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
       <div
-        className="relative w-full max-w-md glass-card rounded-3xl p-8"
+        className="auth-modal relative w-full max-w-md rounded-3xl p-8"
         onClick={e => e.stopPropagation()}
-        style={{ background: 'rgba(12,12,12,0.98)', border: '1px solid rgb(var(--white-rgb) / 0.1)' }}
       >
         <button
           onClick={onClose}
-          className="absolute top-5 right-5 w-8 h-8 rounded-lg flex items-center justify-center border border-white/10 hover:border-white/20 text-ink-muted hover:text-white/70 transition-all"
+          className="auth-close absolute top-5 right-5 w-8 h-8 rounded-lg flex items-center justify-center"
         >
           <X size={15} />
         </button>
 
         <div className="mb-7">
-          <img src="/logo.png" alt="CloutKart" className="h-8 w-auto object-contain mb-5 opacity-80" />
-          <h2 className="font-heading font-bold text-2xl gradient-text mb-1">
+          <img src="/logo.png" alt="CloutKart" className="h-8 w-auto object-contain mb-5" />
+          <h2 className="font-heading font-bold text-2xl mb-1" style={{ color: 'var(--ink)' }}>
             {mode === 'signup' ? 'Get Started Free' : 'Welcome Back'}
           </h2>
           {mode === 'signup' && (
-            <p className="text-ink-muted text-sm">Your first creative is free. No credit card required.</p>
+            <p className="text-sm" style={{ color: 'var(--ink-muted)' }}>Your first creative is free. No credit card required.</p>
           )}
         </div>
 
         <button
           onClick={handleGoogle}
-          className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-xl border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] text-ink-body text-sm font-medium transition-all duration-200 mb-4"
+          className="auth-oauth w-full flex items-center justify-center gap-3 py-3 px-4 rounded-xl text-sm font-semibold mb-4"
         >
           <GoogleIcon />
           Continue with Google
         </button>
 
         <div className="flex items-center gap-3 mb-4">
-          <div className="flex-1 h-px bg-white/[0.08]" />
-          <span className="text-ink-dim text-xs">or continue with email</span>
-          <div className="flex-1 h-px bg-white/[0.08]" />
+          <div className="auth-rule flex-1 h-px" />
+          <span className="text-xs" style={{ color: 'var(--ink-dim)' }}>or continue with email</span>
+          <div className="auth-rule flex-1 h-px" />
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-3">
@@ -159,9 +158,9 @@ export default function SignupModal({ open, onClose, defaultMode = 'signup' }: P
           )}
 
           {error && (
-            <div className="flex items-center gap-2 bg-red-500/[0.06] border border-red-500/20 rounded-xl p-3">
-              <AlertCircle size={14} className="text-red-400 flex-shrink-0" />
-              <span className="text-red-300 text-xs">{error}</span>
+            <div className="flex items-center gap-2 bg-red-500/[0.08] border border-red-500/25 rounded-xl p-3">
+              <AlertCircle size={14} className="text-red-500 flex-shrink-0" />
+              <span className="text-red-500 text-xs font-medium">{error}</span>
             </div>
           )}
 

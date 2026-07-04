@@ -163,6 +163,43 @@
     box-shadow: var(--shadow-card);
   }
 
+  /* Auth / signup modal — theme-aware: a solid elevated card that flips to a clean
+     white surface in light mode (dark in dark), with recessed fields + inputs that
+     lift on focus. Replaces the old hardcoded-dark modal so it reads in both themes. */
+  .auth-modal {
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-card), 0 24px 64px -20px rgb(var(--bg-rgb) / 0.6);
+  }
+  .auth-field {
+    width: 100%;
+    background: rgb(var(--bg-rgb));
+    border: 1px solid var(--border);
+    color: var(--ink);
+    transition: border-color .18s ease, box-shadow .18s ease, background .18s ease;
+  }
+  .auth-field::placeholder { color: var(--ink-dim); }
+  .auth-field:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgb(var(--accent-rgb) / 0.16);
+    background: var(--bg-elev);
+  }
+  .auth-oauth {
+    background: rgb(var(--bg-rgb));
+    border: 1px solid var(--border);
+    color: var(--ink-body);
+    transition: border-color .18s ease, background .18s ease;
+  }
+  .auth-oauth:hover { border-color: var(--border-strong); background: var(--surface-strong); }
+  .auth-close {
+    border: 1px solid var(--border);
+    color: var(--ink-muted);
+    transition: border-color .18s ease, color .18s ease, background .18s ease;
+  }
+  .auth-close:hover { border-color: var(--border-strong); color: var(--ink); background: var(--surface-strong); }
+  .auth-rule { background: var(--border); }
+
   .hero-headline {
     /* Gentle settle — kept mild so "Convert." stays legible as the glow builds. */
     transform: translateY(calc(var(--hero-p) * 30px));
@@ -232,8 +269,8 @@
 
   /* Portrait: enlarge the hands so both read and they still cross the headline. */
   @media (max-width: 640px) {
-    .hero-hands-wrap { width: 176vw !important; top: 38% !important; }
-    .hero-glow { width: 34vw; top: 44%; }
+    .hero-hands-wrap { width: 124vw !important; top: 42% !important; }
+    .hero-glow { width: 25vw; top: 44%; }
   }
 
   @media (prefers-reduced-motion: reduce) {

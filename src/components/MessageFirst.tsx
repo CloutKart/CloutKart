@@ -19,7 +19,6 @@ const truths = [
 
 export default function MessageFirst() {
   const sectionRef = useRef<HTMLElement>(null);
-  const [sectionVisible, setSectionVisible] = useState(false);
   const [scanLineActive, setScanLineActive] = useState(false);
 
   useEffect(() => {
@@ -27,7 +26,6 @@ export default function MessageFirst() {
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            setSectionVisible(true);
             entry.target.querySelectorAll('.reveal, .reveal-scale, .reveal-clip').forEach((el, i) => {
               setTimeout(() => el.classList.add('visible'), i * 70);
             });
@@ -48,22 +46,6 @@ export default function MessageFirst() {
       id="message"
       style={{ background: 'transparent' }}
     >
-      {/* Subtle spotlight behind the focal line */}
-      <div
-        className="absolute pointer-events-none animate-orb-drift"
-        style={{
-          width: '680px',
-          height: '280px',
-          borderRadius: '50%',
-          background: 'radial-gradient(ellipse, rgb(var(--accent-rgb) / 0.08) 0%, transparent 70%)',
-          top: '8%',
-          left: '-8%',
-          zIndex: 0,
-          opacity: sectionVisible ? 1 : 0,
-          transition: 'opacity 1.6s ease',
-        }}
-      />
-
       <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
 
         {/* Eyebrow */}
