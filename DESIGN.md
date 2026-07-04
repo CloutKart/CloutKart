@@ -66,12 +66,14 @@ Reflex-reject fonts (Inter, Montserrat) replaced with a distinctive pairing:
 
 | Role | Font | Weight | Notes |
 |---|---|---|---|
-| Display / headings | **Archivo Expanded** | 600–800 | Wide, industrial, motorsport-signage confidence. `letter-spacing: -0.02em`. |
+| Hero display | **NCL Gasdrifo** | 400 | Elegant high-contrast serif (Enxyclo Studio) — hero headline / eyebrow / subcopy (`.font-gasdrifo`). Self-hosted `@font-face` (`/fonts/NCLGasdrifo.woff2`). *Demo weight — needs the paid license before production.* |
+| Display / headings | **Archivo Expanded** | 600–800 | Wide, industrial. Site-wide `h1–h6`. `letter-spacing: -0.02em`. |
 | Body | **Hanken Grotesk** | 400–600 | Refined, legible workhorse. |
-| Labels / metrics | **DM Mono** | 400–500 | Eyebrow pills + tabular figures for numbers (`font-variant-numeric: tabular-nums`). |
+| Labels / metrics | **DM Mono** | 400–500 | Tabular figures for numbers (`font-variant-numeric: tabular-nums`). |
 | Buttons | Hanken Grotesk | 600 | (Removed the never-loaded `Bricolage Grotesque` reference.) |
 
-Loaded via one Google Fonts `@import` in `src/index.css`.
+Google fonts via one `@import`; NCL Gasdrifo via a self-hosted `@font-face` — both in
+`src/index.css`.
 
 ## Components
 
@@ -102,6 +104,22 @@ an inset hairline rectangle, corner registration crosshairs, edge ruler ticks
 (`repeating-linear-gradient`), and monospace coordinate labels. Token-driven
 (`--frame-line/tick/mark/label`), rendered in both themes; the light dot-grid is
 dropped (`--dot-color: transparent`) so the frame carries the surface.
+
+**Hero** (`src/components/Hero.tsx`): a "Creation of Adam" composition — a static
+grayscale **etched human hand** (wrapped in vines/flowers) reaching a violet
+**CLOUTKART robot hand**, from transparent WebP halves that span full-bleed and
+**approach** on scroll (`--hero-p`, published in a rAF scroll handler; no re-render).
+Headline **"Creation, / Reimagined."** in Gasdrifo sits *behind* the hands (3D depth);
+background is the site grid + TelemetryFrame (`.hero-static` is transparent so both
+show through). Signature effect: only the **botanicals bloom + move**. `hero-vines.webp`
+is a chroma-extracted "colored vines/flowers only" layer (the hand stays gray); its
+opacity fades in on approach (colorize) and it gently **sways** (`hero-vine-sway`,
+pivoted at the vines so dangling flowers move most) — a cheap GPU transform, the hand
+never moves. Both hands get a theme-aware **backing halo** (soft dark on light, faint
+light on dark) so they separate from the canvas. Desktop-only sway; `prefers-reduced-motion`
+shows colored botanicals, static. A tried-and-rejected animated `feTurbulence`/
+`feDisplacementMap` "ripple" was ~2 fps — SVG filter animation on a hero-sized element
+is not viable; use transforms.
 
 ## Animations
 
