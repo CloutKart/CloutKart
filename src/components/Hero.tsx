@@ -106,7 +106,7 @@ export default function Hero({ onSignupOpen }: Props) {
       <div className="absolute inset-0 z-0 flex items-start justify-center px-4 pt-[17vh] sm:pt-[18vh] pointer-events-none">
         <h1
           className="hero-headline font-gasdrifo font-normal text-center leading-[0.96] tracking-[-0.005em]"
-          style={{ color: 'var(--ink)', fontSize: 'clamp(3.2rem, 10vw, 8rem)' }}
+          style={{ color: 'var(--ink)', fontSize: 'clamp(3.7rem, 11vw, 9rem)' }}
         >
           <span className="reveal-clip block overflow-hidden" style={{ transitionDelay: '0ms' }}>Creation,</span>
           <span className="reveal-clip block overflow-hidden" style={{ transitionDelay: '120ms', color: 'var(--accent-ink)' }}>Reimagined.</span>
@@ -143,8 +143,8 @@ export default function Hero({ onSignupOpen }: Props) {
       </div>
 
       <div className="absolute inset-x-0 bottom-0 z-20 flex flex-col items-center text-center px-4 pb-12 sm:pb-16 pointer-events-none">
-        <p className="font-gasdrifo text-ink-body text-sm sm:text-base leading-relaxed max-w-2xl mb-6 animate-fade-up delay-200">
-          The Renaissance redefined art. <span className="font-semibold" style={{ color: 'var(--ink)' }}>AI is redefining creativity.</span> CloutKart
+        <p className="hero-frost text-base sm:text-lg leading-relaxed max-w-2xl mb-6 px-6 py-4 sm:px-8 sm:py-5 animate-fade-up delay-200" style={{ color: 'var(--ink)' }}>
+          The Renaissance redefined art. <span className="font-semibold" style={{ color: 'var(--accent-ink)' }}>AI is redefining creativity.</span> CloutKart
           brings both together to build campaigns that feel human and perform at scale.
         </p>
 
