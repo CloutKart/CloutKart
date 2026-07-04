@@ -201,7 +201,7 @@ export default function Hero({ onSignupOpen }: Props) {
       </div>
 
       <div className="absolute inset-x-0 bottom-0 z-20 flex flex-col items-center text-center px-4 pb-12 sm:pb-16 pointer-events-none">
-        <p className="hero-frost text-base sm:text-lg leading-relaxed max-w-2xl mb-6 px-6 py-4 sm:px-8 sm:py-5 animate-fade-up delay-200" style={{ color: 'var(--ink)' }}>
+        <p className="hero-frost text-sm sm:text-lg leading-relaxed max-w-2xl mb-5 sm:mb-6 px-5 py-3.5 sm:px-8 sm:py-5 animate-fade-up delay-200" style={{ color: 'var(--ink)' }}>
           The Renaissance redefined art. <span className="font-semibold" style={{ color: 'var(--accent-ink)' }}>AI is redefining creativity.</span> CloutKart
           brings both together to build campaigns that feel human and perform at scale.
         </p>

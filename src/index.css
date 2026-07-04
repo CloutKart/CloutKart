@@ -232,8 +232,8 @@
 
   /* Portrait: enlarge the hands so both read and they still cross the headline. */
   @media (max-width: 640px) {
-    .hero-hands-wrap { width: 188vw !important; top: 46% !important; }
-    .hero-glow { width: 34vw; top: 52%; }
+    .hero-hands-wrap { width: 176vw !important; top: 38% !important; }
+    .hero-glow { width: 34vw; top: 44%; }
   }
 
   @media (prefers-reduced-motion: reduce) {
