@@ -22,7 +22,66 @@
    every composed token below re-resolves automatically because
    var() substitution happens at use time.
    ───────────────────────────────────────────────────────────── */
-:root,
+:root {
+  color-scheme: light;
+
+  --white-rgb: 20 19 26;             /* overlays + text-white become near-black on light */
+  /* Crisp near-neutral canvas; cards separate via borders + shadow, not tint. */
+  --bg-rgb: 242 242 246;
+  --bg-elev-rgb: 255 255 255;
+  --ink-rgb: 17 16 22;               /* near-black headings — high contrast */
+  --ink-strong-rgb: 8 7 12;
+  --ink-body-rgb: 44 42 53;          /* ~13:1 on the canvas */
+  --ink-muted-rgb: 82 80 95;         /* ~7:1 on the canvas */
+  --ink-dim-rgb: 108 106 121;        /* ~4.7:1 — readable tertiary, no longer blends */
+  --accent-rgb: 109 40 217;          /* violet-700, holds contrast on near-white */
+  --accent-strong-rgb: 91 33 182;
+  --accent-ink-rgb: 91 31 176;       /* accent text on light = dark violet */
+  --accent-contrast-rgb: 255 255 255;
+  --success-rgb: 4 137 96;
+
+  /* composed semantic tokens (theme-agnostic; follow the channels) */
+  --bg: rgb(var(--bg-rgb));
+  --bg-elev: rgb(var(--bg-elev-rgb));
+  --surface: rgb(var(--white-rgb) / 0.04);
+  --surface-strong: rgb(var(--white-rgb) / 0.06);
+  --surface-hover: rgb(var(--white-rgb) / 0.08);
+  --border: rgb(var(--white-rgb) / 0.10);
+  --border-subtle: rgb(var(--white-rgb) / 0.06);
+  --border-strong: rgb(var(--white-rgb) / 0.15);
+  --ink: rgb(var(--ink-rgb));
+  --ink-body: rgb(var(--ink-body-rgb));
+  --ink-muted: rgb(var(--ink-muted-rgb));
+  --ink-dim: rgb(var(--ink-dim-rgb));
+  --accent: rgb(var(--accent-rgb));
+  --accent-strong: rgb(var(--accent-strong-rgb));
+  --accent-ink: rgb(var(--accent-ink-rgb));
+  --accent-contrast: rgb(var(--accent-contrast-rgb));
+  --accent-soft: rgb(var(--accent-rgb) / 0.10);
+  --accent-border: rgb(var(--accent-rgb) / 0.35);
+
+  /* effects that don't follow a single channel — overridden in light */
+  --shadow-card: 0 1px 2px rgb(20 19 26 / 0.06), 0 10px 24px -10px rgb(20 19 26 / 0.20);
+  --shadow-card-hover: 0 2px 6px rgb(20 19 26 / 0.08), 0 20px 44px -12px rgb(46 20 92 / 0.30);
+  --shadow-lift: 0 16px 36px -12px rgb(46 20 92 / 0.26);
+  --dot-color: rgb(20 19 26 / 0.14);  /* visible dot grid across the light canvas */
+  --top-glow: rgb(var(--accent-rgb) / 0.10);
+  --frame-line: rgb(20 19 26 / 0.10);
+  --frame-tick: rgb(20 19 26 / 0.17);
+  --frame-mark: rgb(var(--accent-rgb) / 0.60);
+  --frame-label: rgb(20 19 26 / 0.42);
+  --glass-bg: rgb(255 255 255);
+  --glass-border: rgb(20 19 26 / 0.14);
+  --glass-highlight: rgb(255 255 255 / 0.90);
+  --glass-mobile-bg: rgb(255 255 255);
+  --glass-nav-mobile-bg: rgb(255 255 255 / 0.94);
+  --nav-bg: rgb(255 255 255 / 0.82);
+  --scrollbar-thumb: #c6c3d2;
+  --scrollbar-thumb-hover: #a8a4ba;
+  --selection-bg: rgb(var(--accent-rgb) / 0.16);
+  --selection-fg: #ffffff;
+}
+
 [data-theme="dark"] {
   color-scheme: dark;
 
@@ -80,55 +139,6 @@
   --scrollbar-thumb: #252525;
   --scrollbar-thumb-hover: #353535;
   --selection-bg: rgb(var(--accent-rgb) / 0.30);
-  --selection-fg: #ffffff;
-}
-
-[data-theme="light"] {
-  color-scheme: light;
-
-  --white-rgb: 20 19 26;             /* overlays + text-white become near-black on light */
-  /* Crisp near-neutral canvas; cards separate via borders + shadow, not tint. */
-  --bg-rgb: 242 242 246;
-  --bg-elev-rgb: 255 255 255;
-  --ink-rgb: 17 16 22;               /* near-black headings — high contrast */
-  --ink-strong-rgb: 8 7 12;
-  --ink-body-rgb: 44 42 53;          /* ~13:1 on the canvas */
-  --ink-muted-rgb: 82 80 95;         /* ~7:1 on the canvas */
-  --ink-dim-rgb: 108 106 121;        /* ~4.7:1 — readable tertiary, no longer blends */
-  --accent-rgb: 109 40 217;          /* violet-700, holds contrast on near-white */
-  --accent-strong-rgb: 91 33 182;
-  --accent-ink-rgb: 91 31 176;       /* accent text on light = dark violet */
-  --accent-contrast-rgb: 255 255 255;
-  --success-rgb: 4 137 96;
-
-  /* Cards are pure white — separation comes from crisp borders + defined shadow. */
-  --surface: rgb(255 255 255);
-  --surface-strong: rgb(255 255 255);
-  --surface-hover: rgb(20 19 26 / 0.05);
-  --border: rgb(20 19 26 / 0.14);
-  --border-subtle: rgb(20 19 26 / 0.09);
-  --border-strong: rgb(20 19 26 / 0.20);
-  --accent-soft: rgb(var(--accent-rgb) / 0.10);
-  --accent-border: rgb(var(--accent-rgb) / 0.35);
-
-  --shadow-card: 0 1px 2px rgb(20 19 26 / 0.06), 0 10px 24px -10px rgb(20 19 26 / 0.20);
-  --shadow-card-hover: 0 2px 6px rgb(20 19 26 / 0.08), 0 20px 44px -12px rgb(46 20 92 / 0.30);
-  --shadow-lift: 0 16px 36px -12px rgb(46 20 92 / 0.26);
-  --dot-color: rgb(20 19 26 / 0.14);  /* visible dot grid across the light canvas */
-  --top-glow: rgb(var(--accent-rgb) / 0.10);
-  --frame-line: rgb(20 19 26 / 0.10);
-  --frame-tick: rgb(20 19 26 / 0.17);
-  --frame-mark: rgb(var(--accent-rgb) / 0.60);
-  --frame-label: rgb(20 19 26 / 0.42);
-  --glass-bg: rgb(255 255 255);
-  --glass-border: rgb(20 19 26 / 0.14);
-  --glass-highlight: rgb(255 255 255 / 0.90);
-  --glass-mobile-bg: rgb(255 255 255);
-  --glass-nav-mobile-bg: rgb(255 255 255 / 0.94);
-  --nav-bg: rgb(255 255 255 / 0.82);
-  --scrollbar-thumb: #c6c3d2;
-  --scrollbar-thumb-hover: #a8a4ba;
-  --selection-bg: rgb(var(--accent-rgb) / 0.16);
   --selection-fg: #ffffff;
 }
 
