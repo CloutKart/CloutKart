@@ -8,6 +8,9 @@ export default {
         sans:    ['Hanken Grotesk', 'system-ui', 'sans-serif'],
         heading: ['Archivo Expanded', 'Hanken Grotesk', 'system-ui', 'sans-serif'],
         mono:    ['DM Mono', 'ui-monospace', 'monospace'],
+        // Renaissance kit
+        'serif-display': ['Cormorant Garamond', 'NCL Gasdrifo', 'Georgia', 'serif'],
+        'serif-text':    ['EB Garamond', 'Georgia', 'serif'],
       },
       colors: {
         // `white` is remapped to a theme token so the ~360 existing
