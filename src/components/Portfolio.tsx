@@ -1,11 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Heart, X, ChevronLeft, ChevronRight, MessageCircle, Bookmark, Send, MoreHorizontal } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import Eyebrow from './ornaments/Eyebrow';
-import PlateFrame from './ornaments/PlateFrame';
-
-const ROMAN = ['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII','XIII','XIV','XV','XVI','XVII','XVIII','XIX','XX'];
-const toRoman = (n: number) => ROMAN[n - 1] ?? String(n);
 
 interface PortfolioSection {
   id: string;
@@ -346,16 +341,21 @@ export default function Portfolio() {
   return (
     <section ref={sectionRef} className="relative py-20 md:py-36 [overflow-x:clip]" id="portfolio" style={{ background: 'transparent' }}>
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-12 md:mb-16">
-          <Eyebrow className="reveal mb-6">The Gallery</Eyebrow>
+        <div className="text-center mb-10 md:mb-16">
+          <div className="reveal eyebrow-pill mb-7">
+            <span className="w-1 h-1 rounded-full bg-brand-purple" />
+            Our Work
+          </div>
           <h2
-            className="reveal delay-100 font-serif-display leading-[0.98] mb-4"
-            style={{ color: 'var(--ink)', fontSize: 'clamp(2.4rem, 6vw, 5rem)' }}
+            className="reveal delay-100 font-heading font-bold leading-[1.06] tracking-tight mb-3 sm:mb-4"
+            style={{ fontSize: 'clamp(2rem, 5vw, 4.5rem)' }}
           >
-            Results That <span className="italic" style={{ color: 'var(--accent-ink)' }}>Speak for Themselves.</span>
+            Results That
+            <br />
+            <span style={{ color: 'var(--ink)' }}>Speak For Themselves.</span>
           </h2>
-          <p className="reveal delay-200 font-serif-text max-w-xl mx-auto leading-relaxed" style={{ color: 'var(--ink-body)', fontSize: '1.15rem' }}>
-            A showcase of premium ad creatives, campaign visuals, and performance-focused work.
+          <p className="reveal delay-200 text-ink-body text-sm sm:text-lg max-w-xl mx-auto leading-relaxed">
+            A showcase of premium ad creatives, campaign visuals, and performance-focused content.
           </p>
         </div>
 
@@ -384,20 +384,19 @@ export default function Portfolio() {
             ))}
           </div>
         ) : sections.length === 0 ? (
-          <div className="text-center py-20">
-            <p className="font-serif-text italic text-xl" style={{ color: 'var(--ink-muted)' }}>The gallery is being hung.</p>
+          <div className="text-center py-16">
+            <p className="text-ink-dim text-sm">Portfolio coming soon.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-9">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {sections.map((section, index) => (
-              <PlateFrame key={section.id} plate={`Plate ${toRoman(index + 1)}`} inset="0.5rem">
-                <InstagramCard
-                  section={section}
-                  index={index}
-                  onOpen={() => openLightbox(section.id, section.title)}
-                  isVisible={visible}
-                />
-              </PlateFrame>
+              <InstagramCard
+                key={section.id}
+                section={section}
+                index={index}
+                onOpen={() => openLightbox(section.id, section.title)}
+                isVisible={visible}
+              />
             ))}
           </div>
         )}

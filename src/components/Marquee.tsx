@@ -12,36 +12,35 @@ const itemsRow2 = [
   'Creative Testing', 'Campaign Assets', 'Result-Driven',
 ];
 
-function Row({ data, anim, ink }: { data: string[]; anim: string; ink: number }) {
-  return (
-    <div className={`flex ${anim} whitespace-nowrap`}>
-      {[...data, ...data].map((item, i) => (
-        <span key={i} className="inline-flex items-center gap-5 px-6">
-          <span
-            className="font-serif-display small-caps oldstyle-nums text-lg sm:text-xl leading-none"
-            style={{ color: `rgb(var(--ink-rgb) / ${ink})`, letterSpacing: '0.06em' }}
-          >
-            {item}
-          </span>
-          <span aria-hidden className="text-sm leading-none" style={{ color: 'rgb(var(--accent-rgb) / 0.5)' }}>❦</span>
-        </span>
-      ))}
-    </div>
-  );
-}
-
-// A carved inscription frieze (architrave), not a ticker: serif small-caps terms
-// separated by fleurons, running between two hairline rules.
 export default function Marquee() {
   return (
-    <div
-      className="overflow-hidden relative py-6 sm:py-8 space-y-2"
-      style={{ borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)' }}
-    >
+    <div className="overflow-hidden relative space-y-2 py-5" style={{ borderTop: '1px solid rgb(var(--white-rgb) / 0.05)', borderBottom: '1px solid rgb(var(--white-rgb) / 0.05)' }}>
       <div className="absolute left-0 top-0 bottom-0 w-24 z-10 pointer-events-none" style={{ background: 'linear-gradient(to right, var(--bg), transparent)' }} />
       <div className="absolute right-0 top-0 bottom-0 w-24 z-10 pointer-events-none" style={{ background: 'linear-gradient(to left, var(--bg), transparent)' }} />
-      <Row data={items} anim="animate-marquee" ink={0.74} />
-      <Row data={itemsRow2} anim="animate-marquee-reverse" ink={0.5} />
+
+      {/* Row 1 — forward */}
+      <div className="flex animate-marquee whitespace-nowrap">
+        {[...items, ...items].map((item, i) => (
+          <span key={i} className="inline-flex items-center gap-3.5 px-5">
+            <span className="text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: 'var(--ink-dim)' }}>
+              {item}
+            </span>
+            <span className="w-1 h-1 rounded-full flex-shrink-0" style={{ background: 'rgb(var(--accent-rgb) / 0.45)' }} />
+          </span>
+        ))}
+      </div>
+
+      {/* Row 2 — reverse, slightly dimmer, indigo dots */}
+      <div className="flex animate-marquee-reverse whitespace-nowrap">
+        {[...itemsRow2, ...itemsRow2].map((item, i) => (
+          <span key={i} className="inline-flex items-center gap-3.5 px-5">
+            <span className="text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: 'var(--ink-dim)' }}>
+              {item}
+            </span>
+            <span className="w-1 h-1 rounded-full flex-shrink-0" style={{ background: 'rgb(var(--accent-rgb) / 0.35)' }} />
+          </span>
+        ))}
+      </div>
     </div>
   );
 }
