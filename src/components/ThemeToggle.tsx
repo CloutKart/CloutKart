@@ -28,8 +28,9 @@ export default function ThemeToggle({ className = '' }: Props) {
       title={`${next} mode`}
       className={`group relative grid h-11 w-11 place-items-center overflow-hidden rounded-full border border-white/[0.10] bg-white/[0.04] text-ink-muted transition-[color,border-color,transform] duration-200 hover:border-accent/40 hover:text-ink active:scale-90 touch-manipulation ${className}`}
     >
-      {/* press ripple — a ring that expands + fades from the button on each activation */}
-      <span key={ripple} className={ripple ? 'toggle-ripple' : ''} aria-hidden />
+      {/* press ripple — only mounted while animating so the idle button keeps a clean
+          1×1 grid (an empty flow child would spawn a 2nd column and shove the glyph left) */}
+      {ripple > 0 && <span key={ripple} className="toggle-ripple" aria-hidden />}
 
       {/* the two glyphs cross-fade + rotate so the swap reads as one motion */}
       <PenTool
