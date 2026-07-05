@@ -1,6 +1,10 @@
 // Instrument / telemetry frame — the light-theme "surface": edge rulers,
 // corner registration marks, and monospace coordinate labels. Purely
 // decorative (pointer-events-none), token-driven so it works in both themes.
+import { useEffect, useState } from 'react';
+import { THEME_TRANSITION_EVENT } from '../context/ThemeContext';
+
+const COORD = 'LAT 28.61 · LON 77.20';
 
 function Registration({ className }: { className: string }) {
   return (
@@ -12,6 +16,31 @@ function Registration({ className }: { className: string }) {
 }
 
 export default function TelemetryFrame() {
+  // Coordinate "recalibration": on a theme swap the readout scrambles for ~380ms then
+  // re-settles to the canonical fix — the instruments re-referencing the new atmosphere.
+  const [coord, setCoord] = useState(COORD);
+  useEffect(() => {
+    let iv = 0;
+    const onTransition = () => {
+      window.clearInterval(iv);
+      let frames = 0;
+      iv = window.setInterval(() => {
+        frames += 1;
+        if (frames > 6) {
+          window.clearInterval(iv);
+          setCoord(COORD);
+        } else {
+          setCoord(COORD.replace(/\d/g, () => String(Math.floor(Math.random() * 10))));
+        }
+      }, 55);
+    };
+    document.addEventListener(THEME_TRANSITION_EVENT, onTransition);
+    return () => {
+      document.removeEventListener(THEME_TRANSITION_EVENT, onTransition);
+      window.clearInterval(iv);
+    };
+  }, []);
+
   return (
     <div className="telemetry-frame pointer-events-none fixed inset-0 z-0 select-none" aria-hidden>
       {/* inset hairline rectangle */}
@@ -39,10 +68,10 @@ export default function TelemetryFrame() {
 
       {/* monospace coordinate labels */}
       <span
-        className="absolute bottom-3 sm:bottom-5 left-5 sm:left-8 translate-y-[150%] font-mono uppercase tracking-[0.22em]"
+        className="absolute bottom-3 sm:bottom-5 left-5 sm:left-8 translate-y-[150%] font-mono uppercase tracking-[0.22em] tabular-nums"
         style={{ fontSize: '9px', color: 'var(--frame-label)' }}
       >
-        LAT 28.61 · LON 77.20
+        {coord}
       </span>
       <span
         className="absolute bottom-3 sm:bottom-5 right-5 sm:right-8 translate-y-[150%] font-mono uppercase tracking-[0.22em]"

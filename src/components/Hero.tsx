@@ -183,6 +183,8 @@ export default function Hero({ onSignupOpen }: Props) {
         >
           {/* small soft accent halo at the fingertip touch point */}
           <div className="hero-glow absolute" aria-hidden="true" />
+          {/* one-shot purple-white shimmer at the gap when a theme transition ends */}
+          <div className="hero-fingertip-shimmer absolute" aria-hidden="true" />
           {/* human group carries the approach; base is static, vines colorize + sway */}
           <div className="hero-human-group absolute inset-0">
             <img className="hero-hand hero-hand-base absolute left-0 top-0 h-full" style={{ width: `${HUMAN_PCT}%` }} src="/hero-human-uncolored.webp" alt="" />
