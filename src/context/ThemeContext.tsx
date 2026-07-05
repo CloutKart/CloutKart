@@ -17,11 +17,11 @@ function getInitialTheme(): Theme {
     const applied = document.documentElement.dataset.theme;
     if (applied === 'light' || applied === 'dark') return applied;
   }
-  return 'dark';
+  return 'light';
 }
 
 const ThemeContext = createContext<ThemeContextType>({
-  theme: 'dark',
+  theme: 'light',
   toggleTheme: () => {},
   setTheme: () => {},
 });
@@ -39,16 +39,6 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const meta = document.querySelector('meta[name="theme-color"]');
     if (meta) meta.setAttribute('content', theme === 'light' ? '#F2F2F6' : '#080808');
   }, [theme]);
-
-  // Follow the OS preference only while the user hasn't made an explicit choice.
-  useEffect(() => {
-    const mq = window.matchMedia('(prefers-color-scheme: light)');
-    const onChange = (e: MediaQueryListEvent) => {
-      if (!localStorage.getItem(STORAGE_KEY)) setThemeState(e.matches ? 'light' : 'dark');
-    };
-    mq.addEventListener('change', onChange);
-    return () => mq.removeEventListener('change', onChange);
-  }, []);
 
   const setTheme = (next: Theme) => setThemeState(next);
   const toggleTheme = () => setThemeState((t) => (t === 'dark' ? 'light' : 'dark'));

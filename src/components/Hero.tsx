@@ -192,13 +192,6 @@ export default function Hero({ onSignupOpen }: Props) {
         </div>
       </div>
 
-      {/* z-20 — foreground UI */}
-      <div className="absolute inset-x-0 top-0 z-20 flex justify-center pt-24 sm:pt-28 pointer-events-none">
-        <div className="eyebrow-pill font-gasdrifo animate-fade-up">
-          <span className="w-1.5 h-1.5 rounded-full bg-brand-purple animate-pulse" />
-          AI Creative Operations Platform
-        </div>
-      </div>
 
       <div className="absolute inset-x-0 bottom-0 z-20 flex flex-col items-center text-center px-4 pb-12 sm:pb-16 pointer-events-none">
         <p className="hero-frost text-sm sm:text-lg leading-relaxed max-w-2xl mb-5 sm:mb-6 px-5 py-3.5 sm:px-8 sm:py-5 animate-fade-up delay-200" style={{ color: 'var(--ink)' }}>

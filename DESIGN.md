@@ -2,9 +2,10 @@
 
 ## Theme
 
-Light and dark, user-toggleable. Dark is the default; the choice follows the OS
-`prefers-color-scheme` on first visit and is then remembered in `localStorage`
-(`ck-theme`). The theme is applied to `<html data-theme="light|dark">` by a tiny
+Light and dark, user-toggleable. **Light is the default**; the theme is not tied to
+the OS `prefers-color-scheme` — first visits open light and only an explicit user
+toggle (remembered in `localStorage` `ck-theme`) switches to dark. The theme is
+applied to `<html data-theme="light|dark">` by a tiny
 blocking script in `index.html` before first paint (no flash), and managed at
 runtime by `src/context/ThemeContext.tsx` with a toggle in the navbar
 (`src/components/ThemeToggle.tsx`).

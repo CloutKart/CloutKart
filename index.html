@@ -11,21 +11,20 @@
     <meta name="author" content="CloutKart" />
     <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
     <meta name="theme-color" content="#080808" />
-    <meta name="color-scheme" content="dark light" />
+    <meta name="color-scheme" content="light dark" />
 
     <!-- Set theme before first paint to avoid a flash of the wrong theme -->
     <script>
       (function () {
         try {
           var stored = localStorage.getItem('ck-theme');
-          var theme = stored === 'light' || stored === 'dark'
-            ? stored
-            : (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+          // Default theme is light; only an explicit stored choice overrides it.
+          var theme = stored === 'dark' ? 'dark' : 'light';
           document.documentElement.dataset.theme = theme;
           var meta = document.querySelector('meta[name="theme-color"]');
           if (meta) meta.setAttribute('content', theme === 'light' ? '#F2F2F6' : '#080808');
         } catch (e) {
-          document.documentElement.dataset.theme = 'dark';
+          document.documentElement.dataset.theme = 'light';
         }
       })();
     </script>
