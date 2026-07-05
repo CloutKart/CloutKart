@@ -236,6 +236,21 @@
     will-change: opacity;
   }
 
+  /* Color-matching glow (dark mode only): a blurred copy of the SAME vines art sits
+     behind the crisp vines and bleeds outward. Because it's the real image, each
+     botanical glows its own colour (green vine → green, pink/blue/yellow bud → its
+     hue). It fades in on the same colorize curve as .hero-vines — the botanicals
+     "come alive" glowing. Static blur + animated opacity only → GPU-cheap. */
+  .hero-vines-glow {
+    opacity: 0;                                   /* hidden in light mode */
+    filter: blur(9px) saturate(1.5) brightness(1.15);
+    pointer-events: none;
+    will-change: opacity;
+  }
+  [data-theme="dark"] .hero-vines-glow {
+    opacity: calc(clamp(0, (var(--hero-a) - 0.08) * 4, 1) * 0.85);
+  }
+
   /* Backing halos so the hands separate from the canvas (shape-accurate, follow the
      alpha). Light canvas → soft DARK halo; dark canvas → soft LIGHT halo. Applied to
      BOTH the human hand (static base) and the robot. */
@@ -246,15 +261,16 @@
       drop-shadow(0 0 16px rgba(18, 16, 26, 0.5))
       drop-shadow(0 0 46px rgba(18, 16, 26, 0.4));
   }
-  [data-theme="dark"] .hero-hand-base,
+  /* Robot keeps a violet halo to separate from the dark canvas. */
   [data-theme="dark"] .hero-hand-robot {
-    /* Purple-tinted halo — a violet glow separates the hands from the dark canvas
-       and ties into the accent. Tight rim stays near-white for edge definition. */
     filter:
       drop-shadow(0 0 2px rgba(221, 214, 254, 0.32))
       drop-shadow(0 0 16px rgba(139, 92, 246, 0.30))
       drop-shadow(0 0 46px rgba(124, 58, 237, 0.24));
   }
+  /* The human hand has NO shadow in dark — the colored vine/bud glow (below) is the
+     only light on this side. (Also overrides the .hero-hand ambient shadow.) */
+  [data-theme="dark"] .hero-hand-base { filter: none; }
 
   /* Touch point — a small, soft accent halo (no big bloom / white core / pulse).
      The grayscale→color reveal now carries the "spark of life"; this is just a

@@ -186,6 +186,8 @@ export default function Hero({ onSignupOpen }: Props) {
           {/* human group carries the approach; base is static, vines colorize + sway */}
           <div className="hero-human-group absolute inset-0">
             <img className="hero-hand hero-hand-base absolute left-0 top-0 h-full" style={{ width: `${HUMAN_PCT}%` }} src="/hero-human-uncolored.webp" alt="" />
+            {/* dark-mode only: blurred copy behind the vines → a colour-matched glow */}
+            <img className="hero-vines-glow absolute left-0 top-0 h-full" style={{ width: `${HUMAN_PCT}%` }} src="/hero-vines.webp" alt="" aria-hidden="true" />
             <img className="hero-vines absolute left-0 top-0 h-full" style={{ width: `${HUMAN_PCT}%` }} src="/hero-vines.webp" alt="" />
           </div>
           <img className="hero-hand hero-hand-robot absolute right-0 top-0 h-full" style={{ width: `${ROBOT_PCT}%` }} src="/hero-robot.webp" alt="CloutKart AI" />
