@@ -116,8 +116,8 @@ show through). Signature effect: only the **botanicals bloom + move**. `hero-vin
 is a chroma-extracted "colored vines/flowers only" layer (the hand stays gray); its
 opacity fades in on approach (colorize) and it gently **sways** (`hero-vine-sway`,
 pivoted at the vines so dangling flowers move most) — a cheap GPU transform, the hand
-never moves. Both hands get a theme-aware **backing halo** (soft dark on light, faint
-light on dark) so they separate from the canvas. Desktop-only sway; `prefers-reduced-motion`
+never moves. Both hands get a theme-aware **backing halo** (soft dark on light, a
+**violet-tinted** glow on dark that ties into the accent) so they separate from the canvas. Desktop-only sway; `prefers-reduced-motion`
 shows colored botanicals, static. A tried-and-rejected animated `feTurbulence`/
 `feDisplacementMap` "ripple" was ~2 fps — SVG filter animation on a hero-sized element
 is not viable; use transforms.

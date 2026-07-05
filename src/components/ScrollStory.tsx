@@ -350,7 +350,7 @@ export default function ScrollStory() {
                       style={{
                         background: isActive ? 'linear-gradient(135deg,var(--accent),var(--accent))' : isPast ? 'rgb(var(--accent-rgb) / 0.15)' : 'rgb(var(--white-rgb) / 0.04)',
                         border: isActive ? 'none' : isPast ? '1px solid rgb(var(--accent-rgb) / 0.3)' : '1px solid rgb(var(--white-rgb) / 0.07)',
-                        color: isActive ? '#fff' : isPast ? 'var(--accent)' : 'rgb(var(--white-rgb) / 0.2)',
+                        color: isActive ? '#fff' : isPast ? 'var(--accent)' : 'rgb(var(--white-rgb) / 0.42)',
                       }}>
                       {isPast ? '✓' : p.num}
                     </div>
@@ -361,11 +361,11 @@ export default function ScrollStory() {
                   </div>
                   <div>
                     <div className="font-heading font-bold text-sm leading-snug mb-0.5 transition-colors duration-300"
-                      style={{ color: isActive ? '#fff' : isPast ? 'rgb(var(--white-rgb) / 0.4)' : 'rgb(var(--white-rgb) / 0.18)' }}>
+                      style={{ color: isActive ? 'var(--ink)' : isPast ? 'var(--ink-muted)' : 'var(--ink-dim)' }}>
                       {p.title}
                     </div>
                     <p className="text-[11px] leading-relaxed transition-colors duration-300 hidden xl:block"
-                      style={{ color: isActive ? 'rgb(var(--white-rgb) / 0.45)' : 'rgb(var(--white-rgb) / 0.1)' }}>
+                      style={{ color: isActive ? 'var(--ink-muted)' : 'var(--ink-dim)' }}>
                       {p.sub}
                     </p>
                   </div>

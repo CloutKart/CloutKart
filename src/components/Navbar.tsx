@@ -50,17 +50,15 @@ export default function Navbar({ onSignupOpen }: Props) {
   const AuthButtons = () => {
     if (!isLoggedIn) {
       return (
-        <div className="flex items-center gap-2">
-          <button onClick={onSignupOpen} className="btn-primary text-sm px-5 py-2.5">
-            Get Started
-            <ArrowRight size={14} />
-          </button>
-        </div>
+        <button onClick={onSignupOpen} className="btn-primary text-sm px-6 self-stretch">
+          Get Started
+          <ArrowRight size={14} />
+        </button>
       );
     }
     if (isAdmin) {
       return (
-        <button onClick={() => navigate('/admin')} className="btn-primary text-sm px-5 py-2.5">
+        <button onClick={() => navigate('/admin')} className="btn-primary text-sm px-6 self-stretch">
           <ShieldCheck size={14} />
           Admin Panel
           <ArrowRight size={14} />
@@ -68,7 +66,7 @@ export default function Navbar({ onSignupOpen }: Props) {
       );
     }
     return (
-      <button onClick={() => navigate('/dashboard')} className="btn-primary text-sm px-5 py-2.5">
+      <button onClick={() => navigate('/dashboard')} className="btn-primary text-sm px-6 self-stretch">
         <LayoutDashboard size={14} />
         Dashboard
         <ArrowRight size={14} />
@@ -100,7 +98,7 @@ export default function Navbar({ onSignupOpen }: Props) {
             willChange: 'transform, border-radius',
           }}
         >
-          <div className="px-3 sm:px-4 lg:pl-6 lg:pr-4">
+          <div className="pl-3 sm:pl-4 lg:pl-6 pr-3 sm:pr-4 md:pr-0">
             <div className={`flex items-center justify-between transition-[height] duration-[480ms] ease-[cubic-bezier(0.22,1,0.36,1)] ${scrolled ? 'h-[52px]' : 'h-[60px]'}`}>
             <a href="/" className="flex items-center gap-3 group flex-shrink-0">
               <img src="/logo.png" alt="CloutKart" className="h-8 sm:h-10 w-auto object-contain" />
@@ -119,7 +117,7 @@ export default function Navbar({ onSignupOpen }: Props) {
               ))}
             </div>
 
-            <div className="hidden md:flex items-center gap-3">
+            <div className="hidden md:flex items-center gap-3 h-full">
               <ThemeToggle />
               <AuthButtons />
             </div>

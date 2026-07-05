@@ -248,10 +248,12 @@
   }
   [data-theme="dark"] .hero-hand-base,
   [data-theme="dark"] .hero-hand-robot {
+    /* Purple-tinted halo — a violet glow separates the hands from the dark canvas
+       and ties into the accent. Tight rim stays near-white for edge definition. */
     filter:
-      drop-shadow(0 0 2px rgba(255, 255, 255, 0.3))
-      drop-shadow(0 0 16px rgba(255, 255, 255, 0.11))
-      drop-shadow(0 0 46px rgba(255, 255, 255, 0.06));
+      drop-shadow(0 0 2px rgba(221, 214, 254, 0.32))
+      drop-shadow(0 0 16px rgba(139, 92, 246, 0.30))
+      drop-shadow(0 0 46px rgba(124, 58, 237, 0.24));
   }
 
   /* Touch point — a small, soft accent halo (no big bloom / white core / pulse).
