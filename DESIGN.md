@@ -72,9 +72,33 @@ Reflex-reject fonts (Inter, Montserrat) replaced with a distinctive pairing:
 | Body | **Hanken Grotesk** | 400–600 | Refined, legible workhorse. |
 | Labels / metrics | **DM Mono** | 400–500 | Tabular figures for numbers (`font-variant-numeric: tabular-nums`). |
 | Buttons | Hanken Grotesk | 600 | (Removed the never-loaded `Bricolage Grotesque` reference.) |
+| Renaissance display | **Cormorant Garamond** | 400–700 + italic | High-contrast old-style serif — section titles, treatise headings, marquee frieze (`.font-serif-display`, Tailwind `font-serif-display`). |
+| Renaissance text | **EB Garamond** | 400–500 + italic | Body/marginalia serif for the illuminated sections (`.font-serif-text`). |
 
 Google fonts via one `@import`; NCL Gasdrifo via a self-hosted `@font-face` — both in
 `src/index.css`.
+
+## Renaissance "illuminated treatise" language
+
+The whole site is being taken to the hero's hand-made, engraved feel (not AI-generated),
+on the **existing neutral + committed-violet palette** (no parchment/gilt). A shared kit
+drives it:
+
+- **Type** — the two Garamonds above carry section titles and body; `.drop-cap`
+  (illuminated initial), `.small-caps`, `.oldstyle-nums`, and roman numerals for steps/plates.
+- **Ornament components** (`src/components/ornaments/`): `Eyebrow` (small-caps serif label
+  flanked by ❦ fleurons, replaces `.eyebrow-pill`), `PlateFrame` (engraved corner-mark
+  "specimen plate" wrapper with a roman-numeral plate caption, generalizes `TelemetryFrame`),
+  `OrnamentDivider` (fleuron between hairlines).
+- **Engraved illustrations** — commissioned copperplate/da-Vinci line-art (generated, then
+  cleaned to transparent "ink" so **alpha = darkness**). Default dark-ink reads on the light
+  canvas; `.engraving` applies `filter: invert(1)` on the dark canvas → light ink. Assets in
+  `public/engravings/` (`schematic`, `makers-mark`, `fleuron`, …).
+- **De-AI** — retiring purple orb-glows, `icon-gradient` chips, and glassy SaaS cards.
+
+Landed (Phase 1): **Marquee** (carved inscription frieze), **Process** ("The Method" treatise
+around the engraved schematic), **Portfolio** ("The Gallery"), **Footer** (printer's colophon).
+Phase 2 (remaining sections) applies the same kit.
 
 ## Components
 

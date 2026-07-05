@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Archivo+Expanded:wght@600;700;800&family=Hanken+Grotesk:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Archivo+Expanded:wght@600;700;800&family=Hanken+Grotesk:wght@400;500;600;700&family=DM+Mono:wght@400;500&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=EB+Garamond:ital,wght@0,400;0,500;1,400;1,500&display=swap');
 
 /* NCL Gasdrifo — elegant high-contrast display serif (Enxyclo Studio), hero only. */
 @font-face {
@@ -14,7 +14,43 @@
 @tailwind utilities;
 
 /* Hero display face. Serif fallback keeps proportions close while it loads. */
-.font-gasdrifo { font-family: 'NCL Gasdrifo', 'Archivo Expanded', Georgia, serif; }
+.font-gasdrifo { font-family: 'NCL Gasdrifo', 'Cormorant Garamond', Georgia, serif; }
+
+/* Renaissance kit — old-style serifs (Gasdrifo stays hero-only; these carry the
+   rest of the site). Cormorant Garamond = high-contrast display; EB Garamond = text
+   & marginalia. */
+.font-serif-display { font-family: 'Cormorant Garamond', 'NCL Gasdrifo', Georgia, serif; }
+.font-serif-text    { font-family: 'EB Garamond', Georgia, 'Times New Roman', serif; }
+
+/* ── Renaissance kit utilities ─────────────────────────────────── */
+.small-caps    { font-variant: small-caps; letter-spacing: 0.12em; }
+.oldstyle-nums { font-variant-numeric: oldstyle-nums proportional-nums; }
+
+/* Illuminated drop cap — a large Cormorant initial that floats into the lead line. */
+.drop-cap::first-letter {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-weight: 600;
+  float: left;
+  line-height: 0.66;
+  font-size: 3.6em;
+  padding: 0.02em 0.1em 0 0;
+  color: var(--accent-ink);
+}
+
+/* Engraved illustration: dark ink reads on the LIGHT canvas (default); invert to
+   light ink on the dark canvas. The generated art is pure grayscale line-work. */
+[data-theme="dark"] .engraving { filter: invert(1) brightness(1.06); }
+
+/* Ornamental hairline rule with a centered fleuron/ornament between the lines. */
+.ornament-rule {
+  display: flex; align-items: center; justify-content: center; gap: 1rem;
+  color: var(--ink-dim);
+}
+.ornament-rule::before, .ornament-rule::after {
+  content: ""; height: 1px; flex: 1 1 auto; max-width: 9rem;
+}
+.ornament-rule::before { background: linear-gradient(to left,  transparent, var(--border-strong)); }
+.ornament-rule::after  { background: linear-gradient(to right, transparent, var(--border-strong)); }
 
 /* ─────────────────────────────────────────────────────────────
    Theme tokens. Channel vars (space-separated RGB) are the single
