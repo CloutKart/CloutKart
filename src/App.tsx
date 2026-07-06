@@ -30,6 +30,9 @@ import Admin from './pages/Admin';
 
 function ProtectedDashboard() {
   const { isLoggedIn, isAdmin, loading } = useAuth();
+  // DEV-only preview so the redesigned dashboard can be viewed without a live session.
+  // `import.meta.env.DEV` is statically false in prod → this branch is tree-shaken out.
+  if (import.meta.env.DEV && !isLoggedIn) return <Dashboard />;
   if (loading) return null;
   if (!isLoggedIn) return <Navigate to="/login" replace />;
   if (isAdmin) return <Navigate to="/admin" replace />;
@@ -38,6 +41,7 @@ function ProtectedDashboard() {
 
 function ProtectedAdmin() {
   const { isAdmin, loading } = useAuth();
+  if (import.meta.env.DEV && !isAdmin) return <Admin />;   // DEV-only preview (see above)
   if (loading) return null;
   if (!isAdmin) return <Navigate to="/dashboard" replace />;
   return <Admin />;
@@ -112,8 +116,8 @@ function AppRoutes() {
         <Route path="/signup" element={<Signup />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
-        <Route path="/dashboard" element={<div data-theme="dark"><ProtectedDashboard /></div>} />
-        <Route path="/admin" element={<div data-theme="dark"><ProtectedAdmin /></div>} />
+        <Route path="/dashboard" element={<ProtectedDashboard />} />
+        <Route path="/admin" element={<ProtectedAdmin />} />
       </Routes>
     </>
   );

@@ -9,6 +9,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { NotificationBell } from '../components/NotificationBell';
+import ThemeToggle from '../components/ThemeToggle';
 import { usePushNotifications } from '../hooks/usePushNotifications';
 
 type Tab = 'overview' | 'creative' | 'gallery' | 'plan' | 'messages' | 'settings';
@@ -641,7 +642,7 @@ function VisionPanel({ vision, onChange, onApprove, submitting, submitError, ani
           onClick={onApprove}
           disabled={submitting}
           className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-          style={{ background: 'linear-gradient(135deg,var(--accent),var(--accent))', color: '#fff' }}>
+          style={{ background: 'var(--accent)', color: 'var(--accent-contrast)' }}>
           {submitting
             ? <><Loader size={13} className="animate-spin" />Sending…</>
             : <>Approve vision</>}
@@ -978,16 +979,8 @@ export default function Dashboard() {
   const isVideoUrl = (url: string) => /\.(mp4|mov|webm|avi|m4v|mkv|ogv)(\?.*)?$/i.test(url);
   const unreadCount = messages.filter(m => m.is_from_admin && !m.is_read).length;
 
-  const inputClass = "w-full rounded-xl px-4 py-3.5 text-sm text-white placeholder-[var(--ink-dim)] focus:outline-none transition-all duration-200 font-medium bg-white/[0.05] border border-white/[0.10] focus:border-accent/50 focus:bg-white/[0.07]";
+  const inputClass = "app-field font-medium";
   const labelClass = "block text-[11px] font-semibold text-ink-muted mb-2 uppercase tracking-[0.08em] font-heading";
-
-  // CC-aware sidebar style
-  const sidebarBg = isCloutClub
-    ? 'linear-gradient(180deg, rgba(22,8,45,0.98) 0%, rgba(12,5,25,0.98) 60%, rgba(10,10,12,0.98) 100%)'
-    : 'rgba(10,10,10,0.95)';
-  const mainBg = isCloutClub
-    ? { background: '#080810', backgroundImage: 'radial-gradient(ellipse 80% 40% at 50% 0%, rgb(var(--accent-rgb) / 0.07) 0%, transparent 70%), radial-gradient(circle, rgb(var(--white-rgb) / 0.03) 1px, transparent 1px)', backgroundSize: '100% 100%, 28px 28px' }
-    : { background: 'var(--bg)', backgroundImage: 'radial-gradient(circle, rgb(var(--white-rgb) / 0.04) 1px, transparent 1px)', backgroundSize: '28px 28px' };
 
   const navItems: { id: Tab; icon: React.ElementType; label: string; ccOnly?: boolean }[] = [
     { id: 'overview', icon: LayoutDashboard, label: 'Overview' },
@@ -998,53 +991,38 @@ export default function Dashboard() {
     { id: 'settings', icon: Settings, label: 'Settings' },
   ].filter(item => !item.ccOnly || isCloutClubMember);
 
+  const activeLabel = navItems.find((n) => n.id === tab)?.label ?? 'Overview';
+
   return (
-    <div className="min-h-screen flex" style={mainBg}>
+    <div className={`app-shell min-h-screen flex ${isCloutClub ? 'is-premium' : ''}`}>
       {/* Sidebar */}
-      <aside className="hidden md:flex flex-col w-60 flex-shrink-0 border-r border-white/[0.06]"
-        style={{ background: sidebarBg }}>
-        <div className="px-5 pt-6 pb-4">
+      <aside className="app-rail hidden md:flex flex-col w-60 flex-shrink-0">
+        <div className="app-rail-brand px-5 pt-6 pb-4">
           <Link to="/"><img src="/logo.png" alt="CloutKart" className="h-8 w-auto object-contain opacity-80" /></Link>
           {isCloutClub && (
-            <div className="mt-3 flex items-center gap-1.5">
-              <Sparkles size={10} className="text-accent" />
-              <span className="text-[10px] font-bold uppercase tracking-widest"
-                style={{ background: 'linear-gradient(135deg,var(--accent),var(--accent-ink),var(--accent-ink))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                Clout Club
-              </span>
+            <div className="mt-3">
+              <span className="premium-seal"><Sparkles size={10} /> Clout Club</span>
             </div>
           )}
         </div>
-        <div className="h-px mx-5 bg-white/[0.06]" />
         <nav className="flex-1 px-3 pt-4 space-y-1">
           {navItems.map(({ id, icon: Icon, label }) => {
             const active = tab === id;
             const isMsg = id === 'messages';
             const isLocked = isMsg && subscriptionExpired;
             return (
-              <button key={id} onClick={() => setTab(id)}
-                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 text-left"
-                style={{
-                  background: active ? (isCloutClub ? 'rgb(var(--accent-rgb) / 0.1)' : 'rgb(var(--accent-rgb) / 0.08)') : 'transparent',
-                  borderLeft: active ? `2px solid ${isCloutClub ? 'var(--accent-ink)' : 'var(--accent)'}` : '2px solid transparent',
-                }}>
+              <button key={id} onClick={() => setTab(id)} className={`app-rail-item ${active ? 'is-active' : ''}`}>
                 <div className="relative">
-                  <Icon size={16} style={{ color: isLocked ? 'var(--ink-dim)' : active ? (isCloutClub ? 'var(--accent-ink)' : 'var(--accent)') : 'var(--ink-muted)' }} />
+                  <Icon size={16} className="app-rail-ico" style={isLocked ? { color: 'var(--ink-dim)' } : undefined} />
                   {isMsg && !isLocked && unreadCount > 0 && (
                     <span className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 rounded-full text-[8px] font-bold flex items-center justify-center"
-                      style={{ background: 'var(--accent)', color: '#fff' }}>{unreadCount}</span>
+                      style={{ background: 'var(--accent)', color: 'var(--accent-contrast)' }}>{unreadCount}</span>
                   )}
                   {isLocked && (
                     <Lock size={9} className="absolute -top-1 -right-1 text-ink-dim" />
                   )}
                 </div>
-                <span style={isLocked
-                  ? { color: 'var(--ink-dim)' }
-                  : active
-                    ? { background: isCloutClub ? 'linear-gradient(135deg,var(--accent-ink),var(--accent-ink))' : 'linear-gradient(135deg,var(--accent),var(--accent),var(--accent))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }
-                    : { color: 'var(--ink-body)' }}>
-                  {label}
-                </span>
+                <span style={isLocked ? { color: 'var(--ink-dim)' } : undefined}>{label}</span>
               </button>
             );
           })}
@@ -1052,45 +1030,43 @@ export default function Dashboard() {
 
         {/* CC member badge */}
         {isCloutClub && (
-          <div className="mx-4 mb-4 rounded-xl p-3 relative overflow-hidden"
-            style={{ background: 'linear-gradient(135deg, rgb(var(--accent-rgb) / 0.15), rgb(var(--accent-rgb) / 0.1))', border: '1px solid rgb(var(--accent-rgb) / 0.3)' }}>
-            <div className="absolute top-0 right-0 w-12 h-12 rounded-full opacity-20"
-              style={{ background: 'radial-gradient(circle, var(--accent), transparent)', transform: 'translate(30%, -30%)' }} />
+          <div className="panel-frame glass-card mx-4 mb-4 rounded-xl p-3">
+            <span className="pf-cross tl" /><span className="pf-cross br" />
             <div className="flex items-center gap-2 mb-1">
               <Star size={11} className="text-accent-ink" fill="currentColor" />
-              <span className="text-[10px] font-bold uppercase tracking-wider"
-                style={{ background: 'linear-gradient(135deg,var(--accent-ink),var(--accent-ink))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                Clout Club
-              </span>
+              <span className="mono-label" style={{ color: 'var(--accent-ink)' }}>Clout Club</span>
             </div>
             <p className="text-ink-muted text-[11px]">Active member</p>
           </div>
         )}
 
-        <div className="px-5 pb-6 pt-4 border-t border-white/[0.06]">
-          <p className="text-ink-dim text-xs mb-3 truncate">{user?.email}</p>
-          <button onClick={handleSignOut} className="flex items-center gap-2 text-ink-muted hover:text-white transition-colors text-sm">
+        <div className="px-5 pb-6 pt-4" style={{ borderTop: '1px solid var(--border)' }}>
+          <p className="text-ink-dim text-xs mb-3 truncate font-mono">{user?.email}</p>
+          <button onClick={handleSignOut} className="flex items-center gap-2 text-ink-muted hover:text-ink transition-colors text-sm">
             <LogOut size={14} /> Log Out
           </button>
         </div>
       </aside>
 
       <main className="flex-1 p-4 sm:p-6 md:p-10 overflow-y-auto">
-        {/* Notification bell — desktop top right */}
-        <div className="hidden md:flex justify-end mb-6">
-          {user && <NotificationBell isAdmin={false} userId={user.id} />}
+        {/* Telemetry top bar — desktop */}
+        <div className="app-topbar hidden md:flex">
+          <span className="app-crumb">Dashboard · <b>{activeLabel}</b></span>
+          <div className="flex items-center gap-3">
+            <ThemeToggle />
+            {user && <NotificationBell isAdmin={false} userId={user.id} />}
+          </div>
         </div>
         {/* Mobile nav */}
         <div className="md:hidden flex items-center gap-2 mb-6">
           <div className="flex items-center gap-2 overflow-x-auto pb-1 flex-1">
             {navItems.map(({ id, icon: Icon, label }) => (
-              <button key={id} onClick={() => setTab(id)}
-                className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium whitespace-nowrap flex-shrink-0 transition-all"
-                style={{ background: tab === id ? 'rgb(var(--accent-rgb) / 0.12)' : 'rgb(var(--white-rgb) / 0.04)', border: tab === id ? '1px solid rgb(var(--accent-rgb) / 0.3)' : '1px solid rgb(var(--white-rgb) / 0.08)', color: tab === id ? 'var(--accent)' : 'var(--ink-muted)' }}>
+              <button key={id} onClick={() => setTab(id)} className={`app-navpill ${tab === id ? 'is-active' : ''}`}>
                 <Icon size={13} />{label}
               </button>
             ))}
           </div>
+          <ThemeToggle className="!h-9 !w-9 flex-shrink-0" />
           {user && <div className="flex-shrink-0"><NotificationBell isAdmin={false} userId={user.id} /></div>}
         </div>
 
@@ -1324,8 +1300,8 @@ export default function Dashboard() {
                               <img src={img.preview} alt="" className="w-16 h-16 rounded-xl object-cover border border-white/10" />
                               <button type="button" onClick={() => removeRefImage(idx)}
                                 className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full flex items-center justify-center"
-                                style={{ background: 'rgba(0,0,0,0.8)', border: '1px solid rgb(var(--white-rgb) / 0.2)' }}>
-                                <X size={10} className="text-white" />
+                                style={{ background: 'var(--ink)', border: '1px solid var(--border)' }}>
+                                <X size={10} style={{ color: 'var(--bg)' }} />
                               </button>
                             </div>
                           ))}
@@ -1557,7 +1533,7 @@ export default function Dashboard() {
                         )}
                         {allUrls.length > 1 && (
                           <span className="absolute top-2 right-2 text-[10px] font-bold px-2 py-0.5 rounded-full"
-                            style={{ background: 'rgba(0,0,0,0.65)', color: 'var(--ink-body)', border: '1px solid rgb(var(--white-rgb) / 0.15)' }}>
+                            style={{ background: 'rgba(0,0,0,0.65)', color: '#fff', border: '1px solid rgba(255,255,255,0.15)' }}>
                             +{allUrls.length - 1} more
                           </span>
                         )}

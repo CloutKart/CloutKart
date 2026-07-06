@@ -1206,3 +1206,148 @@ a.gallery-plaque-handle:hover { color: var(--accent-ink); text-decoration: under
   .gallery-stage .gallery-plate { transition: none !important; }
   .gallery-plaque { animation: none !important; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   The "Instrument" workspace kit — Dashboard + Admin. Scoped under `.app-shell`
+   so the landing is untouched. Turns the old glassy/gradient/glow SaaS chrome
+   into the landing's crisp, theme-aware plate + telemetry language.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.app-shell {
+  min-height: 100vh;
+  background: var(--bg);
+  background-image: radial-gradient(circle, var(--dot-color) 1px, transparent 1px);
+  background-size: 28px 28px;
+  color: var(--ink-body);
+}
+
+/* Every frosted card in the app becomes a crisp bordered plate (theme-aware). */
+.app-shell .glass-card {
+  background: var(--bg-elev) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: var(--shadow-card);
+}
+.app-shell .glass-card::after,
+.app-shell .glass-card::before { display: none !important; }
+
+/* ── The rail (sidebar) ─────────────────────────────────────────────────── */
+.app-rail {
+  background: var(--bg-elev);
+  border-right: 1px solid var(--border);
+}
+.app-rail-brand { border-bottom: 1px solid var(--border); }
+.app-rail-item {
+  position: relative;
+  display: flex; align-items: center; gap: 12px;
+  width: 100%; padding: 9px 12px 9px 14px;
+  border-radius: 10px;
+  font-size: 14px; font-weight: 500; text-align: left;
+  color: var(--ink-body);
+  border-left: 2px solid transparent;
+  transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+}
+.app-rail-item:hover { background: var(--surface); color: var(--ink); }
+.app-rail-item.is-active {
+  background: var(--accent-soft);
+  border-left-color: var(--accent);
+  color: var(--accent-ink);
+}
+.app-rail-item.is-active .app-rail-ico { color: var(--accent); }
+.app-rail-ico { color: var(--ink-muted); flex-shrink: 0; }
+/* registration-tick marker on the active item */
+.app-rail-item.is-active::after {
+  content: ""; position: absolute; right: 10px; top: 50%;
+  width: 5px; height: 5px; margin-top: -2.5px;
+  background:
+    linear-gradient(var(--accent), var(--accent)) center / 1px 100% no-repeat,
+    linear-gradient(var(--accent), var(--accent)) center / 100% 1px no-repeat;
+  opacity: 0.7;
+}
+
+/* ── The telemetry top bar ──────────────────────────────────────────────── */
+/* NB: display is left to the `hidden md:flex` utilities on the element so it can
+   be hidden on mobile; this class only supplies the flex layout + framing. */
+.app-topbar {
+  align-items: center; justify-content: space-between; gap: 16px;
+  padding-bottom: 16px; margin-bottom: 24px;
+  border-bottom: 1px solid var(--border);
+}
+.app-crumb {
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-size: 11px; letter-spacing: 0.24em; text-transform: uppercase;
+  color: var(--frame-label);
+}
+.app-crumb b { color: var(--ink); font-weight: 500; }
+
+/* mono section label used across panels */
+.mono-label {
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-size: 10.5px; letter-spacing: 0.22em; text-transform: uppercase;
+  color: var(--frame-label);
+}
+
+/* ── Registration-crosshair framed panel (for hero cards) ───────────────── */
+.panel-frame { position: relative; }
+.panel-frame > .pf-cross {
+  position: absolute; width: 12px; height: 12px; pointer-events: none; z-index: 2;
+  background:
+    linear-gradient(var(--frame-mark), var(--frame-mark)) center / 1px 100% no-repeat,
+    linear-gradient(var(--frame-mark), var(--frame-mark)) center / 100% 1px no-repeat;
+}
+.panel-frame > .pf-cross.tl { top: -6px; left: -6px; }
+.panel-frame > .pf-cross.tr { top: -6px; right: -6px; }
+.panel-frame > .pf-cross.bl { bottom: -6px; left: -6px; }
+.panel-frame > .pf-cross.br { bottom: -6px; right: -6px; }
+
+/* ── Instrument stat readout ────────────────────────────────────────────── */
+.stat-readout { position: relative; }
+.stat-readout .sr-value {
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-weight: 500; letter-spacing: -0.01em; color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  font-size: clamp(1.6rem, 3.4vw, 2.4rem); line-height: 1;
+}
+.stat-readout .sr-label {
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-size: 10.5px; letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--ink-dim); margin-top: 8px;
+}
+.stat-readout .sr-rule { height: 1px; width: 26px; background: var(--frame-mark); margin: 10px 0; }
+
+/* ── Crisp token inputs ─────────────────────────────────────────────────── */
+.app-shell .field, .app-field {
+  width: 100%; border-radius: 10px; padding: 12px 14px;
+  font-size: 14px; color: var(--ink);
+  background: rgb(var(--bg-rgb)); border: 1px solid var(--border);
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+}
+.app-shell .field::placeholder, .app-field::placeholder { color: var(--ink-dim); }
+.app-shell .field:focus, .app-field:focus {
+  outline: none; border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgb(var(--accent-rgb) / 0.16); background: var(--bg-elev);
+}
+
+/* ── Clout Club / Founder — distinct (restyled) premium treatment ───────── */
+.app-shell.is-premium .app-rail { border-right-color: var(--accent-border); }
+.app-shell.is-premium .app-rail-brand { box-shadow: 0 1px 0 rgb(var(--accent-rgb) / 0.35); }
+.premium-seal {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 10px; border-radius: 9999px;
+  border: 1px solid var(--accent-border);
+  background: var(--accent-soft);
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--accent-ink);
+}
+
+/* mobile app nav pill (theme-aware) */
+.app-navpill {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 12px; border-radius: 10px;
+  font-size: 12px; font-weight: 500; white-space: nowrap; flex-shrink: 0;
+  background: var(--surface); border: 1px solid var(--border); color: var(--ink-muted);
+  transition: all 0.18s ease;
+}
+.app-navpill.is-active { background: var(--accent-soft); border-color: var(--accent-border); color: var(--accent-ink); }

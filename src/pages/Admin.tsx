@@ -12,6 +12,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { NotificationBell } from '../components/NotificationBell';
+import ThemeToggle from '../components/ThemeToggle';
 import { usePushNotifications } from '../hooks/usePushNotifications';
 
 type Tab = 'overview' | 'requests' | 'payments' | 'users' | 'portfolio' | 'cloutclub' | 'messages' | 'settings' | 'leads';
@@ -1814,66 +1815,62 @@ export default function Admin() {
     { id: 'settings',   icon: Settings,        label: 'Settings'          },
   ];
 
+  const activeLabel = navItems.find((n) => n.id === tab)?.label ?? 'Overview';
+
   return (
-    <div className="min-h-screen flex"
-      style={{ background: '#060610', backgroundImage: 'radial-gradient(ellipse 100% 50% at 50% 0%, rgb(var(--accent-rgb) / 0.06) 0%, transparent 60%), radial-gradient(circle, rgb(var(--white-rgb) / 0.025) 1px, transparent 1px)', backgroundSize: '100% 100%, 28px 28px' }}>
+    <div className="app-shell is-premium min-h-screen flex">
 
       {/* Sidebar */}
-      <aside className="hidden md:flex flex-col w-60 flex-shrink-0 border-r"
-        style={{ background: 'linear-gradient(180deg, rgba(8,8,22,0.98) 0%, rgba(6,6,16,0.98) 100%)', borderColor: 'rgb(var(--accent-rgb) / 0.12)' }}>
-        <div className="px-5 pt-6 pb-4">
+      <aside className="app-rail hidden md:flex flex-col w-60 flex-shrink-0">
+        <div className="app-rail-brand px-5 pt-6 pb-4">
           <Link to="/"><img src="/logo.png" alt="CloutKart" className="h-8 w-auto object-contain opacity-80" /></Link>
-          <div className="mt-2 flex items-center gap-1.5">
-            <div className="w-1.5 h-1.5 rounded-full bg-accent" />
-            <p className="text-[10px] text-accent-ink font-mono uppercase tracking-wider">Founder Panel</p>
+          <div className="mt-3">
+            <span className="premium-seal"><Star size={9} fill="currentColor" /> Founder</span>
           </div>
         </div>
-        <div className="h-px mx-5" style={{ background: 'rgb(var(--accent-rgb) / 0.15)' }} />
         <nav className="flex-1 px-3 pt-4 space-y-0.5 overflow-y-auto">
           {navItems.map(({ id, icon: Icon, label }) => {
             const active = tab === id;
-            const isCC = id === 'cloutclub';
             const isMsg = id === 'messages';
             return (
-              <button key={id} onClick={() => setTab(id)}
-                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-left"
-                style={{ background: active ? (isCC ? 'rgb(var(--accent-rgb) / 0.1)' : 'rgb(var(--accent-rgb) / 0.1)') : 'transparent', borderLeft: active ? `2px solid ${isCC ? 'var(--accent)' : 'var(--accent-ink)'}` : '2px solid transparent' }}>
+              <button key={id} onClick={() => setTab(id)} className={`app-rail-item ${active ? 'is-active' : ''}`}>
                 <div className="relative">
-                  <Icon size={16} style={{ color: active ? (isCC ? 'var(--accent)' : 'var(--accent-ink)') : 'var(--ink-muted)' }} />
+                  <Icon size={16} className="app-rail-ico" />
                   {isMsg && totalUnread > 0 && (
                     <span className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 rounded-full text-[8px] font-bold flex items-center justify-center"
                       style={{ background: '#EF4444', color: '#fff' }}>{totalUnread > 9 ? '9+' : totalUnread}</span>
                   )}
                 </div>
-                <span style={active ? { background: isCC ? 'linear-gradient(135deg,var(--accent),var(--accent))' : 'linear-gradient(135deg,var(--accent-ink),var(--accent),var(--accent))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' } : { color: 'var(--ink-body)' }}>
-                  {label}
-                </span>
+                <span>{label}</span>
               </button>
             );
           })}
         </nav>
-        <div className="px-5 pb-6 pt-4 border-t" style={{ borderColor: 'rgb(var(--accent-rgb) / 0.12)' }}>
-          <p className="text-ink-dim text-xs mb-3 truncate">{user?.email}</p>
-          <button onClick={handleSignOut} className="flex items-center gap-2 text-ink-muted hover:text-white transition-colors text-sm"><LogOut size={14} /> Log Out</button>
+        <div className="px-5 pb-6 pt-4" style={{ borderTop: '1px solid var(--border)' }}>
+          <p className="text-ink-dim text-xs mb-3 truncate font-mono">{user?.email}</p>
+          <button onClick={handleSignOut} className="flex items-center gap-2 text-ink-muted hover:text-ink transition-colors text-sm"><LogOut size={14} /> Log Out</button>
         </div>
       </aside>
 
       <main className="flex-1 p-4 sm:p-6 md:p-10 overflow-y-auto">
-        {/* Notification bell — desktop top right */}
-        <div className="hidden md:flex justify-end mb-6">
-          {user && <NotificationBell isAdmin={true} userId={user.id} />}
+        {/* Telemetry top bar — desktop */}
+        <div className="app-topbar hidden md:flex">
+          <span className="app-crumb">Founder · <b>{activeLabel}</b></span>
+          <div className="flex items-center gap-3">
+            <ThemeToggle />
+            {user && <NotificationBell isAdmin={true} userId={user.id} />}
+          </div>
         </div>
         {/* Mobile nav */}
         <div className="md:hidden flex items-center gap-2 mb-6">
           <div className="flex items-center gap-2 overflow-x-auto pb-1 flex-1">
             {navItems.map(({ id, icon: Icon, label }) => (
-              <button key={id} onClick={() => setTab(id)}
-                className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium whitespace-nowrap flex-shrink-0 transition-all"
-                style={{ background: tab === id ? 'rgb(var(--accent-rgb) / 0.12)' : 'rgb(var(--white-rgb) / 0.04)', border: tab === id ? '1px solid rgb(var(--accent-rgb) / 0.3)' : '1px solid rgb(var(--white-rgb) / 0.08)', color: tab === id ? 'var(--accent-ink)' : 'var(--ink-muted)' }}>
+              <button key={id} onClick={() => setTab(id)} className={`app-navpill ${tab === id ? 'is-active' : ''}`}>
                 <Icon size={13} />{label}
               </button>
             ))}
           </div>
+          <ThemeToggle className="!h-9 !w-9 flex-shrink-0" />
           {user && <div className="flex-shrink-0"><NotificationBell isAdmin={true} userId={user.id} /></div>}
         </div>
 
@@ -1881,25 +1878,19 @@ export default function Admin() {
         {tab === 'overview' && (
           <div className="space-y-6">
             {/* Founder welcome */}
-            <div className="rounded-2xl p-6 relative overflow-hidden"
-              style={{ background: 'linear-gradient(135deg, rgba(8,8,28,0.95), rgba(14,10,35,0.9))', border: '1px solid rgb(var(--accent-rgb) / 0.3)' }}>
-              <div className="absolute inset-0 pointer-events-none">
-                <div className="absolute top-0 right-0 w-48 h-48 opacity-15"
-                  style={{ background: 'radial-gradient(circle, var(--accent), transparent)', transform: 'translate(30%, -30%)' }} />
-                <div className="absolute bottom-0 left-20 w-32 h-32 opacity-10"
-                  style={{ background: 'radial-gradient(circle, var(--accent), transparent)', transform: 'translateY(40%)' }} />
-              </div>
+            <div className="panel-frame glass-card p-6"
+              style={{ borderColor: 'var(--accent-border)', borderLeftWidth: '2px', borderLeftColor: 'var(--accent)' }}>
+              <span className="pf-cross tl" /><span className="pf-cross br" />
               <div className="relative flex items-start justify-between">
                 <div>
                   <div className="flex items-center gap-2 mb-2">
                     <Star size={12} className="text-accent-ink" fill="currentColor" />
-                    <span className="text-[10px] font-bold uppercase tracking-widest"
-                      style={{ background: 'linear-gradient(135deg,var(--accent-ink),var(--accent))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                    <span className="mono-label" style={{ color: 'var(--accent-ink)' }}>
                       Founder Dashboard
                     </span>
                   </div>
                   <h2 className="font-heading font-bold text-white text-2xl mb-1">{getGreeting(adminName)}</h2>
-                  <p className="text-ink-muted text-sm" style={{ color: '#94A3B8' }}>Here's your business at a glance.</p>
+                  <p className="text-ink-muted text-sm">Here's your business at a glance.</p>
                 </div>
                 <div className="flex-shrink-0 w-12 h-12 rounded-2xl flex items-center justify-center"
                   style={{ background: 'rgb(var(--accent-rgb) / 0.15)', border: '1px solid rgb(var(--accent-rgb) / 0.3)' }}>
@@ -1919,12 +1910,10 @@ export default function Admin() {
                 { label: 'Total Revenue', value: formatCurrency(overviewStats.totalRevenue), color: 'var(--success)' },
                 { label: 'Clout Club Rate', value: `${conversionRate}%`, color: 'var(--accent)' },
               ].map(s => (
-                <div key={s.label} className="glass-card rounded-2xl p-5 relative overflow-hidden"
-                  style={{ border: `1px solid ${s.color}22` }}>
-                  <div className="absolute top-0 right-0 w-16 h-16 opacity-10 rounded-full"
-                    style={{ background: `radial-gradient(circle, ${s.color}, transparent)`, transform: 'translate(30%, -30%)' }} />
-                  <p className="text-ink-muted text-xs font-medium mb-2">{s.label}</p>
-                  <p className="font-mono font-bold text-xl" style={{ color: s.color }}>{s.value}</p>
+                <div key={s.label} className="glass-card rounded-2xl p-5 stat-readout">
+                  <p className="sr-label">{s.label}</p>
+                  <span className="sr-rule" style={{ background: s.color }} />
+                  <p className="sr-value" style={{ color: s.color, fontSize: '1.7rem' }}>{s.value}</p>
                 </div>
               ))}
             </div>
