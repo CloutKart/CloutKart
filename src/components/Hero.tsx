@@ -103,6 +103,46 @@ export default function Hero({ onSignupOpen }: Props) {
     return () => { io.disconnect(); if (raf) cancelAnimationFrame(raf); };
   }, []);
 
+  // Vine physics — a damped spring driven by the HAND's velocity. The hand's x is read from
+  // the live --hero-a (scroll on desktop, autoplay on mobile); its velocity leans a spring that
+  // overshoots + settles, written to --vine-sway (unitless deg). The vine layer picks it up as a
+  // subtle sway pivoted at the wrist, so the botanicals move with momentum while the hand stays
+  // rigid. Runs only while the hero is on screen; disabled under reduced-motion.
+  useEffect(() => {
+    const hero = heroRef.current;
+    if (!hero) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return; // --vine-sway stays 0
+
+    const APPROACH = 52;                 // px — matches the CSS approach range
+    const GAIN = 0.018;                  // deg of lean per (px/s) of hand velocity
+    const MAX = 2.5;                     // deg cap on the lean target
+    const STIFF = 160, DAMP = 11;        // underdamped → a natural overshoot + settle
+
+    let sway = 0, swayVel = 0, prevX = NaN, last = 0, raf = 0, running = false;
+    const handX = () => {
+      const a = parseFloat(hero.style.getPropertyValue('--hero-a')) || 0;
+      return -APPROACH + Math.min(Math.max(a * 2.85, 0), 1) * APPROACH;
+    };
+    const frame = (ts: number) => {
+      let dt = (ts - last) / 1000; last = ts;
+      if (!(dt > 0)) dt = 0.016;
+      dt = Math.min(dt, 1 / 30);
+      const x = handX();
+      if (Number.isNaN(prevX)) prevX = x;
+      const vel = (x - prevX) / dt; prevX = x;
+      const targetLean = Math.max(-MAX, Math.min(MAX, vel * GAIN));
+      swayVel += (STIFF * (targetLean - sway) - DAMP * swayVel) * dt;
+      sway += swayVel * dt;
+      hero.style.setProperty('--vine-sway', sway.toFixed(3));
+      if (running) raf = requestAnimationFrame(frame);
+    };
+    const start = () => { if (!running) { running = true; last = performance.now(); prevX = NaN; raf = requestAnimationFrame(frame); } };
+    const stop = () => { running = false; if (raf) cancelAnimationFrame(raf); raf = 0; };
+    const io = new IntersectionObserver(([e]) => (e.isIntersecting ? start() : stop()), { threshold: 0 });
+    io.observe(hero);
+    return () => { io.disconnect(); stop(); };
+  }, []);
+
   // Reveal the headline lines once the hero is in view.
   useEffect(() => {
     const observer = new IntersectionObserver(

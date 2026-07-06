@@ -158,6 +158,7 @@
   .hero-static {
     --hero-p: 0;  /* scroll parallax (inertially smoothed in JS) */
     --hero-a: 0;  /* climax progress — autoplays 0→1 once when the hero is in view */
+    --vine-sway: 0; /* spring-driven vine lean (unitless deg), written by Hero.tsx */
     min-height: 100svh;
     background: transparent;
   }
@@ -225,7 +226,17 @@
   /* Hands APPROACH: a Creation-of-Adam gap at rest that closes as the climax plays
      (--hero-a, autoplayed once over ~2s on view — so the full "coming to life" is
      never skipped by a fast scroll). Group (static hand + vines) closes; robot mirrors. */
-  .hero-human-group { transform: translateX(calc(-52px + clamp(0, var(--hero-a) * 2.85, 1) * 52px)); will-change: transform; }
+  /* The organic hand carries BOTH the approach AND the spring sway. The vines are baked
+     into the hand art, so hand + vines sway as one piece (no ghosting); pivoting near the
+     fingertip keeps the touch point steady while the arm/vines swing and settle. The robot
+     stays rigid — machine still, life moving. --vine-sway is the spring output (Hero.tsx). */
+  .hero-human-group {
+    transform:
+      translateX(calc(-52px + clamp(0, var(--hero-a) * 2.85, 1) * 52px))
+      rotate(calc(var(--vine-sway, 0) * 0.5deg));
+    transform-origin: var(--vine-pivot, 48% 46%);
+    will-change: transform;
+  }
   .hero-hand-robot  { transform: translateX(calc(52px - clamp(0, var(--hero-a) * 2.85, 1) * 52px)); }
 
   /* Only the BOTANICALS bloom. The colored vines/flowers layer (transparent over the
