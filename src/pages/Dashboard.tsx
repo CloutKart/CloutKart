@@ -708,6 +708,18 @@ export default function Dashboard() {
     loadProfile();
   }, [user, loadProfile]);
 
+  // DEV-only: preview premium/expired states without a live session (?cc, ?expired).
+  // Tree-shaken from prod (import.meta.env.DEV is statically false).
+  useEffect(() => {
+    if (!import.meta.env.DEV || user) return;
+    const q = new URLSearchParams(window.location.search);
+    if (q.has('cc') || q.has('expired')) {
+      const days = q.has('expired') ? -2 : 40;
+      setProfile((p) => ({ ...p, plan: 'clout_club', clout_club_price: 149900, subscription_expires_at: new Date(Date.now() + days * 864e5).toISOString() }));
+      setLoadingRequest(false);
+    }
+  }, [user]);
+
   // Load messages when Messages tab opens
   useEffect(() => {
     if (tab !== 'messages' || !user) return;
@@ -1115,28 +1127,17 @@ export default function Dashboard() {
             )}
             {/* Welcome card — CC variant */}
             {isCloutClub ? (
-              <div className="rounded-2xl p-6 relative overflow-hidden"
-                style={{ background: 'linear-gradient(135deg, rgba(22,8,45,0.9), rgba(15,5,30,0.9))', border: '1px solid rgb(var(--accent-rgb) / 0.35)' }}>
-                <div className="absolute inset-0 pointer-events-none">
-                  <div className="absolute top-0 right-0 w-40 h-40 opacity-20"
-                    style={{ background: 'radial-gradient(circle, var(--accent), transparent)', transform: 'translate(30%, -30%)' }} />
-                  <div className="absolute bottom-0 left-0 w-24 h-24 opacity-10"
-                    style={{ background: 'radial-gradient(circle, var(--accent), transparent)', transform: 'translate(-30%, 30%)' }} />
-                </div>
-                <div className="relative flex items-start justify-between">
+              <div className="panel-frame glass-card rounded-2xl p-6"
+                style={{ borderColor: 'var(--accent-border)', borderLeftWidth: '2px', borderLeftColor: 'var(--accent)' }}>
+                <span className="pf-cross tl" /><span className="pf-cross br" />
+                <div className="relative flex items-start justify-between gap-4">
                   <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <Sparkles size={14} className="text-accent-ink" />
-                      <span className="text-xs font-bold uppercase tracking-widest"
-                        style={{ background: 'linear-gradient(135deg,var(--accent-ink),var(--accent-ink))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                        Clout Club Member
-                      </span>
-                    </div>
-                    <h2 className="font-heading font-bold text-white text-2xl mb-1">Welcome back, {userName}</h2>
-                    <p className="text-accent-ink text-sm opacity-80">Your campaigns are in motion.</p>
+                    <span className="premium-seal"><Sparkles size={11} /> Clout Club Member</span>
+                    <h2 className="font-heading font-bold text-white text-2xl mb-1 mt-3">Welcome back, {userName}</h2>
+                    <p className="text-ink-muted text-sm">Your campaigns are in motion.</p>
                   </div>
                   <div className="flex-shrink-0 w-12 h-12 rounded-2xl flex items-center justify-center"
-                    style={{ background: 'rgb(var(--accent-rgb) / 0.2)', border: '1px solid rgb(var(--accent-rgb) / 0.4)' }}>
+                    style={{ background: 'rgb(var(--accent-rgb) / 0.15)', border: '1px solid rgb(var(--accent-rgb) / 0.3)' }}>
                     <Zap size={20} className="text-accent-ink" />
                   </div>
                 </div>

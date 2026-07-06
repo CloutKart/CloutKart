@@ -1236,7 +1236,15 @@ a.gallery-plaque-handle:hover { color: var(--accent-ink); text-decoration: under
 .app-rail {
   background: var(--bg-elev);
   border-right: 1px solid var(--border);
+  /* Pin the rail to the viewport so the footer (log out) is always reachable,
+     no matter how tall the active tab's content is. */
+  position: sticky;
+  top: 0;
+  height: 100dvh;
+  align-self: flex-start;
 }
+/* the nav list scrolls internally on short viewports; footer stays pinned */
+.app-rail > nav { min-height: 0; overflow-y: auto; }
 .app-rail-brand { border-bottom: 1px solid var(--border); }
 .app-rail-item {
   position: relative;
