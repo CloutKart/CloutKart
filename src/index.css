@@ -1020,3 +1020,189 @@ html[data-theme-transition] .hero-fingertip-shimmer {
 @media (max-width: 640px) {
   .hero-fingertip-shimmer { top: 45%; width: 26vw; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Portfolio — "The Gallery Corridor" (3D coverflow of engraved plates).
+   Desktop = perspective corridor; mobile = scroll-snap carousel. Frames reuse
+   the --frame-* / --accent instrument vocabulary from the hero telemetry.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.gallery-corridor {
+  position: relative;
+  height: clamp(380px, 50vw, 520px);
+  isolation: isolate;
+  overflow: hidden;
+}
+
+/* corridor atmosphere */
+.gallery-vignette {
+  position: absolute; inset: -1px; z-index: 0; pointer-events: none;
+  background: radial-gradient(ellipse 72% 92% at 50% 46%, transparent 38%, var(--bg) 90%);
+}
+.gallery-guides {
+  position: absolute; inset: 0; z-index: 0; width: 100%; height: 100%;
+  pointer-events: none; opacity: 0.5;
+}
+.gallery-guides line { stroke: var(--frame-line); stroke-width: 0.15; vector-effect: non-scaling-stroke; }
+.gallery-mote {
+  position: absolute; width: 3px; height: 3px; border-radius: 50%; z-index: 1;
+  background: radial-gradient(circle, rgba(237,233,254,0.9), rgba(167,139,250,0.35) 60%, transparent);
+  box-shadow: 0 0 6px rgba(167,139,250,0.45);
+  opacity: 0; pointer-events: none; will-change: transform, opacity;
+}
+[data-theme="light"] .gallery-mote {
+  background: radial-gradient(circle, rgba(109,40,217,0.55), rgba(109,40,217,0.2) 60%, transparent);
+  box-shadow: 0 0 5px rgba(109,40,217,0.25);
+}
+.gallery-mote.m1 { left: 18%; bottom: 14%; animation: moteDrift 9s ease-in-out infinite; }
+.gallery-mote.m2 { left: 34%; bottom: 22%; animation: moteDrift 11s ease-in-out 1.4s infinite; }
+.gallery-mote.m3 { left: 62%; bottom: 12%; animation: moteDrift 8.5s ease-in-out 0.6s infinite; }
+.gallery-mote.m4 { left: 78%; bottom: 26%; animation: moteDrift 12s ease-in-out 2.1s infinite; }
+.gallery-mote.m5 { left: 48%; bottom: 8%;  animation: moteDrift 10s ease-in-out 3.2s infinite; }
+.gallery-mote.m6 { left: 88%; bottom: 18%; animation: moteDrift 9.5s ease-in-out 1.9s infinite; }
+@keyframes moteDrift {
+  0%   { opacity: 0; transform: translateY(0) translateX(0); }
+  20%  { opacity: 0.8; }
+  80%  { opacity: 0.5; }
+  100% { opacity: 0; transform: translateY(-120px) translateX(14px); }
+}
+
+/* the 3D stage */
+.gallery-stage {
+  position: absolute; inset: 0; z-index: 2;
+  perspective: 1400px;
+  transform-style: preserve-3d;
+  touch-action: pan-y;
+}
+.gallery-spotlight {
+  position: absolute; left: 50%; top: 46%; z-index: 1;
+  width: min(46vw, 560px); height: min(46vw, 560px);
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle, rgb(var(--accent-rgb) / 0.18) 0%, rgb(var(--accent-rgb) / 0.06) 40%, transparent 70%);
+  pointer-events: none;
+}
+
+/* one framed plate */
+.gallery-plate {
+  width: clamp(220px, 24vw, 320px);
+  cursor: pointer;
+  user-select: none;
+}
+.gallery-stage .gallery-plate {
+  position: absolute; left: 50%; top: 50%;
+  transform-origin: center center;
+  transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.5s ease, filter 0.5s ease;
+  will-change: transform, opacity;
+}
+.gallery-stage .gallery-plate.is-active { cursor: zoom-in; }
+
+.gallery-plate-inner {
+  position: relative;
+  padding: 12px;
+  background: var(--bg-elev);
+  border: 1px solid var(--frame-line);
+  box-shadow: 0 0 0 1px var(--frame-line), var(--shadow-card);
+  transition: box-shadow 0.4s ease;
+}
+.gallery-plate.is-active .gallery-plate-inner {
+  box-shadow: 0 0 0 1px rgb(var(--accent-rgb) / 0.45), var(--shadow-lift), 0 0 40px -6px rgb(var(--accent-rgb) / 0.28);
+}
+/* registration crosshairs at the plate corners (engraved instrument marks) */
+.plate-cross {
+  position: absolute; width: 12px; height: 12px; pointer-events: none;
+  background:
+    linear-gradient(var(--frame-mark), var(--frame-mark)) center / 1px 100% no-repeat,
+    linear-gradient(var(--frame-mark), var(--frame-mark)) center / 100% 1px no-repeat;
+}
+.plate-cross.tl { top: -6px; left: -6px; }
+.plate-cross.tr { top: -6px; right: -6px; }
+.plate-cross.bl { bottom: -6px; left: -6px; }
+.plate-cross.br { bottom: -6px; right: -6px; }
+
+.gallery-plate-art {
+  position: relative; overflow: hidden;
+  aspect-ratio: 4 / 5; background: #0a0a0a;
+}
+.gallery-plate-art img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.gallery-plate-fallback { width: 100%; height: 100%; background: linear-gradient(135deg, #1a1327, #0a0a0a); }
+.gallery-plate-view {
+  position: absolute; inset: 0; display: grid; place-items: center;
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-size: 12px; letter-spacing: 0.28em; text-transform: uppercase;
+  color: #fff; background: rgb(var(--accent-rgb) / 0.28); backdrop-filter: blur(2px);
+  opacity: 0; transition: opacity 0.25s ease;
+}
+.gallery-plate.is-active:hover .gallery-plate-view { opacity: 1; }
+
+/* engraved circular nav arrows */
+.gallery-arrow {
+  position: absolute; top: 46%; z-index: 20;
+  width: 44px; height: 44px; border-radius: 9999px;
+  display: grid; place-items: center;
+  transform: translateY(-50%);
+  background: var(--bg-elev); border: 1px solid var(--border); color: var(--ink-muted);
+  box-shadow: var(--shadow-card);
+  transition: color 0.2s ease, border-color 0.2s ease, transform 0.2s ease, opacity 0.2s ease;
+}
+.gallery-arrow.left { left: 2%; }
+.gallery-arrow.right { right: 2%; }
+.gallery-arrow:hover:not(:disabled) { color: var(--accent); border-color: var(--accent-border); transform: translateY(-50%) scale(1.08); }
+.gallery-arrow:disabled { opacity: 0.3; cursor: default; }
+
+/* the provenance plaque */
+.gallery-plaque {
+  text-align: center; margin-top: 26px;
+  animation: plaqueIn 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes plaqueIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.gallery-plaque-no {
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-size: 11px; letter-spacing: 0.34em; text-transform: uppercase;
+  color: var(--accent-ink);
+}
+.gallery-plaque-rule {
+  display: block; width: 34px; height: 1px; margin: 10px auto; background: var(--frame-mark);
+}
+.gallery-plaque-title {
+  font-family: 'Archivo Expanded', 'Hanken Grotesk', sans-serif;
+  font-weight: 700; color: var(--ink); letter-spacing: -0.01em;
+  font-size: clamp(1.15rem, 2.4vw, 1.7rem);
+}
+.gallery-plaque-meta {
+  display: flex; align-items: center; justify-content: center; gap: 14px;
+  flex-wrap: wrap; margin-top: 8px;
+}
+.gallery-plaque-handle {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 12.5px; color: var(--ink-muted);
+  transition: color 0.2s ease;
+}
+a.gallery-plaque-handle:hover { color: var(--accent-ink); text-decoration: underline; text-underline-offset: 3px; }
+.gallery-plaque-patina {
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-size: 11px; letter-spacing: 0.06em; color: var(--ink-dim);
+}
+
+/* position dots */
+.gallery-dots { display: flex; gap: 8px; justify-content: center; margin-top: 20px; }
+.gallery-dot {
+  width: 7px; height: 7px; border-radius: 9999px; padding: 0;
+  background: rgb(var(--white-rgb) / 0.28);
+  transition: width 0.25s ease, background 0.25s ease;
+}
+.gallery-dot.is-active { width: 20px; background: var(--accent); }
+
+/* mobile scroll-snap carousel */
+.gallery-mobile-track {
+  display: flex; gap: 16px; overflow-x: auto; scroll-snap-type: x mandatory;
+  padding: 8px 16px 16px; margin: 0 -16px;
+  -ms-overflow-style: none; scrollbar-width: none;
+}
+.gallery-mobile-track::-webkit-scrollbar { display: none; }
+.gallery-mobile-cell { flex: 0 0 74vw; scroll-snap-align: center; }
+.gallery-mobile-cell .gallery-plate { width: 100%; cursor: zoom-in; }
+
+@media (prefers-reduced-motion: reduce) {
+  .gallery-mote { animation: none !important; opacity: 0 !important; }
+  .gallery-stage .gallery-plate { transition: none !important; }
+  .gallery-plaque { animation: none !important; }
+}
