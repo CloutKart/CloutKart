@@ -233,7 +233,7 @@
   .hero-human-group {
     transform:
       translateX(calc(-52px + clamp(0, var(--hero-a) * 2.85, 1) * 52px))
-      rotate(calc(var(--vine-sway, 0) * 0.5deg));
+      rotate(calc(var(--vine-sway, 0) * 0.3deg));
     transform-origin: var(--vine-pivot, 48% 46%);
     will-change: transform;
   }
