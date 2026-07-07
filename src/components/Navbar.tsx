@@ -48,9 +48,17 @@ export default function Navbar({ onSignupOpen }: Props) {
   const fanItems: FanItem[] = [...navLinks, ctaItem];
 
   const AuthButtons = () => {
+    // The CTA is flush to the nav's right edge (self-stretch + md:pr-0). In the scrolled
+    // FLOATING state it's a pill (matches the rounded nav); in the top NOTCH state it docks
+    // into the square top-right corner (square TR, 20px BR matching the notch) instead of
+    // reading as a mismatched pill.
+    const ctaStyle: React.CSSProperties = {
+      borderRadius: scrolled ? '100px' : '14px 0px 20px 14px',
+      transition: 'transform 0.2s ease, box-shadow 0.25s ease, filter 0.2s ease, border-radius 480ms cubic-bezier(0.22,1,0.36,1)',
+    };
     if (!isLoggedIn) {
       return (
-        <button onClick={onSignupOpen} className="btn-primary text-sm px-6 self-stretch">
+        <button onClick={onSignupOpen} className="btn-primary text-sm px-6 self-stretch" style={ctaStyle}>
           Get Started
           <ArrowRight size={14} />
         </button>
@@ -58,7 +66,7 @@ export default function Navbar({ onSignupOpen }: Props) {
     }
     if (isAdmin) {
       return (
-        <button onClick={() => navigate('/admin')} className="btn-primary text-sm px-6 self-stretch">
+        <button onClick={() => navigate('/admin')} className="btn-primary text-sm px-6 self-stretch" style={ctaStyle}>
           <ShieldCheck size={14} />
           Admin Panel
           <ArrowRight size={14} />
@@ -66,7 +74,7 @@ export default function Navbar({ onSignupOpen }: Props) {
       );
     }
     return (
-      <button onClick={() => navigate('/dashboard')} className="btn-primary text-sm px-6 self-stretch">
+      <button onClick={() => navigate('/dashboard')} className="btn-primary text-sm px-6 self-stretch" style={ctaStyle}>
         <LayoutDashboard size={14} />
         Dashboard
         <ArrowRight size={14} />
