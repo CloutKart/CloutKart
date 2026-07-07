@@ -976,10 +976,6 @@ html[data-theme-transition] .hero-headline > span:nth-child(2) {
   45%      { text-shadow: 0 0 22px rgb(var(--accent-rgb) / 0.55); }
 }
 
-/* 4b · numbers second — the hero stats settle ~100ms AFTER the headline (hierarchy) */
-html[data-theme-transition] .hero-stats { animation: heroStatsSettle 620ms cubic-bezier(0.16, 1, 0.3, 1) 380ms both; }
-@keyframes heroStatsSettle { 0% { opacity: 0.3; } 100% { opacity: 1; } }
-
 /* 5 · vines bloom — botanicals gain saturation, the colour-matched glow swells */
 html[data-theme-transition] .hero-vines-glow {
   transition: opacity 500ms cubic-bezier(0.16, 1, 0.3, 1) 340ms;
