@@ -331,7 +331,8 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     min-height: 100vh;
-    transition: background-color 0.4s ease, color 0.4s ease;
+    /* soft-landing curve for the theme crossfade (gentler finish than ease-in-out) */
+    transition: background-color 0.5s cubic-bezier(0.16, 1, 0.3, 1), color 0.5s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -914,7 +915,7 @@ img { max-width: 100%; height: auto; }
 .theme-wipe-new { position: absolute; inset: 0; background-size: 28px 28px; }
 .theme-wipe-new {
   clip-path: circle(0% at var(--tx-x, 50%) var(--tx-y, 50%));
-  animation: themeWipeGrow 600ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  animation: themeWipeGrow 680ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
   will-change: clip-path;
 }
 @keyframes themeWipeGrow {
@@ -940,7 +941,7 @@ img { max-width: 100%; height: auto; }
 .theme-vignette {
   position: fixed; inset: 0; z-index: 0;
   pointer-events: none; opacity: 0;
-  transition: opacity 0.6s ease;
+  transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .theme-vignette-concept {
   background: radial-gradient(58% 55% at 30% 42%, rgb(var(--accent-rgb) / 0.06), transparent 70%);
@@ -965,7 +966,7 @@ html[data-theme-transition] .telemetry-frame {
 
 /* 4 · headline crossfade + accent "freshly-printed ink" glow */
 html[data-theme-transition] .hero-headline span {
-  transition: color 400ms ease 280ms;
+  transition: color 460ms cubic-bezier(0.16, 1, 0.3, 1) 280ms;
 }
 html[data-theme-transition] .hero-headline > span:nth-child(2) {
   animation: accentBloom 520ms ease 320ms;
@@ -975,9 +976,13 @@ html[data-theme-transition] .hero-headline > span:nth-child(2) {
   45%      { text-shadow: 0 0 22px rgb(var(--accent-rgb) / 0.55); }
 }
 
+/* 4b · numbers second — the hero stats settle ~100ms AFTER the headline (hierarchy) */
+html[data-theme-transition] .hero-stats { animation: heroStatsSettle 620ms cubic-bezier(0.16, 1, 0.3, 1) 380ms both; }
+@keyframes heroStatsSettle { 0% { opacity: 0.3; } 100% { opacity: 1; } }
+
 /* 5 · vines bloom — botanicals gain saturation, the colour-matched glow swells */
 html[data-theme-transition] .hero-vines-glow {
-  transition: opacity 450ms ease 340ms;
+  transition: opacity 500ms cubic-bezier(0.16, 1, 0.3, 1) 340ms;
   animation: vineGlowBloom 620ms ease 340ms;
 }
 @keyframes vineGlowBloom {
@@ -993,7 +998,7 @@ html[data-theme-transition] .hero-vines { animation: vineBloom 620ms ease 340ms;
 
 /* 6 · robot energy crossfade (contained in Concept → radiating violet in Execution) */
 html[data-theme-transition] .hero-hand-robot {
-  transition: filter 500ms ease 420ms;
+  transition: filter 560ms cubic-bezier(0.16, 1, 0.3, 1) 420ms;
   will-change: filter;
 }
 

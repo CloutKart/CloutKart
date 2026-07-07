@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { PenTool, Cog } from 'lucide-react';
+import { PenTool, Cpu } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 
 interface Props {
@@ -7,7 +7,7 @@ interface Props {
 }
 
 // The toggle is reframed as Concept ↔ Execution (Concept = light, Execution = dark).
-// PenTool = the idea/Concept; Cog = the machine/Execution. Refined line-glyphs, no emoji.
+// PenTool = the idea/Concept; Cpu = the machine/Execution. Refined line-glyphs, no emoji.
 export default function ThemeToggle({ className = '' }: Props) {
   const { theme, toggleTheme } = useTheme();
   const isDark = theme === 'dark';           // dark === Execution
@@ -40,7 +40,7 @@ export default function ThemeToggle({ className = '' }: Props) {
           isDark ? 'rotate-90 scale-0 opacity-0' : 'rotate-0 scale-100 opacity-100'
         }`}
       />
-      <Cog
+      <Cpu
         size={18}
         strokeWidth={1.7}
         className={`col-start-1 row-start-1 transition-all duration-300 ease-out ${
