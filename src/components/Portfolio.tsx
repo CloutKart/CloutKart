@@ -33,20 +33,30 @@ const DEV_WORKS: Work[] = [
   { id: 'd6', title: 'The Commission', thumbnail_url: '/og-image.webp', instagram_handle: '@cloutkart', instagram_link: 'https://instagram.com', image_count: 4, localImages: ['/og-image.webp', '/Luffy.png'] },
 ];
 
-/* ── One framed plate (engraved + violet, registration crosshairs) ──────────── */
+/* ── One framed plate — a recovered artifact: engraved violet frame, registration
+   crosshairs, a registrar's accession tag, and (active, fine-pointer) a loupe
+   detail crop that follows the cursor like leaning into a painting. ─────────── */
 function Plate({
   work,
+  index,
   active,
   onClick,
   className = '',
   style,
 }: {
   work: Work;
+  index: number;
   active: boolean;
   onClick: () => void;
   className?: string;
   style?: React.CSSProperties;
 }) {
+  const onArtMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!active || e.pointerType !== 'mouse') return;
+    const r = e.currentTarget.getBoundingClientRect();
+    e.currentTarget.style.setProperty('--lx', `${(((e.clientX - r.left) / r.width) * 100).toFixed(1)}%`);
+    e.currentTarget.style.setProperty('--ly', `${(((e.clientY - r.top) / r.height) * 100).toFixed(1)}%`);
+  };
   return (
     <div
       className={`gallery-plate ${active ? 'is-active' : ''} ${className}`}
@@ -61,11 +71,15 @@ function Plate({
         <span className="plate-cross tr" />
         <span className="plate-cross bl" />
         <span className="plate-cross br" />
-        <div className="gallery-plate-art" data-theme="dark">
+        <span className="accession">No. {String(index + 1).padStart(3, '0')} · 2045</span>
+        <div className="gallery-plate-art" data-theme="dark" onPointerMove={onArtMove}>
           {work.thumbnail_url ? (
             <img src={work.thumbnail_url} alt={work.title} loading="lazy" draggable={false} />
           ) : (
             <div className="gallery-plate-fallback" />
+          )}
+          {active && work.thumbnail_url && (
+            <div className="gallery-loupe" style={{ backgroundImage: `url(${work.thumbnail_url})` }} aria-hidden="true" />
           )}
           {active && <span className="gallery-plate-view">View</span>}
         </div>
@@ -82,6 +96,9 @@ function Plaque({ work, index }: { work: Work; index: number }) {
       <span className="gallery-plaque-no">Plate {toRoman(index)}</span>
       <span className="gallery-plaque-rule" />
       <h3 className="gallery-plaque-title">{work.title}</h3>
+      <p className="gallery-plaque-medium">
+        Campaign · Mixed media <span className="gallery-plaque-catalog">— Cataloged 2045</span>
+      </p>
       <div className="gallery-plaque-meta">
         {work.instagram_link ? (
           <a href={work.instagram_link} target="_blank" rel="noopener noreferrer" className="gallery-plaque-handle">
@@ -268,20 +285,17 @@ export default function Portfolio() {
   };
 
   return (
-    <section ref={sectionRef} className="relative py-20 md:py-32 [overflow-x:clip]" id="portfolio" style={{ background: 'transparent' }}>
+    <section ref={sectionRef} className="relative py-20 md:py-32 [overflow-x:clip]" id="portfolio" data-cursor-zone="loupe" style={{ background: 'transparent' }}>
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-8 md:mb-12">
-          <div className="reveal eyebrow-pill mb-7">
-            <span className="w-1 h-1 rounded-full bg-brand-purple" />
-            The Gallery
-          </div>
-          <h2 className="reveal delay-100 font-heading font-bold leading-[1.06] tracking-tight mb-3 sm:mb-4" style={{ fontSize: 'clamp(2rem, 5vw, 4.5rem)' }}>
-            Works on
+          <p className="reveal mono-label mb-6" style={{ letterSpacing: '0.3em' }}>The Gallery</p>
+          <h2 className="reveal delay-100 font-authored font-semibold leading-[1.04] mb-3 sm:mb-4" style={{ fontSize: 'clamp(2.4rem, 5.6vw, 4.8rem)', color: 'var(--ink)' }}>
+            Recovered
             <br />
-            <span style={{ color: 'var(--ink)' }}>Exhibition.</span>
+            <span style={{ color: 'var(--accent-ink)' }}>Works.</span>
           </h2>
           <p className="reveal delay-200 text-ink-body text-sm sm:text-lg max-w-xl mx-auto leading-relaxed">
-            A curated corridor of premium ad creatives and campaign visuals — step through the collection.
+            Campaign artifacts, catalogued as they were made — step through the collection.
           </p>
         </div>
 
@@ -307,7 +321,7 @@ export default function Portfolio() {
             >
               {works.map((w, i) => (
                 <div className="gallery-mobile-cell" key={w.id}>
-                  <Plate work={w} active={i === active} onClick={() => openLightbox(w)} />
+                  <Plate work={w} index={i} active={i === active} onClick={() => openLightbox(w)} />
                 </div>
               ))}
             </div>
@@ -349,7 +363,7 @@ export default function Portfolio() {
               >
                 <div className="gallery-spotlight" aria-hidden />
                 {works.map((w, i) => (
-                  <Plate key={w.id} work={w} active={i === active} onClick={() => handlePlateClick(i, w)} style={plateStyle(i)} />
+                  <Plate key={w.id} work={w} index={i} active={i === active} onClick={() => handlePlateClick(i, w)} style={plateStyle(i)} />
                 ))}
               </div>
 

@@ -38,11 +38,11 @@ function getInitialTheme(): Theme {
     const applied = document.documentElement.dataset.theme;
     if (applied === 'light' || applied === 'dark') return applied;
   }
-  return 'light';
+  return 'dark';
 }
 
 const ThemeContext = createContext<ThemeContextType>({
-  theme: 'light',
+  theme: 'dark',
   toggleTheme: () => {},
   setTheme: () => {},
 });

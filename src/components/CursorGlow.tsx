@@ -1,6 +1,6 @@
 import { useEffect, useRef, useCallback } from 'react';
 
-type CursorState = 'default' | 'hover' | 'button' | 'card' | 'text';
+type CursorState = 'default' | 'hover' | 'button' | 'card' | 'text' | 'nib' | 'loupe';
 
 export default function CursorGlow() {
   const dotRef = useRef<HTMLDivElement>(null);
@@ -22,8 +22,44 @@ export default function CursorGlow() {
     if (!d || !r || !a) return;
 
     d.style.transform = `translate(-50%, -50%) scale(${clicking ? 0.6 : 1})`;
+    // normalize dot geometry (nib state reshapes it; every other state expects the 8px dot)
+    d.style.width = '8px';
+    d.style.height = '8px';
+    d.style.borderRadius = '50%';
 
-    if (state === 'button') {
+    if (state === 'nib') {
+      // V2 Workshop — holding a pen: the dot becomes a thin nib point, the ring recedes.
+      d.style.width = '3px';
+      d.style.height = '15px';
+      d.style.borderRadius = '2px';
+      d.style.transform = `translate(-50%, -50%) rotate(-40deg) scale(${clicking ? 0.7 : 1})`;
+      d.style.background = 'var(--accent)';
+      d.style.boxShadow = '0 0 8px rgb(var(--accent-rgb) / 0.5)';
+      d.style.opacity = '1';
+      r.style.width = '18px';
+      r.style.height = '18px';
+      r.style.borderRadius = '50%';
+      r.style.borderColor = 'rgb(var(--accent-rgb) / 0.25)';
+      r.style.boxShadow = 'none';
+      r.style.background = 'transparent';
+      a.style.opacity = '0.1';
+      a.style.transform = 'translate(-50%, -50%) scale(0.8)';
+    } else if (state === 'loupe') {
+      // V2 Gallery — holding a loupe: a soft magnifier circle, dot nearly gone.
+      d.style.opacity = '0.5';
+      d.style.width = '3px';
+      d.style.height = '3px';
+      d.style.background = 'var(--accent)';
+      d.style.boxShadow = 'none';
+      r.style.width = '48px';
+      r.style.height = '48px';
+      r.style.borderRadius = '50%';
+      r.style.borderColor = 'rgb(var(--white-rgb) / 0.45)';
+      r.style.boxShadow = '0 0 18px rgb(var(--accent-rgb) / 0.18), inset 0 0 12px rgb(var(--white-rgb) / 0.06)';
+      r.style.background = 'rgb(var(--white-rgb) / 0.02)';
+      a.style.opacity = '0.15';
+      a.style.transform = 'translate(-50%, -50%) scale(1.1)';
+    } else if (state === 'button') {
       r.style.width = '48px';
       r.style.height = '48px';
       r.style.borderColor = 'rgb(var(--accent-rgb) / 0.6)';
@@ -138,6 +174,9 @@ export default function CursorGlow() {
       if (el.closest('button, a, [role="button"], [data-cursor="button"]')) return 'button';
       if (el.closest('[data-cursor="card"]')) return 'card';
       if (el.closest('[data-cursor="hover"]')) return 'hover';
+      // V2 per-section "tools" — the room decides what your hand is holding.
+      if (el.closest('[data-cursor-zone="nib"]')) return 'nib';
+      if (el.closest('[data-cursor-zone="loupe"]')) return 'loupe';
       return 'default';
     };
 

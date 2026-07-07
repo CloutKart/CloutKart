@@ -77,7 +77,7 @@ export default function TelemetryFrame() {
         className="absolute bottom-3 sm:bottom-5 right-5 sm:right-8 translate-y-[150%] font-mono uppercase tracking-[0.22em]"
         style={{ fontSize: '9px', color: 'var(--frame-label)' }}
       >
-        SYS · OK
+        CAT · 20.45
       </span>
     </div>
   );

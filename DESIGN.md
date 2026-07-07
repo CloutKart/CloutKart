@@ -1,10 +1,53 @@
 # Design
 
+## V2 — "The Second Renaissance (2045)"
+
+The site is an **artifact recovered from a second Renaissance, dated 2045** — the year
+human creativity and AI stop competing and start collaborating. The hero is the founding
+myth (first contact); everything after it is the archive. 2045 is **never explained** —
+it surfaces only through stamps, coordinates, and accession numbers.
+
+Rules (all sections, both phases):
+
+- **Dark is home base** (the 2045 workshop). Parchment/cream appears only as *objects
+  inside* the dark room (`.artifact`), never as full-bleed section backgrounds — and every
+  artifact carries a faint **purple edge-bleed** (ink and circuitry share the page).
+- **Purple is reserved for AI/execution** — if purple shows up, something intelligent is
+  happening. Never decorative.
+- **Serif = authored** (`.font-authored`, Cormorant Garamond: headlines, plaques, letters);
+  **sans = read** (Hanken: body, UI, metadata). NCL Gasdrifo stays hero-only (licence).
+- **Motion is archival**: revealed / unrolled / lit. No SaaS easing, no bounce (the one
+  exception is the hero's settle). Soft-landing curve: `cubic-bezier(.16,1,.3,1)`.
+- Vines/botanicals are the collaboration motif — hero-only unless a section earns one use.
+
+Kit (global devices, `src/index.css` V2 block + components):
+
+- `.artifact` — parchment object in the dark room (cream literals + purple edge-bleed).
+- `.accession` — registrar catalog tag, `No. 047 · 2045`, same position on every artifact.
+- `MarginIndex.tsx` — roman-numeral chapter marks I–VII at the right viewport edge;
+  purple when current; click-to-navigate. Desktop only.
+- Ambient drifting film grain (`.noise-overlay` + `grainDrift`), near-subliminal, dark only.
+- Per-section cursor tools via `data-cursor-zone` on sections (`nib` = Workshop,
+  `loupe` = Gallery), implemented as states in `CursorGlow.tsx`.
+- 2045 easter eggs: TelemetryFrame's `CAT · 20.45` registrar mark; "ANGELO" stays engraved
+  in the hero art. Max one Latin word per section.
+
+Phase 1 (built): dark default, the kit, **The Workshop** (`Process.tsx` — sketchbook
+entries; a graphite stroke drawn on reveal that a purple schematic trace catches up to;
+hover re-draws the trace) and **The Gallery** (`Portfolio.tsx` corridor reframed as
+recovered artifacts: accession tags, exhibit-label plaque with the single quiet
+"Cataloged 2045" line, museum-light hover, loupe detail crop under the cursor).
+
+Phase 2 (planned, needs approval): Pixie/The Muse, The Ledger (ScrollStory), The Patrons +
+Testimonials (new sections, placeholder content), Performance inscriptions (chisel-flash,
+no count-up), CTA breathing glow, wax-seal scroll transition (pending review), drop caps.
+
 ## Theme
 
-Light and dark, user-toggleable. **Light is the default**; the theme is not tied to
-the OS `prefers-color-scheme` — first visits open light and only an explicit user
-toggle (remembered in `localStorage` `ck-theme`) switches to dark. The theme is
+Light and dark, user-toggleable. **Dark is the default** (V2: the 2045 workshop is home
+base); light survives as "Concept" mode. The theme is not tied to the OS
+`prefers-color-scheme` — first visits open dark and only an explicit user
+toggle (remembered in `localStorage` `ck-theme`) switches to light. The theme is
 applied to `<html data-theme="light|dark">` by a tiny
 blocking script in `index.html` before first paint (no flash), and managed at
 runtime by `src/context/ThemeContext.tsx` with a toggle in the navbar
