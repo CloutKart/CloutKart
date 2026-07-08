@@ -1428,7 +1428,8 @@ a.gallery-plaque-handle:hover { color: var(--accent-ink); text-decoration: under
 /* ── Margin index — chapter marks I–VII down the right edge; lights purple as you
    pass. Reads like a bound book's spine, doubles as nav. Desktop only. ─────── */
 .margin-index {
-  position: fixed; right: 14px; top: 50%; z-index: 40;
+  /* keep clear of the telemetry frame's right hairline (inset ~20px) */
+  position: fixed; right: 38px; top: 50%; z-index: 40;
   transform: translateY(-50%);
   display: none; flex-direction: column; gap: 18px; align-items: center;
 }
