@@ -1658,6 +1658,28 @@ a.gallery-plaque-handle:hover { color: var(--accent-ink); text-decoration: under
   100% { text-shadow: none; opacity: 1; }
 }
 
+/* ── The Philosophy — the doctrine's branch diagram (anime.js choreography) ── */
+.phi-diagram { width: min(660px, 100%); height: auto; overflow: visible; }
+.phi-root-title {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 27px; font-weight: 600; fill: var(--ink);
+}
+.phi-root-sub {
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-size: 9.5px; letter-spacing: 0.24em; fill: var(--frame-label);
+}
+.phi-fmt { cursor: default; }
+.phi-fmt-label {
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-size: 12.5px; letter-spacing: 0.2em; fill: var(--ink-muted);
+  transition: fill 0.25s ease;
+}
+.phi-fmt:hover .phi-fmt-label { fill: var(--accent-ink); }
+.phi-word { will-change: text-shadow; }
+@media (prefers-reduced-motion: reduce) {
+  .phi-pulse { display: none; }   /* the markup is already the finished page */
+}
+
 /* ── CTA — the hero's spark, still alive, just quieter now ─────────────────── */
 .btn-breathe { animation: btnBreathe 4.5s ease-in-out infinite; }
 @keyframes btnBreathe {
