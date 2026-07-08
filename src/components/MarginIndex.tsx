@@ -9,9 +9,9 @@ const CHAPTERS: { numeral: string; id: string; label: string }[] = [
   { numeral: 'II', id: 'about', label: 'The Movement' },
   { numeral: 'III', id: 'pixie', label: 'The Muse' },
   { numeral: 'IV', id: 'process', label: 'The Workshop' },
-  { numeral: 'V', id: 'pricing', label: 'The Commission' },
-  { numeral: 'VI', id: 'portfolio', label: 'The Gallery' },
-  { numeral: 'VII', id: 'contact', label: 'The Letter' },
+  { numeral: 'V', id: 'portfolio', label: 'The Gallery' },
+  { numeral: 'VI', id: 'patrons', label: 'The Patrons' },
+  { numeral: 'VII', id: 'letters', label: 'The Correspondence' },
 ];
 
 export default function MarginIndex() {

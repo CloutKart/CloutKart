@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Sparkles, CheckCircle, ArrowRight } from 'lucide-react';
 
 const PALETTE = [
@@ -154,6 +154,7 @@ interface Props {
 
 export default function PixieSection({ onSignupOpen }: Props) {
   const sectionRef = useRef<HTMLElement>(null);
+  const [notePresent, setNotePresent] = useState(false);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -172,30 +173,64 @@ export default function PixieSection({ onSignupOpen }: Props) {
     return () => observer.disconnect();
   }, []);
 
+  // The Muse is still in the room: if the cursor rests anywhere in the section for a
+  // moment, a small margin note quietly appears — evidence someone else is thinking
+  // while you read. Appears once, never announced. Fine pointers only.
+  useEffect(() => {
+    const el = sectionRef.current;
+    if (!el || notePresent) return;
+    if (!window.matchMedia('(pointer: fine)').matches) return;
+    let timer = 0;
+    const arm = () => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => setNotePresent(true), 2400);
+    };
+    const disarm = () => window.clearTimeout(timer);
+    el.addEventListener('pointermove', arm, { passive: true });
+    el.addEventListener('pointerleave', disarm);
+    return () => {
+      window.clearTimeout(timer);
+      el.removeEventListener('pointermove', arm);
+      el.removeEventListener('pointerleave', disarm);
+    };
+  }, [notePresent]);
+
   return (
     <section ref={sectionRef} className="relative py-20 md:py-36 [overflow-x:clip]" id="pixie" style={{ background: 'transparent' }}>
-      {/* purple ambient glow */}
+      {/* purple ambient glow — this is the AI's room; the light is allowed here */}
       <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[400px] rounded-full pointer-events-none"
         style={{ background: 'radial-gradient(ellipse at center, rgb(var(--accent-rgb) / 0.07) 0%, transparent 70%)' }} />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section header */}
-        <div className="text-center mb-14 md:mb-20">
-          <div className="reveal eyebrow-pill mb-7">
-            <Sparkles size={11} className="text-brand-purple" />
-            AI Creative Intelligence
-          </div>
-          <h2 className="reveal delay-100 font-heading font-bold leading-[1.06] tracking-tight mb-5"
-            style={{ fontSize: 'clamp(2rem, 5vw, 4.5rem)' }}>
-            Meet Pixie — your
+        <div className="relative text-center mb-14 md:mb-20">
+          <p className="reveal mono-label mb-6" style={{ letterSpacing: '0.3em' }}>The Muse</p>
+          <h2 className="reveal delay-100 font-authored font-semibold leading-[1.04] mb-5"
+            style={{ fontSize: 'clamp(2.4rem, 5.6vw, 4.8rem)', color: 'var(--ink)' }}>
+            Meet Pixie —
             <br />
-            <span className="gradient-text">AI creative director</span>
+            <span style={{ color: 'var(--accent-ink)' }}>inspiration that talks back.</span>
           </h2>
           <p className="reveal delay-200 text-ink-body text-sm sm:text-lg max-w-2xl mx-auto leading-relaxed">
-            Submit a brief. Upload a product photo. Pixie generates your entire creative vision in seconds —
-            vibe, color story, hook, caption, and deliverables.{' '}
-            <span className="text-white font-medium">Your team starts at 80% instead of zero.</span>
+            <span className="font-authored italic" style={{ fontSize: '1.15em', color: 'var(--ink)' }}>
+              Every masterpiece begins with inspiration. In 2045, inspiration started talking back.
+            </span>
+            <br />
+            <span className="inline-block mt-3">
+              Submit a brief. Pixie drafts your entire creative vision in seconds — vibe, color story, hook, and
+              deliverables. <span className="text-white font-medium">Your team starts at 80% instead of zero.</span>
+            </span>
           </p>
+
+          {/* the Muse's margin note — appears only if the reader lingers */}
+          <div
+            className={`artifact muse-note hidden lg:block px-4 py-2.5 ${notePresent ? 'is-present' : ''}`}
+            aria-hidden="true"
+          >
+            <span className="font-authored italic block" style={{ fontSize: '14.5px', color: '#3a3128' }}>
+              — the hook could lead with the feeling.&nbsp;&nbsp;·&nbsp;&nbsp;P.
+            </span>
+          </div>
         </div>
 
         {/* Two-col: bullets + demo */}

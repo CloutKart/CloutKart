@@ -19,7 +19,6 @@ export default function Hero({ onSignupOpen }: Props) {
   const navigate = useNavigate();
 
   const [statsVisible, setStatsVisible] = useState(false);
-  const [counts, setCounts] = useState({ brands: 0, roas: 0, turnaround: 0 });
 
   // Scroll parallax → --hero-p (inertially smoothed so a fast scroll GLIDES instead of
   // snapping). On DESKTOP the climax is also scroll-driven, so --hero-a tracks the same
@@ -161,29 +160,15 @@ export default function Hero({ onSignupOpen }: Props) {
     return () => observer.disconnect();
   }, []);
 
-  // Animated stat counters — one-shot on first intersection.
+  // V2: the numbers are CARVED, not counted. They render at their final value and,
+  // on first view, a single flash of light traces each numeral once — a chisel
+  // strike catching the light — then they're still. Permanent.
   useEffect(() => {
     const el = statsRef.current;
     if (!el) return;
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting && !statsVisible) {
-          setStatsVisible(true);
-          const duration = 1200;
-          let start: number | null = null;
-          const tick = (ts: number) => {
-            if (start === null) start = ts;
-            const prog = Math.min((ts - start) / duration, 1);
-            const eased = 1 - (1 - prog) * (1 - prog);
-            setCounts({
-              brands: Math.floor(eased * 500),
-              roas: Math.round(eased * 100) / 10,
-              turnaround: Math.floor(eased * 48),
-            });
-            if (prog < 1) requestAnimationFrame(tick);
-          };
-          requestAnimationFrame(tick);
-        }
+        if (entry.isIntersecting && !statsVisible) setStatsVisible(true);
       },
       { threshold: 0.5 }
     );
@@ -258,24 +243,21 @@ export default function Hero({ onSignupOpen }: Props) {
           className="grid grid-cols-3 gap-6 sm:gap-12 mt-4 pt-5 sm:mt-9 sm:pt-7 animate-fade-up delay-400"
           style={{ borderTop: '1px solid var(--border)' }}
         >
-          <div className={statsVisible ? 'animate-count-up' : ''}>
-            <div className="font-mono text-xl sm:text-3xl font-bold gradient-text-warm mb-1 tracking-tight">
-              {statsVisible ? `${counts.brands}+` : '0+'}
+          {[
+            { value: '500+', label: 'Brands Scaled' },
+            { value: '10×', label: 'Avg ROAS' },
+            { value: '48h', label: 'Turnaround' },
+          ].map((s, i) => (
+            <div key={s.label}>
+              <div
+                className={`font-mono text-xl sm:text-3xl font-bold gradient-text-warm mb-1 tracking-tight ${statsVisible ? 'chisel-flash' : ''}`}
+                style={{ animationDelay: `${i * 140}ms` }}
+              >
+                {s.value}
+              </div>
+              <div className="text-[10px] sm:text-xs text-ink-dim font-medium uppercase tracking-widest">{s.label}</div>
             </div>
-            <div className="text-[10px] sm:text-xs text-ink-dim font-medium uppercase tracking-widest">Brands Scaled</div>
-          </div>
-          <div className={statsVisible ? 'animate-count-up' : ''} style={{ animationDelay: '60ms' }}>
-            <div className="font-mono text-xl sm:text-3xl font-bold gradient-text-warm mb-1 tracking-tight">
-              {statsVisible ? (counts.roas >= 10 ? '10×' : `${counts.roas.toFixed(1)}×`) : '0×'}
-            </div>
-            <div className="text-[10px] sm:text-xs text-ink-dim font-medium uppercase tracking-widest">Avg ROAS</div>
-          </div>
-          <div className={statsVisible ? 'animate-count-up' : ''} style={{ animationDelay: '120ms' }}>
-            <div className="font-mono text-xl sm:text-3xl font-bold gradient-text-warm mb-1 tracking-tight">
-              {statsVisible ? `${counts.turnaround}h` : '0h'}
-            </div>
-            <div className="text-[10px] sm:text-xs text-ink-dim font-medium uppercase tracking-widest">Turnaround</div>
-          </div>
+          ))}
         </div>
       </div>
     </section>

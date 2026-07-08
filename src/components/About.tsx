@@ -42,18 +42,14 @@ export default function About() {
 
           {/* Left */}
           <div>
-            <div className="reveal eyebrow-pill mb-7">
-              <span className="w-1 h-1 rounded-full bg-brand-purple" />
-              The Studio
-            </div>
+            <p className="reveal mono-label mb-7" style={{ letterSpacing: '0.3em' }}>The Movement</p>
 
-            <h2 className="reveal delay-100 font-heading font-bold leading-[1.1] tracking-tight mb-5 sm:mb-7" style={{ fontSize: 'clamp(2rem, 5vw, 3.5rem)' }}>
-              A Creative Studio Built for{' '}
-              <span className="gradient-text">Modern</span>{' '}
-              <span className="text-white">Brands</span>
+            <h2 className="reveal delay-100 font-authored font-semibold leading-[1.06] mb-5 sm:mb-7" style={{ fontSize: 'clamp(2.2rem, 5vw, 3.8rem)', color: 'var(--ink)' }}>
+              A studio built for{' '}
+              <span style={{ color: 'var(--accent-ink)' }}>the second Renaissance.</span>
             </h2>
 
-            <p className="reveal delay-200 text-ink-body text-sm sm:text-lg leading-[1.75] mb-5 sm:mb-7">
+            <p className="reveal delay-200 drop-cap text-ink-body text-sm sm:text-lg leading-[1.75] mb-5 sm:mb-7">
               CloutKart is a creative advertising studio that helps brands sell more with scroll-stopping ads, strategic messaging, AI-powered design, and high-conversion creative systems.
             </p>
 

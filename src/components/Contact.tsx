@@ -106,12 +106,14 @@ export default function Contact() {
         <div className="reveal mb-12 md:mb-16 gradient-border-wrap">
           <div className="glass-card rounded-[20px] p-8 sm:p-12 text-center" style={{ background: 'var(--bg-elev)' }}>
             <div className="relative z-10">
-              <h2 className="font-heading font-bold leading-tight tracking-tight mb-4" style={{ fontSize: 'clamp(2rem, 5vw, 3.5rem)' }}>
-                <span className="text-white">Ready to Build Ads That </span>
-                <span style={{ color: 'var(--ink)' }}>Actually Convert?</span>
+              <h2 className="font-authored font-semibold leading-[1.06] mb-4" style={{ fontSize: 'clamp(2.2rem, 5.2vw, 4rem)', color: 'var(--ink)' }}>
+                Begin Your Masterpiece.
               </h2>
               <p className="text-ink-body text-sm sm:text-lg max-w-lg mx-auto leading-relaxed">
-                For enterprise deals, custom briefs, partnership inquiries, or anything else — reach out here. Free creative requests are handled inside your dashboard after signing up.
+                Every unforgettable campaign starts with a human idea. Let Pixie help you bring yours to life.
+              </p>
+              <p className="text-ink-dim text-xs sm:text-sm max-w-lg mx-auto leading-relaxed mt-3">
+                For enterprise deals, custom briefs, or partnerships, reach out here — free creative requests are handled inside your dashboard after signing up.
               </p>
             </div>
           </div>
@@ -190,7 +192,7 @@ export default function Contact() {
                   <button
                     type="submit"
                     disabled={status === 'loading'}
-                    className="btn-primary w-full justify-center text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="btn-primary btn-breathe w-full justify-center text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {status === 'loading' ? (
                       <Loader size={15} className="animate-spin" />

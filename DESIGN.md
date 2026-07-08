@@ -38,9 +38,16 @@ hover re-draws the trace) and **The Gallery** (`Portfolio.tsx` corridor reframed
 recovered artifacts: accession tags, exhibit-label plaque with the single quiet
 "Cataloged 2045" line, museum-light hover, loupe detail crop under the cursor).
 
-Phase 2 (planned, needs approval): Pixie/The Muse, The Ledger (ScrollStory), The Patrons +
-Testimonials (new sections, placeholder content), Performance inscriptions (chisel-flash,
-no count-up), CTA breathing glow, wax-seal scroll transition (pending review), drop caps.
+Phase 2 (built): **The Muse** (`PixieSection` — serif archive voice; an idle-cursor margin
+note quietly appears, evidence Pixie is still thinking); **The Ledger** (`ScrollStory` —
+roman entries I–IV + the site's ONE literal date device, the `REG · 14 VI 2045` registrar
+stamp); **The Patrons** (`Patrons.tsx` — letterpressed names in a stone slab, dust-puff on
+hover, placeholder names); **The Correspondence** (`Testimonials.tsx` — parchment letters
+with drop caps, blurred signatures under violet wax seals pressed with a faint circuit;
+hover lifts the seal); **Performance** (hero stats are carved, no count-up — one chisel
+flash on entry); **CTA** ("Begin Your Masterpiece." + a slow breathing glow on the button);
+`.drop-cap` illuminated initials (About lead + letters). Still deliberately unbuilt: the
+wax-seal scroll transition (global scroll-feel change — needs its own approval).
 
 ## Theme
 

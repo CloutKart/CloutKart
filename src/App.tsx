@@ -18,6 +18,8 @@ import ScrollStory from './components/ScrollStory';
 import PixieSection from './components/PixieSection';
 import Pricing from './components/Pricing';
 import Portfolio from './components/Portfolio';
+import Patrons from './components/Patrons';
+import Testimonials from './components/Testimonials';
 import FAQ from './components/FAQ';
 import Contact from './components/Contact';
 import Footer from './components/Footer';
@@ -96,6 +98,8 @@ function LandingPage({ onSignupOpen }: { onSignupOpen: () => void }) {
           <Process />
           <Pricing onSignupOpen={onSignupOpen} />
           <Portfolio />
+          <Patrons />
+          <Testimonials />
           <FAQ />
           <Contact />
         </main>

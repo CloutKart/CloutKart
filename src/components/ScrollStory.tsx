@@ -265,10 +265,10 @@ function CartScene({ localProg }: { localProg: number }) {
 // ─── Phase data ────────────────────────────────────────────────────────────────
 
 const phases = [
-  { num: '01', title: 'Write the brief', sub: 'Tell us your brand, niche, and what you want to say. Pixie reads every word.' },
-  { num: '02', title: 'Pixie builds the vision', sub: 'Hook, colors, visual direction, ad copy — generated in seconds. Review before a pixel is made.' },
-  { num: '03', title: 'The creative ships', sub: 'Production-ready ads, delivered in 48 hours. Every format, every platform, zero ambiguity.' },
-  { num: '04', title: 'Cart. Convert. Scale.', sub: 'The right message at the right moment. ROAS climbs. Spend scales. Run it again.' },
+  { num: 'I', title: 'Write the brief', sub: 'Tell us your brand, niche, and what you want to say. Pixie reads every word.' },
+  { num: 'II', title: 'Pixie builds the vision', sub: 'Hook, colors, visual direction, ad copy — generated in seconds. Review before a pixel is made.' },
+  { num: 'III', title: 'The creative ships', sub: 'Production-ready ads, delivered in 48 hours. Every format, every platform, zero ambiguity.' },
+  { num: 'IV', title: 'Cart. Convert. Scale.', sub: 'The right message at the right moment. ROAS climbs. Spend scales. Run it again.' },
 ];
 
 // ─── Main component ────────────────────────────────────────────────────────────
@@ -315,18 +315,19 @@ export default function ScrollStory() {
     <section id="story" className="py-20 md:py-28 relative" style={{ background: 'transparent' }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
-        {/* Header */}
-        <div className="text-center mb-10 md:mb-14">
-          <div className="eyebrow-pill inline-flex mb-4">
-            <span className="w-1 h-1 rounded-full bg-brand-purple" />
-            How It Works
-          </div>
-          <h2 className="font-heading font-bold text-white leading-tight tracking-tight"
-            style={{ fontSize: 'clamp(1.25rem, 4vw, 2.8rem)' }}>
+        {/* Header — a page recovered from the production ledger */}
+        <div className="relative text-center mb-10 md:mb-14">
+          <p className="mono-label mb-5" style={{ letterSpacing: '0.3em' }}>The Ledger</p>
+          <h2 className="font-authored font-semibold leading-[1.06]"
+            style={{ fontSize: 'clamp(1.6rem, 4.4vw, 3.2rem)', color: 'var(--ink)' }}>
             From brief to{' '}
-            <span className="gradient-text">converting creative</span>
-            {' '}in four steps
+            <span style={{ color: 'var(--accent-ink)' }}>converting creative,</span>
+            {' '}in four entries.
           </h2>
+          {/* the registrar's stamp — the ONE literal date/time device on the site */}
+          <span className="registrar-stamp hidden md:inline-flex" aria-hidden="true">
+            REG · 14 VI 2045
+          </span>
         </div>
 
         <div className="grid lg:grid-cols-[300px_1fr] gap-8 lg:gap-14 items-center">
