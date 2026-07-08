@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
+import { edgeFunctionError } from '../lib/edgeError';
 import { NotificationBell } from '../components/NotificationBell';
 import ThemeToggle from '../components/ThemeToggle';
 import { usePushNotifications } from '../hooks/usePushNotifications';
@@ -1523,7 +1524,7 @@ export default function Admin() {
     };
     try {
       const { data, error } = await supabase.functions.invoke('lead-agent', { body: payload });
-      if (error) throw new Error(error.message);
+      if (error) throw new Error(await edgeFunctionError(error));
       const response = data as DiscoverResponse;
       const results = response?.leads ?? [];
       setDiscoverResults(results);
@@ -1551,7 +1552,7 @@ export default function Admin() {
           platform: platformLabel[scoreForm.platform] ?? scoreForm.platform,
         },
       });
-      if (error) throw new Error(error.message);
+      if (error) throw new Error(await edgeFunctionError(error));
       if (data?.error) throw new Error(data.error);
       setScoreResult(data);
     } catch (e) {
@@ -1698,7 +1699,7 @@ export default function Admin() {
       const { data, error } = await supabase.functions.invoke('lead-agent', {
         body: { mode: 'fetch_contacts', domain },
       });
-      if (error) throw new Error(error.message);
+      if (error) throw new Error(await edgeFunctionError(error));
       const fetched: Array<{ name: string; role: string | null; email: string | null; phone: string | null; linkedin_url: string | null; instagram_handle: string | null }> = data?.contacts ?? [];
       if (fetched.length === 0) { setFetchingContacts(false); return; }
       const toInsert = fetched.map(c => ({ lead_id: contactsLead.id, ...c, notes: null }));
@@ -1745,7 +1746,7 @@ export default function Admin() {
       const { data, error } = await supabase.functions.invoke('lead-agent', {
         body: { mode: 'reddit_search', subreddits: redditSubreddits, keywords: redditKeywords.trim(), timeframe: redditTimeframe },
       });
-      if (error) throw new Error(error.message);
+      if (error) throw new Error(await edgeFunctionError(error));
       if (data?.error) { setRedditError(data.error); setSearchingReddit(false); return; }
       setRedditResults(data?.posts ?? []);
       if ((data?.posts ?? []).length === 0) setRedditError('No matching posts found. Try different keywords or a wider timeframe.');

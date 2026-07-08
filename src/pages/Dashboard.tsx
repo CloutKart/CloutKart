@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
+import { edgeFunctionError } from '../lib/edgeError';
 import { NotificationBell } from '../components/NotificationBell';
 import ThemeToggle from '../components/ThemeToggle';
 import { usePushNotifications } from '../hooks/usePushNotifications';
@@ -875,7 +876,8 @@ export default function Dashboard() {
           referenceImages: refImages.map(({ base64, mimeType }) => ({ base64, mimeType })),
         },
       });
-      if (error) throw error;
+      // surface the function's real error (invoke hides the body behind a generic non-2xx)
+      if (error) throw new Error(await edgeFunctionError(error));
       if (data?.error) throw new Error(data.error);
       // Normalize whatWeWillCreate — model occasionally returns objects instead of strings
       if (Array.isArray(data?.whatWeWillCreate)) {
