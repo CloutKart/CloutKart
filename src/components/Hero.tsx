@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { ArrowRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -14,11 +14,9 @@ const ROBOT_PCT = (1651 / 3344) * 100;
 
 export default function Hero({ onSignupOpen }: Props) {
   const heroRef = useRef<HTMLElement>(null);
-  const statsRef = useRef<HTMLDivElement>(null);
   const { isLoggedIn } = useAuth();
   const navigate = useNavigate();
 
-  const [statsVisible, setStatsVisible] = useState(false);
 
   // Scroll parallax → --hero-p (inertially smoothed so a fast scroll GLIDES instead of
   // snapping). On DESKTOP the climax is also scroll-driven, so --hero-a tracks the same
@@ -160,22 +158,6 @@ export default function Hero({ onSignupOpen }: Props) {
     return () => observer.disconnect();
   }, []);
 
-  // V2: the numbers are CARVED, not counted. They render at their final value and,
-  // on first view, a single flash of light traces each numeral once — a chisel
-  // strike catching the light — then they're still. Permanent.
-  useEffect(() => {
-    const el = statsRef.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && !statsVisible) setStatsVisible(true);
-      },
-      { threshold: 0.5 }
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [statsVisible]);
-
   const handlePrimary = () => {
     if (isLoggedIn) navigate('/dashboard');
     else onSignupOpen();
@@ -236,28 +218,6 @@ export default function Hero({ onSignupOpen }: Props) {
           <a href="#portfolio" className="btn-secondary text-sm sm:text-base">
             See Our Work
           </a>
-        </div>
-
-        <div
-          ref={statsRef}
-          className="grid grid-cols-3 gap-6 sm:gap-12 mt-4 pt-5 sm:mt-9 sm:pt-7 animate-fade-up delay-400"
-          style={{ borderTop: '1px solid var(--border)' }}
-        >
-          {[
-            { value: '500+', label: 'Brands Scaled' },
-            { value: '10×', label: 'Avg ROAS' },
-            { value: '48h', label: 'Turnaround' },
-          ].map((s, i) => (
-            <div key={s.label}>
-              <div
-                className={`font-mono text-xl sm:text-3xl font-bold gradient-text-warm mb-1 tracking-tight ${statsVisible ? 'chisel-flash' : ''}`}
-                style={{ animationDelay: `${i * 140}ms` }}
-              >
-                {s.value}
-              </div>
-              <div className="text-[10px] sm:text-xs text-ink-dim font-medium uppercase tracking-widest">{s.label}</div>
-            </div>
-          ))}
         </div>
       </div>
     </section>
