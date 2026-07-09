@@ -30,6 +30,8 @@ import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import Dashboard from './pages/Dashboard';
 import Admin from './pages/Admin';
+import Privacy from './pages/Privacy';
+import Terms from './pages/Terms';
 
 function ProtectedDashboard() {
   const { isLoggedIn, isAdmin, loading } = useAuth();
@@ -124,6 +126,8 @@ function AppRoutes() {
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/dashboard" element={<ProtectedDashboard />} />
         <Route path="/admin" element={<ProtectedAdmin />} />
+        <Route path="/privacy" element={<Privacy />} />
+        <Route path="/terms" element={<Terms />} />
       </Routes>
     </>
   );

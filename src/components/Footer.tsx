@@ -97,9 +97,11 @@ export default function Footer() {
           <p className="text-ink-dim text-xs font-mono">
             © {new Date().getFullYear()} CloutKart. All rights reserved.
           </p>
-          <p className="text-ink-dim text-xs font-mono">
-            AI Creatives That Drive Results
-          </p>
+          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-ink-dim text-xs font-mono">
+            <a href="/privacy" className="hover:text-white transition-colors">Privacy</a>
+            <a href="/terms" className="hover:text-white transition-colors">Terms</a>
+            <span>AI Creatives That Drive Results</span>
+          </div>
         </div>
       </div>
     </footer>
