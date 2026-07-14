@@ -1,8 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 // @ts-ignore
-import { GoogleGenerativeAI } from "npm:@google/generative-ai";
-// @ts-ignore
 import { MongoClient } from "npm:mongodb";
+import { aiEnabled, chat, parseJson, type Msg, type Part } from "../_shared/ai.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -95,6 +94,17 @@ Generate the hook, then internally ask: is this about the transformation (not th
 **Ad Caption**
 3 sentences. First: land the hook's promise hard with a product truth. Second: make the reader feel the gap between their current life and their life with this product. Third: one short, confident directional — not a pleading CTA, a statement of inevitability. No exclamation marks unless they're earned.
 
+**Image Prompt**
+A single prompt for a text-to-image model that will render the hero frame of this campaign. You are the only one who sees everything — the brief, the client's reference photo, and their scraped website — so this prompt is where all three fuse. Rules:
+- Under 60 words. One paragraph, comma-separated visual clauses. No JSON, no headings, no preamble.
+- Describe ONLY what the camera sees: subject, shot type, lens/angle, lighting, surface texture, background, atmosphere. Restate the Visual Direction in concrete, renderable terms.
+- Name the actual product truthfully — its form, material and packaging. If a reference photo was supplied, describe the product AS IT APPEARS in that photo (shape, finish, label placement); do not invent a different product.
+- If the website gave you a concrete product fact (a variant, a material, a format), use it — a diffusion model renders "matte black aluminium can, condensation beading" far better than "premium beverage".
+- Fold in the Creative Vibe Colors by their physical appearance ("deep petrol blue shadows", "bleached midday light"), not by name or hex.
+- No text, no words, no logos, no typography in the frame — the model renders those as garbage. Never ask for them.
+- NEVER write the brand's name. A diffusion model reads a proper noun as an instruction to print those letters on the product and renders them as mangled nonsense. Write "matte black aluminium can", never "a can of Kettle & Ash".
+- No adjectives about quality ("premium", "stunning"), no emotions a camera can't photograph.
+
 **What We Will Create**
 Exactly 4 deliverables. Match format and dimensions to the ad format requested. Be precise: format, platform, dimensions, one descriptor of what makes it distinct from a stock asset. Static → image-led, Video → scenes + script note, UGC → concept + talent direction, Story → vertical native formats.
 
@@ -129,6 +139,7 @@ Exact structure required:
   "vibeColorRationale": "One sentence on the emotional direction this palette creates for this specific brief",
   "hook": "Single scroll-stopping line under 8 words — no commas, no ellipsis, no exclamation marks",
   "adCaption": "3 sentences: product truth → desire gap → inevitable CTA",
+  "imagePrompt": "Under 60 words of purely visual, renderable description of the hero frame — subject, shot, light, texture, colour as appearance. No text, no logos, no brand name.",
   "whatWeWillCreate": [
     "plain string — e.g. Static image ad — Instagram feed 1080×1080px — tight macro of product texture",
     "plain string — e.g. Static image ad — Facebook feed 1080×1080px — low-angle hero with hard rim light",
@@ -136,8 +147,6 @@ Exact structure required:
     "plain string — e.g. Static image ad — Amazon listing 1000×1000px — clean white background product shot"
   ]
 }`;
-
-const MODEL = "gemini-2.5-flash";
 
 async function getQueryEmbedding(text: string, hfKey: string): Promise<number[]> {
   const res = await fetch(
@@ -216,15 +225,13 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
-    if (!GEMINI_API_KEY) {
+    if (!aiEnabled()) {
       return new Response(
-        JSON.stringify({ error: "GEMINI_API_KEY not configured. Add it in Supabase → Project Settings → Edge Functions → Secrets." }),
+        JSON.stringify({ error: "No AI provider configured. Add AI_API_KEY / AI_BASE_URL / AI_MODEL (or GROQ_API_KEY) in Supabase → Project Settings → Edge Functions → Secrets." }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
     const hasImages = Array.isArray(referenceImages) && referenceImages.length > 0;
 
     // Scrape the reference URL if provided
@@ -276,44 +283,29 @@ Use at least one of these extracted specifics in the hook so it is provably non-
 
     userPrompt += "\n\nReturn only the JSON object.";
 
-    // Build Gemini content parts
-    type Part = { text: string } | { inlineData: { mimeType: string; data: string } };
-    const parts: Part[] = [{ text: userPrompt }];
-
+    // Reference photos ride along as data URIs; a text-only provider in the
+    // chain gets them stripped rather than failing the brief outright.
+    const content: Part[] = [{ type: "text", text: userPrompt }];
     if (hasImages) {
       for (const img of (referenceImages as { base64: string; mimeType: string }[]).slice(0, 3)) {
-        parts.push({ inlineData: { mimeType: img.mimeType, data: img.base64 } });
+        content.push({ type: "image_url", image_url: { url: `data:${img.mimeType};base64,${img.base64}` } });
       }
     }
 
-    const model = genAI.getGenerativeModel({
-      model: MODEL,
-      systemInstruction: SYSTEM_PROMPT,
+    const messages: Msg[] = [
+      { role: "system", content: SYSTEM_PROMPT },
+      { role: "user", content },
+    ];
+
+    const raw = await chat(messages, {
+      temperature: 0.75,
+      maxTokens: 1800,
+      // JSON mode only for text — vision inputs don't guarantee structured output
+      json: !hasImages,
     });
 
-    const result = await model.generateContent({
-      contents: [{ role: "user", parts }],
-      generationConfig: {
-        temperature: 0.75,
-        maxOutputTokens: 1800,
-        // JSON mode only for text — vision inputs don't guarantee structured output
-        ...(hasImages ? {} : { responseMimeType: "application/json" }),
-      },
-    });
-
-    const raw = result.response.text().trim();
-
-    // Robustly extract JSON from the response
-    const jsonStart = raw.indexOf("{");
-    const jsonEnd = raw.lastIndexOf("}");
-    const cleaned = jsonStart >= 0 && jsonEnd > jsonStart
-      ? raw.slice(jsonStart, jsonEnd + 1)
-      : raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/i, "").trim();
-
-    let vision;
-    try {
-      vision = JSON.parse(cleaned);
-    } catch {
+    const vision = parseJson(raw);
+    if (!vision) {
       console.error("[generate-creative-vision] JSON parse failed. Raw response:", raw);
       throw new Error("Model returned malformed JSON. Try again.");
     }

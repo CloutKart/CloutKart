@@ -40,6 +40,7 @@ interface VisionData {
   colorStory?: Array<{ name: string; hex: string }>; // legacy fallback
   hook: string;
   adCaption: string;
+  imagePrompt?: string;
   whatWeWillCreate: string[];
 }
 
@@ -356,13 +357,18 @@ function Typewriter({ text, speed = 20, onDone }: { text: string; speed?: number
   );
 }
 
-function VisionPanel({ vision, onChange, onApprove, submitting, submitError, animKey }: {
+function VisionPanel({ vision, onChange, onApprove, submitting, submitError, animKey,
+  previewImage, generatingImage, imageError, onGenerateImage }: {
   vision: VisionData;
   onChange: (v: VisionData) => void;
   onApprove: () => void;
   submitting: boolean;
   submitError: string;
   animKey: number;
+  previewImage: string | null;
+  generatingImage: boolean;
+  imageError: string;
+  onGenerateImage: () => void;
 }) {
   const prodColorRef0 = useRef<HTMLInputElement>(null);
   const prodColorRef1 = useRef<HTMLInputElement>(null);
@@ -629,6 +635,67 @@ function VisionPanel({ vision, onChange, onApprove, submitting, submitError, ani
             ))}
           </div>
         </div>}
+
+        {/* HERO FRAME — rendered on demand from the vision's own image prompt */}
+        {show(7) && divider}
+        {show(7) && <div className="px-5 py-4 animate-vision-section">
+          <div className="flex items-center justify-between mb-3">
+            <span className={`${sectionLabel} mb-0`}>Hero Frame</span>
+            {previewImage && !generatingImage && (
+              <div className="flex items-center gap-3">
+                <button type="button" onClick={onGenerateImage}
+                  className="flex items-center gap-1.5 text-[11px] font-semibold text-ink-dim hover:text-ink-body transition-colors">
+                  <RefreshCw size={11} /> Regenerate
+                </button>
+                <a href={`data:image/jpeg;base64,${previewImage}`} download="cloutkart-hero-frame.jpg"
+                  className="flex items-center gap-1.5 text-[11px] font-semibold text-ink-dim hover:text-ink-body transition-colors">
+                  <Download size={11} /> Download
+                </a>
+              </div>
+            )}
+          </div>
+
+          {previewImage ? (
+            <img
+              src={`data:image/jpeg;base64,${previewImage}`}
+              alt="AI-generated hero frame for this campaign"
+              className="w-full rounded-xl animate-vision-section"
+              style={{ border: '1px solid rgb(var(--white-rgb) / 0.07)' }}
+            />
+          ) : (
+            <button
+              type="button"
+              onClick={onGenerateImage}
+              disabled={generatingImage}
+              className="w-full flex flex-col items-center justify-center gap-2 py-8 rounded-xl text-sm font-semibold transition-all disabled:cursor-not-allowed"
+              style={{
+                border: '1px dashed rgb(var(--white-rgb) / 0.14)',
+                background: 'rgb(var(--white-rgb) / 0.02)',
+                color: generatingImage ? 'var(--ink-dim)' : 'var(--accent-ink)',
+              }}>
+              {generatingImage ? (
+                <>
+                  <Loader size={16} className="animate-spin" />
+                  Rendering the frame — this takes a few seconds
+                </>
+              ) : (
+                <>
+                  <Sparkles size={16} />
+                  Generate the hero frame
+                  <span className="text-[11px] font-normal text-ink-dim">
+                    Rendered from this vision and your product photo
+                  </span>
+                </>
+              )}
+            </button>
+          )}
+
+          {imageError && (
+            <p className="flex items-center gap-1.5 mt-2.5 text-[11px] text-red-300">
+              <AlertCircle size={11} className="flex-shrink-0" /> {imageError}
+            </p>
+          )}
+        </div>}
       </div>
 
       {/* Footer: Approve button */}
@@ -671,6 +738,9 @@ export default function Dashboard() {
   const [generatingVision, setGeneratingVision] = useState(false);
   const [visionError, setVisionError] = useState('');
   const [refImages, setRefImages] = useState<RefImage[]>([]);
+  const [previewImage, setPreviewImage] = useState<string | null>(null); // base64 jpeg
+  const [generatingImage, setGeneratingImage] = useState(false);
+  const [imageError, setImageError] = useState('');
   const refImageRef = useRef<HTMLInputElement>(null);
   const [profile, setProfile] = useState<UserProfile>({ full_name: null, company_name: null, phone: null, plan: 'free', clout_club_price: null, subscription_expires_at: null });
   const [settingsForm, setSettingsForm] = useState({ fullName: '', company: '', phone: '' });
@@ -868,6 +938,10 @@ export default function Dashboard() {
     }
     setGeneratingVision(true);
     setVisionError('');
+    // A preview belongs to the vision it was rendered from — regenerating the
+    // vision invalidates it.
+    setPreviewImage(null);
+    setImageError('');
     try {
       const { data, error } = await supabase.functions.invoke('generate-creative-vision', {
         body: {
@@ -902,6 +976,50 @@ export default function Dashboard() {
   };
 
 
+  // Renders the hero frame from the vision the client is looking at. The prompt
+  // was authored by the vision model (which saw the brief, the reference photo
+  // and the scraped site); the reference photo is sent along so Stability can
+  // run image-to-image and keep the real product's form.
+  const generatePreviewImage = async () => {
+    if (!vision) return;
+    setGeneratingImage(true);
+    setImageError('');
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-vision-image', {
+        body: {
+          vision,
+          brandName: form.brandName,
+          niche: form.niche,
+          referenceImages: refImages.map(({ base64, mimeType }) => ({ base64, mimeType })),
+        },
+      });
+      if (error) throw new Error(await edgeFunctionError(error));
+      if (data?.error) throw new Error(data.error);
+      if (!data?.imageBase64) throw new Error('No image came back. Try again.');
+      setPreviewImage(data.imageBase64 as string);
+    } catch (err: unknown) {
+      setImageError(err instanceof Error ? err.message : 'Failed to generate the image. Please try again.');
+    } finally {
+      setGeneratingImage(false);
+    }
+  };
+
+  /** Upload the approved preview to storage; returns its public URL. */
+  async function uploadPreviewImage(userId: string): Promise<string | null> {
+    if (!previewImage) return null;
+    const bytes = Uint8Array.from(atob(previewImage), c => c.charCodeAt(0));
+    const path = `${userId}/${crypto.randomUUID()}.jpg`;
+    const { error } = await supabase.storage
+      .from('creative-previews')
+      .upload(path, bytes, { contentType: 'image/jpeg' });
+    if (error) {
+      // The brief is what matters — never lose it over a failed image upload.
+      console.warn('Preview upload failed:', error.message);
+      return null;
+    }
+    return supabase.storage.from('creative-previews').getPublicUrl(path).data.publicUrl;
+  }
+
   async function handleRefImages(files: FileList) {
     const toAdd = Math.min(files.length, 3 - refImages.length);
     if (toAdd <= 0) return;
@@ -927,10 +1045,11 @@ export default function Dashboard() {
     setSubmitting(true);
     setSubmitError('');
     try {
+      const previewUrl = await uploadPreviewImage(user.id);
       const { data: inserted, error: insertError } = await supabase.from('free_creative_requests').insert({
         user_id: user.id, brand_name: form.brandName, niche: form.niche, ad_format: form.adFormat,
         description: form.description, reference_url: form.referenceUrl, status: 'pending',
-        approved_vision: vision,
+        approved_vision: vision, preview_image_url: previewUrl,
       }).select().single();
       if (insertError) throw insertError;
       try {
@@ -944,7 +1063,7 @@ export default function Dashboard() {
             email: user.email,
             brandName: form.brandName, niche: form.niche, adFormat: form.adFormat,
             description: form.description, referenceUrl: form.referenceUrl,
-            approvedVision: vision,
+            approvedVision: vision, previewImageUrl: previewUrl,
           }),
         });
       } catch (emailErr) { console.warn('Email notification failed:', emailErr); }
@@ -952,6 +1071,8 @@ export default function Dashboard() {
       setForm({ brandName: '', niche: '', adFormat: '', description: '', referenceUrl: '' });
       setVision(null);
       setRefImages([]);
+      setPreviewImage(null);
+      setImageError('');
       setShowForm(false);
     } catch (err: unknown) {
       setSubmitError(err instanceof Error ? err.message : 'Failed to submit. Please try again.');
@@ -1295,7 +1416,11 @@ export default function Dashboard() {
                     <div><label className={labelClass}>Reference URL (optional)</label><input type="url" name="referenceUrl" value={form.referenceUrl} onChange={handleFormChange} placeholder="https://..." className={inputClass} /></div>
                     {/* Reference images */}
                     <div>
-                      <label className={labelClass}>Reference Images (optional, up to 3)</label>
+                      <label className={labelClass}>Product Photos (optional, up to 3)</label>
+                      <p className="text-[11px] text-ink-dim -mt-1 mb-2 leading-relaxed">
+                        Photos of the actual product — the hero frame is rendered from these, so your real
+                        packaging shows up in the ad. Mood boards and logos will be rendered literally.
+                      </p>
                       {refImages.length > 0 && (
                         <div className="flex gap-2 flex-wrap mb-2">
                           {refImages.map((img, idx) => (
@@ -1315,7 +1440,7 @@ export default function Dashboard() {
                           className="w-full flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm text-ink-dim border border-dashed transition-colors hover:border-white/20 hover:text-ink-muted"
                           style={{ borderColor: 'rgb(var(--white-rgb) / 0.08)' }}>
                           <Upload size={14} />
-                          {refImages.length === 0 ? 'Add reference images' : `Add more (${3 - refImages.length} left)`}
+                          {refImages.length === 0 ? 'Add product photos' : `Add more (${3 - refImages.length} left)`}
                         </button>
                       )}
                       <input ref={refImageRef} type="file" accept="image/*" multiple className="hidden"
@@ -1347,6 +1472,10 @@ export default function Dashboard() {
                     submitting={submitting}
                     submitError={submitError}
                     animKey={visionKey}
+                    previewImage={previewImage}
+                    generatingImage={generatingImage}
+                    imageError={imageError}
+                    onGenerateImage={generatePreviewImage}
                   />
                 )}
               </div>

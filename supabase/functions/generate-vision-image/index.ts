@@ -22,6 +22,10 @@ interface VisionData {
   vibeColors?: ColorEntry[];
   productColors?: ColorEntry[];
   hook?: string;
+  /** Authored by the vision model, which is the only thing that sees the brief,
+   *  the reference photo AND the scraped site at once. Preferred over the
+   *  field-stitching below when present. */
+  imagePrompt?: string;
 }
 
 async function getQueryEmbedding(text: string, hfKey: string): Promise<number[]> {
@@ -86,6 +90,23 @@ function buildStabilityPrompt(
 ): string {
   const parts: string[] = [];
 
+  // The vision model already fused the brief, the reference photo and the
+  // scraped site into one renderable prompt — use it verbatim as the spine and
+  // don't re-stitch the same facts around it, which only dilutes the signal.
+  if (vision.imagePrompt?.trim()) {
+    parts.push(vision.imagePrompt.trim());
+    if (!hasRefImage) {
+      parts.push("commercial advertising photography, professional studio lighting, ultra high resolution, cinematic composition");
+    }
+    if (ragChunks.length > 0) {
+      const charLimit = hasRefImage ? 200 : 400;
+      parts.push(ragChunks.slice(0, hasRefImage ? 1 : 2).map((c) => c.slice(0, charLimit)).join(" | "));
+    }
+    return parts.join(". ");
+  }
+
+  // ── Legacy path: no imagePrompt (an older vision doc). Stitch the fields. ──
+
   // Visual direction is the strongest signal for both modes
   if (vision.visualDirection) {
     parts.push(vision.visualDirection);
@@ -106,7 +127,7 @@ function buildStabilityPrompt(
     // Text-to-image: include product color anchors and brand context to guide what to generate
     const productColorNames = (vision.productColors ?? []).map((c) => c.name).join(", ");
     if (productColorNames) parts.push(`Product tones: ${productColorNames}`);
-    parts.push(`${niche} product for ${brandName}`);
+    parts.push(`${niche} product`); // never the brand name — see stripBrandName
     parts.push("commercial advertising photography, professional studio lighting, ultra high resolution, cinematic composition");
   } else {
     // Image-to-image: keep prompt focused on scene/atmosphere, not what the product looks like
@@ -125,6 +146,25 @@ function buildStabilityPrompt(
   }
 
   return parts.join(". ");
+}
+
+/**
+ * Strip the brand name out of the prompt. Diffusion models treat a proper noun
+ * as an instruction to render those letters on the product, and they render text
+ * as garbage — so a prompt saying "can of Kettle & Ash cold brew" comes back with
+ * a mangled label. The system prompt forbids brand names, but the model slips
+ * them in anyway, so this enforces it rather than hoping.
+ */
+function stripBrandName(prompt: string, brandName: string): string {
+  const name = brandName.trim();
+  if (!name) return prompt;
+  const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return prompt
+    .replace(new RegExp(escaped, "gi"), "")
+    .replace(/\s{2,}/g, " ")       // collapse the gap the name left behind
+    .replace(/\s+([,.])/g, "$1")   // "can of , cold brew" → "can of, cold brew"
+    .replace(/\bof\s*,/gi, "of")
+    .trim();
 }
 
 const NEGATIVE_PROMPT =
@@ -182,8 +222,14 @@ Deno.serve(async (req: Request) => {
     }
 
     // Build the Stability AI prompt
-    const prompt = buildStabilityPrompt(vision, brandName, niche, ragChunks, hasRefImage);
-    console.log(`[generate-vision-image] mode=${hasRefImage ? "sd3-img2img" : "core-txt2img"} prompt_len=${prompt.length}`);
+    const prompt = stripBrandName(
+      buildStabilityPrompt(vision, brandName, niche, ragChunks, hasRefImage),
+      brandName,
+    );
+    console.log(
+      `[generate-vision-image] mode=${hasRefImage ? "sd3-img2img" : "core-txt2img"} ` +
+      `prompt=${vision.imagePrompt?.trim() ? "authored" : "stitched"} len=${prompt.length}`,
+    );
 
     const formData = new FormData();
     formData.append("prompt", prompt);

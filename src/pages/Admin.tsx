@@ -55,6 +55,7 @@ interface CreativeRequest {
   creative_caption?: string;
   client_message?: string;
   approved_vision?: ApprovedVision | null;
+  preview_image_url?: string | null;
   created_at: string;
   profiles: { full_name: string | null; company_name: string | null } | null;
 }
@@ -578,7 +579,7 @@ function getGreeting(name: string) {
 }
 
 // ─── Vision Modal ────────────────────────────────────────────────────────────
-function VisionModal({ vision, brandName, onClose }: { vision: ApprovedVision; brandName: string; onClose: () => void }) {
+function VisionModal({ vision, brandName, previewImageUrl, onClose }: { vision: ApprovedVision; brandName: string; previewImageUrl?: string | null; onClose: () => void }) {
   const sectionLabel = "text-[10px] font-bold text-ink-dim uppercase tracking-[0.12em] mb-2 block";
   return createPortal(
     <div className="fixed inset-0 z-[200] flex items-center justify-center px-4" onClick={onClose}>
@@ -706,6 +707,21 @@ function VisionModal({ vision, brandName, onClose }: { vision: ApprovedVision; b
               ))}
             </div>
           </div>
+
+          {/* The AI hero frame the client approved — what they expect to receive */}
+          {previewImageUrl && (
+            <>
+              <div className="h-px" style={{ background: 'rgb(var(--white-rgb) / 0.06)' }} />
+              <div>
+                <span className={sectionLabel}>Approved Hero Frame</span>
+                <a href={previewImageUrl} target="_blank" rel="noopener noreferrer">
+                  <img src={previewImageUrl} alt="AI-generated hero frame approved by the client"
+                    className="w-full rounded-xl"
+                    style={{ border: '1px solid rgb(var(--white-rgb) / 0.08)' }} />
+                </a>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>,
@@ -1948,7 +1964,7 @@ export default function Admin() {
               {loadingTab ? <div className="flex items-center justify-center p-10"><Loader size={20} className="animate-spin text-accent-ink" /></div>
                 : filteredRequests.length === 0 ? <p className="text-ink-dim text-sm text-center p-10">No requests found.</p>
                 : <div className="overflow-x-auto"><table className="w-full"><thead><tr>{['User','Brand','Niche','Format','Submitted','Vision','Creative','Status'].map(h=><th key={h} className={thClass}>{h}</th>)}</tr></thead><tbody>{filteredRequests.map(r=>(<tr key={r.id}><td className={tdClass}>{r.profiles?.full_name||'—'}</td><td className={tdClass}>{r.brand_name}</td><td className={tdClass+' text-ink-muted'}>{r.niche}</td><td className={tdClass+' text-ink-muted'}>{r.ad_format}</td><td className={tdClass+' text-ink-muted'}>{formatDate(r.created_at)}</td><td className={tdClass}>{r.approved_vision?<button onClick={()=>setVisionRequest(r)} className="flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full transition-all" style={{background:'rgb(var(--accent-rgb) / 0.1)',border:'1px solid rgb(var(--accent-rgb) / 0.25)',color:'var(--accent-ink)'}}><Eye size={11}/>View</button>:<span className="text-ink-dim text-xs">—</span>}</td><td className={tdClass}>{r.creative_url?<span className="flex items-center gap-1 text-xs text-success"><CheckCircle size={12}/> Uploaded</span>:<span className="flex items-center gap-1 text-xs text-ink-dim"><Clock size={12}/> Pending</span>}</td><td className={tdClass}><StatusDropdown request={r} onUpdate={handleRequestUpdate}/></td></tr>))}</tbody></table></div>}
-              {visionRequest?.approved_vision && <VisionModal vision={visionRequest.approved_vision} brandName={visionRequest.brand_name} onClose={()=>setVisionRequest(null)}/>}
+              {visionRequest?.approved_vision && <VisionModal vision={visionRequest.approved_vision} brandName={visionRequest.brand_name} previewImageUrl={visionRequest.preview_image_url} onClose={()=>setVisionRequest(null)}/>}
             </div>
           </div>
         )}

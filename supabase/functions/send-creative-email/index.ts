@@ -66,7 +66,18 @@ function buildVisionBlock(vision: ApprovedVision): string {
   </tr>`;
 }
 
-function buildNotificationEmail(fullName: string, email: string, brandName: string, niche: string, adFormat: string, description: string, referenceUrl: string, approvedVision?: ApprovedVision): string {
+/** The AI hero frame the client signed off on. Hosted in a public bucket —
+ *  email clients can't authenticate, so a signed URL would render as a broken
+ *  image. */
+function buildPreviewBlock(url: string): string {
+  return `
+    <tr><td style="padding:0 32px 24px 32px;">
+      <p style="font-family:Arial,sans-serif;font-size:11px;font-weight:bold;letter-spacing:1.5px;text-transform:uppercase;color:#3b5280;margin:0 0 10px 0;">Approved Hero Frame</p>
+      <img src="${url}" alt="AI-generated hero frame" width="536" style="width:100%;max-width:536px;border-radius:12px;border:1px solid rgba(255,255,255,0.1);display:block;" />
+    </td></tr>`;
+}
+
+function buildNotificationEmail(fullName: string, email: string, brandName: string, niche: string, adFormat: string, description: string, referenceUrl: string, approvedVision?: ApprovedVision, previewImageUrl?: string): string {
   const field = (label: string, value: string, isLink = false) => `
     <tr>
       <td style="padding: 0 0 16px 0;">
@@ -156,6 +167,7 @@ function buildNotificationEmail(fullName: string, email: string, brandName: stri
             </td>
           </tr>
           ${approvedVision ? buildVisionBlock(approvedVision) : ''}
+          ${previewImageUrl ? buildPreviewBlock(previewImageUrl) : ''}
           <tr>
             <td style="padding: 0 40px;">
               <table width="100%" cellpadding="0" cellspacing="0" border="0">
@@ -256,7 +268,7 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const { fullName, email, brandName, niche, adFormat, description, referenceUrl, approvedVision } = await req.json();
+    const { fullName, email, brandName, niche, adFormat, description, referenceUrl, approvedVision, previewImageUrl } = await req.json();
 
     const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 
@@ -280,7 +292,7 @@ Deno.serve(async (req: Request) => {
         to: ["adhiraj@clout-kart.com", "rounak@clout-kart.com", "shivam@clout-kart.com"],
         subject: `New Free Creative Request from ${fullName} — ${brandName}`,
         text: plainText,
-        html: buildNotificationEmail(fullName, email, brandName, niche, adFormat, description, referenceUrl || "", approvedVision),
+        html: buildNotificationEmail(fullName, email, brandName, niche, adFormat, description, referenceUrl || "", approvedVision, previewImageUrl),
       }),
     });
 
