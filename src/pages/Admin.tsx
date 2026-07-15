@@ -1090,9 +1090,30 @@ const DEFAULT_ADD_LEAD_FORM = { brand_name: '', business_name: '', niche: '', pl
 const DEFAULT_CONTACT_FORM  = { name: '', role: '', email: '', phone: '', linkedin_url: '', instagram_handle: '', notes: '' };
 
 // ─── Main Admin component ─────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// DEMO MODE — sample figures for screenshots, product walk-throughs and testing.
+// Turned on ONLY by adding ?demo=1 to the admin URL. This data lives purely in
+// React state; it is NEVER written to the `payments` table, so real captured
+// revenue is untouched and this can't be mistaken for it — a banner marks every
+// screen as demo while it's on. The brand names below are illustrative
+// placeholders, NOT actual CloutKart clients or real transactions.
+const DEMO_PAYMENTS: Payment[] = [
+  { id: 'demo-1', user_id: 'demo', amount: 1200000, plan: 'clout_club', status: 'captured', payment_id: 'pay_DEMO0001', created_at: '2026-06-08T11:20:00Z', profiles: { full_name: 'TwistedX' } },
+  { id: 'demo-2', user_id: 'demo', amount: 950000,  plan: 'clout_club', status: 'captured', payment_id: 'pay_DEMO0002', created_at: '2026-06-17T15:05:00Z', profiles: { full_name: 'Cloak Clothing' } },
+  { id: 'demo-3', user_id: 'demo', amount: 750000,  plan: 'clout_club', status: 'captured', payment_id: 'pay_DEMO0003', created_at: '2026-06-24T09:41:00Z', profiles: { full_name: 'Nomad Threads' } },
+  { id: 'demo-4', user_id: 'demo', amount: 1100000, plan: 'clout_club', status: 'captured', payment_id: 'pay_DEMO0004', created_at: '2026-07-03T13:12:00Z', profiles: { full_name: 'Halcyon Skincare' } },
+  { id: 'demo-5', user_id: 'demo', amount: 800000,  plan: 'clout_club', status: 'captured', payment_id: 'pay_DEMO0005', created_at: '2026-07-09T10:33:00Z', profiles: { full_name: 'Frostbite Coffee' } },
+  { id: 'demo-6', user_id: 'demo', amount: 900000,  plan: 'clout_club', status: 'captured', payment_id: 'pay_DEMO0006', created_at: '2026-07-12T18:47:00Z', profiles: { full_name: 'Ravel Footwear' } },
+  { id: 'demo-7', user_id: 'demo', amount: 700000,  plan: 'clout_club', status: 'captured', payment_id: 'pay_DEMO0007', created_at: '2026-07-14T14:26:00Z', profiles: { full_name: 'Velo Supplements' } },
+];
+// Sums to ₹64,000 (amounts are paise; formatCurrency divides by 100).
+const DEMO_REVENUE_TOTAL = DEMO_PAYMENTS.reduce((s, p) => s + p.amount, 0);
+
 export default function Admin() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  // Demo mode: ?demo=1 in the URL. Sample figures only, never persisted.
+  const demoMode = new URLSearchParams(window.location.search).get('demo') === '1';
   usePushNotifications(user?.id ?? null, true);
   const [tab, setTab] = useState<Tab>('overview');
   const [requestFilter, setRequestFilter] = useState<RequestFilter>('all');
@@ -1280,10 +1301,20 @@ export default function Admin() {
       supabase.from('profiles').select('plan'),
       supabase.from('profiles').select('id, full_name, company_name, plan, clout_club_price, created_at').order('created_at', { ascending: false }).limit(10),
     ]);
-    const totalRevenue = paymentsData?.reduce((sum: number, p: { amount: number }) => sum + p.amount, 0) ?? 0;
+    const realRevenue = paymentsData?.reduce((sum: number, p: { amount: number }) => sum + p.amount, 0) ?? 0;
     const customerProfiles = (conversionProfiles ?? []).filter((p: { plan: string | null }) => (p.plan ?? 'free').toLowerCase() !== 'admin');
     const paidUsers = customerProfiles.filter((p: { plan: string | null }) => (p.plan ?? 'free').toLowerCase() === 'clout_club').length;
-    setOverviewStats({ totalUsers: totalUsers ?? 0, requestsToday: requestsToday ?? 0, totalRevenue, paidUsers, conversionUsers: customerProfiles.length });
+    // In demo mode, show the illustrative ₹64,000 and demo brand count instead of
+    // the real (empty) figures. Never mutates the database.
+    setOverviewStats(demoMode
+      ? {
+          totalUsers: (totalUsers ?? 0) + DEMO_PAYMENTS.length,
+          requestsToday: requestsToday ?? 0,
+          totalRevenue: DEMO_REVENUE_TOTAL,
+          paidUsers: paidUsers + DEMO_PAYMENTS.length,
+          conversionUsers: customerProfiles.length + DEMO_PAYMENTS.length,
+        }
+      : { totalUsers: totalUsers ?? 0, requestsToday: requestsToday ?? 0, totalRevenue: realRevenue, paidUsers, conversionUsers: customerProfiles.length });
     setRecentUsers(recent ?? []);
     setLoadingTab(false);
   }
@@ -1303,12 +1334,16 @@ export default function Admin() {
   async function loadPayments() {
     setLoadingTab(true);
     const { data: rawPayments } = await supabase.from('payments').select('*').eq('status', 'captured').order('created_at', { ascending: false });
-    if (!rawPayments || rawPayments.length === 0) { setPayments([]); setLoadingTab(false); return; }
-    const userIds = [...new Set(rawPayments.map((p: { user_id: string }) => p.user_id))];
-    const { data: profiles } = await supabase.from('profiles').select('id, full_name').in('id', userIds);
-    const profileMap: Record<string, { full_name: string | null }> = {};
-    (profiles ?? []).forEach((p: { id: string; full_name: string | null }) => { profileMap[p.id] = { full_name: p.full_name }; });
-    setPayments(rawPayments.map((p: Payment) => ({ ...p, profiles: profileMap[p.user_id] ?? null })));
+    let realList: Payment[] = [];
+    if (rawPayments && rawPayments.length > 0) {
+      const userIds = [...new Set(rawPayments.map((p: { user_id: string }) => p.user_id))];
+      const { data: profiles } = await supabase.from('profiles').select('id, full_name').in('id', userIds);
+      const profileMap: Record<string, { full_name: string | null }> = {};
+      (profiles ?? []).forEach((p: { id: string; full_name: string | null }) => { profileMap[p.id] = { full_name: p.full_name }; });
+      realList = rawPayments.map((p: Payment) => ({ ...p, profiles: profileMap[p.user_id] ?? null }));
+    }
+    // Demo mode prepends the sample rows; they are state-only and never saved.
+    setPayments(demoMode ? [...DEMO_PAYMENTS, ...realList] : realList);
     setLoadingTab(false);
   }
 
@@ -1870,6 +1905,15 @@ export default function Admin() {
       </aside>
 
       <main className="flex-1 p-4 sm:p-6 md:p-10 overflow-y-auto">
+        {/* Demo-mode banner — makes it unmistakable that figures are illustrative */}
+        {demoMode && (
+          <div className="flex items-center gap-2.5 mb-5 rounded-xl px-4 py-2.5 text-sm font-semibold"
+            style={{ background: 'rgb(250 204 21 / 0.10)', border: '1px solid rgb(250 204 21 / 0.35)', color: '#facc15' }}>
+            <AlertCircle size={15} className="flex-shrink-0" />
+            <span>Demo mode — sample figures for presentation, not real revenue or actual client payments.
+              Remove <code className="font-mono">?demo=1</code> from the URL to see live data.</span>
+          </div>
+        )}
         {/* Telemetry top bar — desktop */}
         <div className="app-topbar hidden md:flex">
           <span className="app-crumb">Founder · <b>{activeLabel}</b></span>
