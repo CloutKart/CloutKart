@@ -92,7 +92,7 @@ currently empty, so no counts are shown.
   - **MongoDB** (`MONGODB_URI`) — vector store / retrieval.
   - Scrapes the client site (e.g. `https://clout-kart.com`) for grounding.
 
-### `generate-vision-image` — edge function *(added in HEAD: provider fail-over + AI hero frame)*
+### `generate-vision-image` — edge function *(provider fail-over + AI hero frame)*
 - **Incoming:** `POST` (vision → hero image).
 - **Outgoing:**
   - **Stability AI** — `stable-image/generate/core` and `.../sd3`
