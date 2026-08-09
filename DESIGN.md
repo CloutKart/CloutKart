@@ -1,6 +1,187 @@
 # Design
 
-## V2 — "The Second Renaissance (2045)"
+## V3 — "The Drawing Sheet" (current)
+
+The offering is **automating and optimising the creative production process**, so the
+site is the **plan for a production line**: a numbered set of drawing sheets, hairline
+schematics, dimension lines, and title blocks. The V2 Renaissance world below is
+superseded on the landing page.
+
+**The one semantic rule, enforced in every mark:**
+
+> **Graphite hairline = a human decides. Violet = the machine executes.**
+
+Nothing is violet for decoration. It is what makes "four of six stations run themselves"
+legible before a label is read, and it continues V2's `.ws-graphite` / `.ws-trace` motif
+(an ink line a machine trace catches up to and completes), which survived the switch.
+
+**The switch was largely a promotion, not a rewrite.** `TelemetryFrame.tsx` already drew
+registration crosshairs, ruler ticks, and mono coordinates off
+`--frame-line/tick/mark/label`; V3 makes that vocabulary the primary system.
+
+### The sheet set
+
+Seven numbered sheets. The number appears in the section eyebrow, in the section's title
+block, and in `MarginIndex.tsx` — all three must agree, because the cross-reference is the
+whole point of numbering them.
+
+| # | id | Section | File |
+|---|---|---|---|
+| 01 | `about` | The Offering — production spec + stage allocation | `About.tsx` |
+| 02 | `assembly` | **The Assembly** — the centrepiece circuit | `ProductionLine.tsx` |
+| 03 | `pixie` | The Engine | `PixieSection.tsx` |
+| 04 | `story` | The Run | `ScrollStory.tsx` |
+| 05 | `services` | The Scope | `Services.tsx` |
+| 06 | `process` | The Stations (Sheet 02 at 1:1) | `Process.tsx` |
+| 07 | `portfolio` | The Gallery | `Portfolio.tsx` |
+
+Removed in revision 2: the message manifesto, the standalone optimisation-loop section,
+the patron roster, and the testimonial sign-off sheets. Their CSS went with them.
+
+### Sheet 02 — The Assembly
+
+The page's one big drawing, and the section everything else defers to. Six stations on a
+rail, **closed into a circuit** by a routed return track that carries campaign signal back
+under the line to re-brief the next run. (The loop used to be its own section; folding it
+in is what makes this a circuit rather than a line with two dead ends, and it is also why
+the job token never stops.)
+
+Honest flowchart grammar: a **rectangle is a process the machine runs**, a **diamond is a
+decision a person makes**, and a rail segment is graphite only when it *ends* at a gate.
+Branch endpoints are labelled individually, set vertically (`rotate(90)`) so six fit under
+one station — a vertical callout is native to drawings, not a workaround.
+
+Motion, all anime.js v4:
+
+- The job token travels each leg, lands with an `outElastic` pop, and fires a `.pl-ping`
+  ring off the station. Auto stations get a short beat; **gates hold ~4× longer and throb**,
+  because a gate is exactly where a real job waits on a person.
+- `.pl-glow` duplicates every rail segment and the return leg and is drawn `0 → 1` in step
+  with the token crossing it, so the circuit lights up behind the job and resets at the top
+  of each lap. This is the single biggest step from "diagram" to "line that is running".
+- The return leg is one fast unbroken run — no station beats on the way back.
+- **The detail panel auto-advances with the token**, so a visitor who touches nothing still
+  reads all six stations. Any hover, click, or focus hands control over permanently for that
+  page view; the token keeps circling but stops driving the panel.
+- The reveal is kept to ~1.6s on purpose: a long entrance means staring at a half-drawn
+  sheet before the thing that sells it has started.
+
+### Sheet 07 — The Gallery
+
+The coverflow corridor carries three things beyond the artwork:
+
+- **A notes panel bolted to the plate's right edge.** It lives *inside* the transformed
+  plate, so it tilts and scales with the frame rather than floating over it, and its copy
+  types itself out when the work comes into preview. The plate and panel centre as one
+  unit via `--gallery-panel-shift` (half the panel width, applied to every plate);
+  `--gallery-panel-shift` is forced to `0px` when the active work has no copy, so a work
+  without a panel still centres exactly as before. Spacing went 232 → 300px: fully
+  clearing plate +1 would need ~570px, which flattens the coverflow into a flat row, so
+  the tail of the queue is allowed to recede *behind* the panel instead. Mobile has no
+  side panel — the copy stacks under the plate, above the plaque.
+- **Video works.** `portfolio_sections.video_url` non-empty means the work is a video;
+  `thumbnail_url` stays as its poster. Muted, looping, no controls, no audio by contract.
+  **Only the plate in preview plays** — several simultaneous decodes behind 3D transforms
+  is what makes a coverflow stutter — and `muted` + `playsInline` are both required or iOS
+  refuses to autoplay at all.
+- **Ambient tint matched to the artwork.** `--work-tint` comes from `accent_hex`, sampled
+  from the media at upload time by `src/lib/dominantColor.ts`. **This is the one place on
+  the site a non-token hue is allowed**, and it needs its own rule or the violet-means-
+  automated system quietly stops meaning anything: *the tint is the artwork's own light
+  spilling into the room*. It is confined to the corridor's ambient wash and spotlight at
+  low alpha; every piece of chrome around it — frame, crosshairs, panel, caret, plaque —
+  stays on the existing tokens. Empty `accent_hex` falls back to the site accent.
+
+The corridor itself is a **drawing sheet**, not the V2 dark museum room it used to be:
+grid paper (the same `.bp-grid` as Sheet 02), the plate's measured pixel size stated as a
+`.bp-dim` dimension line, a `.bp-titleblock` in the notes panel, a numbered plate register
+in place of dots, and four focus marks that lock onto whichever plate is centred. The
+museum devices — drifting dust motes and perspective vanishing-point guides — are gone.
+
+Traps paid for here:
+
+- **`.gallery-vignette` was painting an opaque box.** It ramped to solid `var(--bg)` from
+  38% outward, washing most of the corridor in flat near-black, blocking the page's ambient
+  and reading as a dark rectangle bounding the whole section. It is now a *horizontal* fade
+  capped at `0.82` alpha, which still finishes off plates sliding past the clipped edges
+  (they are already at ~42% opacity by then) without sealing the section off. It cannot
+  simply be deleted — without it the plates hard-clip. Measured either side of the corridor
+  edge: worst-case channel delta went from a visible box to ≤ 7/255.
+- **The focus marks are positioned from a measured rect**, not from re-deriving the
+  coverflow's 3D transform. Two sources of truth for one position drift apart. They track
+  the plate with rAF for ~750ms because the plate transition is 600ms, so the marks follow
+  it in rather than teleporting; under reduced motion that transition is disabled, so the
+  first frame is already final and no special-casing is needed.
+- The plate dimension is read off the loaded media (`naturalWidth` / `videoWidth`), so it
+  needs no admin field and can never disagree with the file.
+- `.gallery-register-item` sits on `--ink-muted` for the same 4.5:1 reason as everything
+  else on this page.
+
+- **Sample the colour in the admin, from the local `File`** — never from the published
+  Supabase URL in a visitor's browser. Painting a canvas from a cross-origin image taints
+  it and `getImageData` throws.
+- **Discard near-black, near-white and near-grey pixels before bucketing.** They dominate
+  the raw counts (paper, shadow, background) and average out to a muddy beige that says
+  nothing about the artwork.
+- **The ambient gradient has to fade out inside the corridor.** The corridor is
+  `overflow: hidden`; an ellipse wider than its box gets sliced into a visible rectangle
+  of lighter ground.
+- **The gallery fetch degrades on its own.** It selects the new columns and falls back to
+  the original list if they are missing, because an unapplied migration would otherwise
+  error the query and blank the whole section.
+- `.gallery-panel-eyebrow` sits on `--ink-muted`: `--ink-dim` measured 3.99:1 against the
+  panel's `--bg-elev`, and small uppercase text needs 4.5.
+
+### Kit (`src/index.css`, `/* ── BP: the drawing sheet ── */`)
+
+- `.bp-sheet` — corner registration brackets implying a sheet; `--bp-sheet-inset` tunes the
+  offset. `.bp-sheet--ruled` adds the hairline border.
+- `.bp-titleblock` — the registrar device, **replaces `.accession`** as the stamp.
+- `.bp-dim` / `.bp-dim-line` / `.bp-dim-text` — dimension lines; the page's numeric device.
+- `.bp-tag` / `.bp-tag--auto` — the AUTO vs GATE badge.
+- `.bp-margin-note` — a pencilled revision note; replaced the parchment slips.
+- `.bp-grid` — masked grid paper, under Sheet 02 only.
+- `.bp-rail`, `.bp-station-mark`, `.bp-fan-label`, `.bp-token`, `.pl-glow`, `.pl-ping`,
+  `.bp-focus-ring` — schematic primitives.
+
+### Traps, all of them paid for once already
+
+- **`svg.createDrawable` takes ONE targets param, not varargs.** Spreading paths into it
+  silently registers only the first, so the rest never animate.
+- **`.bp-rail` must carry no `stroke-dasharray`.** `createDrawable` drives that property
+  itself; a CSS dash pattern gets overwritten mid-draw.
+- **Violet alpha has to be per-theme.** `--bp-auto-line` is 0.9 on the light canvas and 0.6
+  on the dark one; a single shared alpha either vanishes on light or glares on dark.
+- **`--ink-dim` is only 4.14:1 on `#080808`.** The label ramp `--bp-label` therefore sits on
+  `--ink-muted` (7.9 dark / 6.9 light). `--frame-label` is ~3:1 and is chrome ONLY.
+- **Chromium does not match `:focus-visible` on an SVG `<g tabindex="0">`.** The station
+  focus ring uses plain `:focus`.
+- **Do not put `aria-hidden` on an SVG containing focusable children** — it pulls the
+  stations out of the a11y tree entirely. Sheet 02's SVG is `role="group"` + `aria-label`,
+  with decorative paths individually hidden.
+- An animated `feTurbulence`/`feDisplacementMap` on a hero-sized element measured ~2 fps.
+  SVG filter animation is not viable here; use transforms and stroke drawing.
+
+### Numbers discipline
+
+Only figures the site already claimed may appear: `48h`, `500+ brands`, `+284% ROAS`,
+`8.4% CTR`, `10.2× ROAS`, `4.1% CVR`, `6 formats`, `4 placements`, `6 stations`. No invented
+before/after comparisons, no fabricated per-stage timings, no "% of handoffs removed". Where
+a diagram needs a shape rather than a value it shows structure. Pricing states **capacity,
+never a price** — the page has never shown a rupee figure.
+
+Charts follow the same discipline: CTR, ROAS, and CVR **share no scale and have no natural
+maximum**, so they render as stat readouts, never meter bars. The V2 `AdScene` bars were
+removed for exactly that reason — their fill fractions implied a denominator that does not exist.
+
+### Motion contract
+
+Every schematic ships its **finished** state in the markup; the timelines only animate state
+that is already complete. Reduced motion therefore needs no fallback branch — just an early
+return in the effect plus `display: none` on `.bp-token`, `.pl-glow`, and `.pl-ping`.
+
+
+## V2 — "The Second Renaissance (2045)" (superseded on the landing page)
 
 The site is an **artifact recovered from a second Renaissance, dated 2045** — the year
 human creativity and AI stop competing and start collaborating. The hero is the founding
@@ -160,8 +341,27 @@ dropped (`--dot-color: transparent`) so the frame carries the surface.
 grayscale **etched human hand** (wrapped in vines/flowers) reaching a violet
 **CLOUTKART robot hand**, from transparent WebP halves that span full-bleed and
 **approach** on scroll (`--hero-p`, published in a rAF scroll handler; no re-render).
-Headline **"Creation, / Reimagined."** in Gasdrifo sits *behind* the hands (3D depth);
-background is the site grid + TelemetryFrame (`.hero-static` is transparent so both
+Headline **"Creation, / Reimagined."** in Gasdrifo sits *behind* the hands (3D depth).
+The forearm used to swallow the "Re" so the word read as *"imagined."* The fix is
+composition, not effects: the block is pushed up hard (`sm:pt-[max(4.8rem,8.5vh)]`) and
+the face is a little larger (`clamp(3.9rem, 11.6vw, 9.6rem)`). Note the two pull against
+each other — a bigger face makes line 1 taller, which pushes line 2 back *down* into the
+arm — so the size bump is modest and the upward push does the work. The rem floor in the
+padding is load-bearing: pure `vh` collides with the 60px navbar on short viewports.
+
+The artwork's `top` is `max(55%, calc(28.14vw + 90px))` for the matching reason. The wrap
+is centred, and its height is width-driven (100vw × 1882/3344 ≈ 56.28vw, hence the 28.14vw
+half), so a bare `55%` lets the art ride UP as the window gets shorter: at 1440×700 the
+forearm climbed back over the headline. The floor pins the art's top edge near 90px —
+where it already lands at 1440×900 — so the headline/artwork relationship no longer
+depends on window height. Verified constant across 1440×900, 1440×700 and 1280×800.
+
+Two rejected approaches, both recorded so they are not re-attempted: a `mix-blend-mode:
+multiply` "x-ray echo" (a duplicate headline printed onto the hand), and a `backdrop-filter`
+"spotlight pool" (a feathered ellipse dimming the art behind the type, which required the
+headline to move in front of the hands and so gave up the overlap).
+
+Background is the site grid + TelemetryFrame (`.hero-static` is transparent so both
 show through). Signature effect: only the **botanicals bloom + move**. `hero-vines.webp`
 is a chroma-extracted "colored vines/flowers only" layer (the hand stays gray); its
 opacity fades in on approach (colorize) and it gently **sways** (`hero-vine-sway`,

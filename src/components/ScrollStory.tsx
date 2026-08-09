@@ -181,20 +181,21 @@ function AdScene({ localProg }: { localProg: number }) {
         </div>
       </div>
 
-      <div className="flex sm:flex-col gap-4 sm:gap-3" style={vis(0.5)}>
+      {/* Readouts, not meters: CTR, ROAS, and CVR share no scale and have no
+          natural maximum, so a filled bar would have to invent its denominator. */}
+      <div className="flex sm:flex-col gap-5 sm:gap-4" style={vis(0.5)}>
         {[
-          { label: 'CTR', val: '8.4%', bar: 0.84, color: 'var(--accent)' },
-          { label: 'ROAS', val: '10.2×', bar: 0.92, color: 'var(--accent)' },
-          { label: 'CVR', val: '4.1%', bar: 0.6, color: 'var(--accent)' },
+          { label: 'CTR', val: '8.4%' },
+          { label: 'ROAS', val: '10.2×' },
+          { label: 'CVR', val: '4.1%' },
         ].map(m => (
-          <div key={m.label} className="w-28 sm:w-36">
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-[10px] text-ink-dim font-mono">{m.label}</span>
-              <span className="text-[11px] font-bold font-mono text-white">{m.val}</span>
+          <div key={m.label} className="w-24 sm:w-36">
+            <div className="font-mono font-medium text-lg sm:text-xl tabular-nums leading-none" style={{ color: 'var(--ink)' }}>
+              {m.val}
             </div>
-            <div className="h-1 rounded-full bg-white/[0.06] overflow-hidden">
-              <div className="h-full rounded-full transition-all duration-1000"
-                style={{ width: `${m.bar * 100}%`, background: m.color, transitionDelay: '0.3s' }} />
+            <div className="h-px w-6 my-2" style={{ background: 'var(--frame-mark)' }} />
+            <div className="text-[9px] font-mono uppercase tracking-[0.2em]" style={{ color: 'var(--ink-dim)' }}>
+              {m.label}
             </div>
           </div>
         ))}
@@ -265,10 +266,10 @@ function CartScene({ localProg }: { localProg: number }) {
 // ─── Phase data ────────────────────────────────────────────────────────────────
 
 const phases = [
-  { num: 'I', title: 'Write the brief', sub: 'Tell us your brand, niche, and what you want to say. Pixie reads every word.' },
-  { num: 'II', title: 'Pixie builds the vision', sub: 'Hook, colors, visual direction, ad copy — generated in seconds. Review before a pixel is made.' },
-  { num: 'III', title: 'The creative ships', sub: 'Production-ready ads, delivered in 48 hours. Every format, every platform, zero ambiguity.' },
-  { num: 'IV', title: 'Cart. Convert. Scale.', sub: 'The right message at the right moment. ROAS climbs. Spend scales. Run it again.' },
+  { num: '01', title: 'Intake', sub: 'Brand, niche, and goal arrive as structured fields. The run is opened the moment the brief lands.' },
+  { num: '02', title: 'Draft and gate', sub: 'Pixie drafts hook, colours, direction, and the deliverable list. You approve it before a pixel exists.' },
+  { num: '03', title: 'Produce and deliver', sub: 'The batch is produced, checked, exported, and delivered inside the 48-hour cycle. Every format, every placement.' },
+  { num: '04', title: 'Launch and read', sub: 'Assets go live and the platforms report back. What the numbers say becomes the brief for the next run.' },
 ];
 
 // ─── Main component ────────────────────────────────────────────────────────────
@@ -317,16 +318,15 @@ export default function ScrollStory() {
 
         {/* Header — a page recovered from the production ledger */}
         <div className="relative text-center mb-10 md:mb-14">
-          <p className="mono-label mb-5" style={{ letterSpacing: '0.3em' }}>The Ledger</p>
-          <h2 className="font-authored font-semibold leading-[1.06]"
-            style={{ fontSize: 'clamp(1.6rem, 4.4vw, 3.2rem)', color: 'var(--ink)' }}>
-            From brief to{' '}
-            <span style={{ color: 'var(--accent-ink)' }}>converting creative,</span>
-            {' '}in four entries.
+          <p className="mono-label mb-5" style={{ letterSpacing: '0.3em' }}>Sheet 04 · The Run</p>
+          <h2 className="font-heading font-bold leading-[1.06] tracking-tight"
+            style={{ fontSize: 'clamp(1.7rem, 4.4vw, 3.2rem)', color: 'var(--ink)', textWrap: 'balance' }}>
+            One run,{' '}
+            <span style={{ color: 'var(--accent-ink)' }}>start to signal.</span>
           </h2>
-          {/* the registrar's stamp — the ONE literal date/time device on the site */}
+          {/* the run stamp — the one literal identifier on the sheet */}
           <span className="registrar-stamp hidden md:inline-flex" aria-hidden="true">
-            REG · 14 VI 2045
+            Run 04 · Closed
           </span>
         </div>
 

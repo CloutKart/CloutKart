@@ -1,17 +1,17 @@
 import { useEffect, useRef } from 'react';
 
-// V2 "The Workshop" — a workbench from 2045. Each step is a sketchbook entry:
-// a graphite stroke draws itself under the title, then a thin purple schematic
-// trace catches up and completes the same line — ink and circuit finishing the
-// same stroke. Hovering an entry re-draws its trace live (the visitor holds the
-// pen; the section sets the nib cursor). No cards, no icon chips, no gradients.
+// V3 "The Stations" — Sheet 02 (ProductionLine) drawn at 1:1. Same six stations,
+// same order, same AUTO/GATE split; this sheet is the detail view where each one
+// is written out. The graphite-then-violet stroke survives the switch to the
+// blueprint register unchanged, because it already WAS the thesis: a human line
+// that a machine trace catches up to and completes.
 const studies = [
-  { numeral: 'I', title: 'Research', desc: 'We analyze winning ad styles, market trends, and your competitors to find the patterns that convert.' },
-  { numeral: 'II', title: 'Find the Winning Message', desc: 'We identify the core message that resonates with your audience — the one that makes them stop scrolling.' },
-  { numeral: 'III', title: 'Map to Formats', desc: 'We translate the winning message into multiple creative formats: images, videos, reels, and landing pages.' },
-  { numeral: 'IV', title: 'Generate Concepts', desc: 'Our AI pipeline generates premium visual concepts at scale, refined by human creative direction.' },
-  { numeral: 'V', title: 'Polish & Refine', desc: 'Every concept goes through rigorous quality control to meet our production standards.' },
-  { numeral: 'VI', title: 'Deliver Ready-to-Run', desc: 'You receive production-ready creatives, export-ready for every platform. Plug in and launch.' },
+  { numeral: '01', title: 'Research', auto: true, desc: 'Winning ad styles, category patterns, and competitor angles are pulled and summarised before anyone opens a document.' },
+  { numeral: '02', title: 'Winning Message', auto: false, desc: 'Pixie proposes the core message and the hook it hangs on. You approve the direction while changing it still costs nothing.' },
+  { numeral: '03', title: 'Format Map', auto: true, desc: 'The approved message is mapped across every format and placement your account runs. The map becomes the production plan.' },
+  { numeral: '04', title: 'Concepting', auto: true, desc: 'Visual concepts and copy variants are produced for the whole map in one pass, refined by human creative direction.' },
+  { numeral: '05', title: 'Polish & QC', auto: false, desc: 'Brand rules, legibility, and platform specs are checked across the batch. You sign off a clean set.' },
+  { numeral: '06', title: 'Export & Deliver', auto: true, desc: 'Every asset is resized, exported, versioned, and delivered ready to upload. Plug in and launch.' },
 ];
 
 // Three hand-drawn underline variants (pathLength=100 → trivial dash math),
@@ -52,32 +52,28 @@ export default function Process() {
     >
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="relative text-center mb-14 md:mb-20">
-          <p className="reveal mono-label mb-6" style={{ letterSpacing: '0.3em' }}>The Workshop</p>
+          <p className="reveal mono-label mb-6" style={{ letterSpacing: '0.3em' }}>Sheet 06 · The Stations</p>
           <h2
-            className="reveal delay-100 font-authored font-semibold leading-[1.04] mb-4"
-            style={{ fontSize: 'clamp(2.4rem, 5.6vw, 4.8rem)', color: 'var(--ink)', letterSpacing: '0.005em' }}
+            className="reveal delay-100 font-heading font-bold leading-[1.04] mb-4 tracking-tight"
+            style={{ fontSize: 'clamp(2.2rem, 5.2vw, 4.2rem)', color: 'var(--ink)', textWrap: 'balance' }}
           >
-            The Method,
+            Every station,
             <br />
-            <span style={{ color: 'var(--accent-ink)' }}>in Six Studies.</span>
+            <span style={{ color: 'var(--accent-ink)' }}>written out.</span>
           </h2>
           <p className="reveal delay-200 text-ink-body text-sm sm:text-lg max-w-xl mx-auto leading-relaxed">
-            Every CloutKart campaign is drafted the same way: a human line first, an intelligent trace to finish it.
+            Sheet 02 at full scale. Each entry draws a graphite line the violet trace then completes,
+            which is the whole arrangement in miniature: a person sets the direction, the machine finishes the work.
           </p>
 
-          {/* one Da Vinci flourish — a pinned parchment slip, mirrored hand. Used once. */}
+          {/* the drawing's revision note — replaces the V2 parchment slip */}
           <div
-            className="reveal delay-300 artifact hidden lg:block absolute px-4 py-2.5"
-            style={{ position: 'absolute', right: 0, left: 'auto', top: 6, transform: 'rotate(-2.5deg)', width: 'max-content', maxWidth: '240px' }}
-            title="the idea and the machine"
+            className="reveal delay-300 bp-margin-note hidden lg:block absolute text-left"
+            style={{ right: 0, left: 'auto', top: 6, maxWidth: '220px' }}
             aria-hidden="true"
           >
-            <span
-              className="font-authored italic block"
-              style={{ fontSize: '15px', transform: 'scale(-1, 1)', color: '#3a3128' }}
-            >
-              l'idea e la macchina
-            </span>
+            <b>Note</b>
+            Stations 02 and 05 hold for sign-off. Everything between them runs unattended.
           </div>
         </div>
 
@@ -85,10 +81,13 @@ export default function Process() {
           {studies.map((s, i) => (
             <div key={s.numeral} className="reveal ws-entry" style={{ transitionDelay: `${i * 110}ms` }}>
               <div className="flex items-baseline gap-4 mb-2">
-                <span className="font-authored ws-numeral">{s.numeral}</span>
-                <h3 className="font-authored font-semibold" style={{ fontSize: '1.35rem', color: 'var(--ink)' }}>
+                <span className="ws-numeral font-mono tabular-nums" style={{ fontSize: '1.4rem' }}>{s.numeral}</span>
+                <h3 className="font-heading font-bold tracking-tight" style={{ fontSize: '1.2rem', color: 'var(--ink)' }}>
                   {s.title}
                 </h3>
+                <span className={`bp-tag ml-auto ${s.auto ? 'bp-tag--auto' : ''}`}>
+                  {s.auto ? 'Auto' : 'Gate'}
+                </span>
               </div>
               {/* the stroke: graphite first, the purple trace catches up */}
               <svg className="ws-stroke" viewBox="0 0 120 14" preserveAspectRatio="none" aria-hidden="true">

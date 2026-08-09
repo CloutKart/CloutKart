@@ -3,28 +3,32 @@ import { Plus, Minus } from 'lucide-react';
 
 const faqs = [
   {
-    q: 'How do I get my free creative?',
-    a: 'Create a free account, fill in a quick brief inside your dashboard, and our team will deliver your creative within 48 hours.',
+    q: 'What exactly is automated, and what is not?',
+    a: 'Four of the six stations run without you: research, format mapping, concepting, and export. Two are gates where a person decides, because the outcome genuinely changes there. You approve the message before anything is designed, and you sign off the finished batch before it ships.',
+  },
+  {
+    q: 'How do I start my first run?',
+    a: 'Create a free account and fill in the brief inside your dashboard. The run opens as soon as you submit it, and the finished batch arrives within the 48-hour cycle.',
   },
   {
     q: 'Do I need a credit card to get started?',
-    a: 'No. Your first creative is completely free, no card required.',
+    a: 'No. Your first run is free and no card is required.',
   },
   {
-    q: 'What happens after I request the free creative?',
-    a: "You'll see the live status inside your dashboard. Once ready, you'll get notified and can download it directly.",
+    q: 'What can I see while a run is in progress?',
+    a: 'The dashboard shows which station the run is at and what it is waiting on. When it reaches a gate it waits for you, and when the batch is ready you are notified and can download it directly.',
   },
   {
-    q: 'Can I upgrade my plan anytime?',
-    a: 'Yes — upgrade from inside your dashboard at any time. Payment is processed securely via Razorpay.',
+    q: 'Which formats does a run produce?',
+    a: 'Static, video, UGC-style, stories, email creatives, and store assets, each exported at every placement size in your format map.',
   },
   {
-    q: 'What formats do you create ads in?',
-    a: 'Static, video, UGC-style, stories, email creatives, and landing pages.',
+    q: 'How does the system get better over time?',
+    a: 'Campaign performance comes back into the pipeline after launch, so the next brief starts from what converted rather than from scratch. Runs on a standing format map compound this: the map holds steady while the message and creative are re-tuned each cycle.',
   },
   {
-    q: 'How do I contact the team for a custom project?',
-    a: 'Use the Contact page for custom quotes, negotiations, or enterprise inquiries.',
+    q: 'Can I change my plan or get a custom setup?',
+    a: 'Yes. Volume, cadence, and cycle time are set per brand, and you can change them from inside your dashboard at any time. Payment is processed securely via Razorpay. Use the contact form for custom scope or enterprise inquiries.',
   },
 ];
 
@@ -55,13 +59,10 @@ export default function FAQ() {
     <section ref={sectionRef} className="relative py-20 md:py-36 [overflow-x:clip]" id="faq" style={{ background: 'transparent' }}>
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12 md:mb-16">
-          <div className="reveal eyebrow-pill mb-7">
-            <span className="w-1 h-1 rounded-full bg-brand-purple" />
-            FAQ
-          </div>
-          <h2 className="reveal delay-100 font-heading font-bold leading-[1.06] tracking-tight" style={{ fontSize: 'clamp(2rem, 5vw, 4.5rem)' }}>
-            Common{' '}
-            <span style={{ color: 'var(--ink)' }}>Questions.</span>
+          <p className="reveal mono-label mb-7" style={{ letterSpacing: '0.3em' }}>Queries</p>
+          <h2 className="reveal delay-100 font-heading font-bold leading-[1.06] tracking-tight" style={{ fontSize: 'clamp(2rem, 5vw, 4.2rem)', color: 'var(--ink)', textWrap: 'balance' }}>
+            Questions about{' '}
+            <span style={{ color: 'var(--accent-ink)' }}>running the line.</span>
           </h2>
         </div>
 
@@ -98,7 +99,7 @@ export default function FAQ() {
 
                 <div
                   style={{
-                    maxHeight: isOpen ? '300px' : '0',
+                    maxHeight: isOpen ? '460px' : '0',
                     overflow: 'hidden',
                     transition: 'max-height 300ms ease',
                   }}

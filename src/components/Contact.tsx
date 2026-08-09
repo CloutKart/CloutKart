@@ -106,14 +106,15 @@ export default function Contact() {
         <div className="reveal mb-12 md:mb-16 gradient-border-wrap">
           <div className="glass-card rounded-[20px] p-8 sm:p-12 text-center" style={{ background: 'var(--bg-elev)' }}>
             <div className="relative z-10">
-              <h2 className="font-authored font-semibold leading-[1.06] mb-4" style={{ fontSize: 'clamp(2.2rem, 5.2vw, 4rem)', color: 'var(--ink)' }}>
-                Begin Your Masterpiece.
+              <h2 className="font-heading font-bold leading-[1.06] mb-4 tracking-tight" style={{ fontSize: 'clamp(2rem, 5vw, 3.6rem)', color: 'var(--ink)', textWrap: 'balance' }}>
+                Put your production on the line.
               </h2>
               <p className="text-ink-body text-sm sm:text-lg max-w-lg mx-auto leading-relaxed">
-                Every unforgettable campaign starts with a human idea. Let Pixie help you bring yours to life.
+                Tell us what you currently run and how it gets made. We will map it against the six stations
+                and show you which stretches stop needing you.
               </p>
               <p className="text-ink-dim text-xs sm:text-sm max-w-lg mx-auto leading-relaxed mt-3">
-                For enterprise deals, custom briefs, or partnerships, reach out here — free creative requests are handled inside your dashboard after signing up.
+                For enterprise scope, custom cadence, or partnerships, reach out here. Free runs are requested inside your dashboard after signing up.
               </p>
             </div>
           </div>
