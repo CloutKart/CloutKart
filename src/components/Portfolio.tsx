@@ -78,7 +78,7 @@ function useTypewriter(text: string, on: boolean, speed = 18) {
    gets one; the copy types itself in. The full string lives on the container's
    aria-label and the animating span is hidden, so assistive tech reads the
    sentence once instead of stuttering through every partial state. ─────────── */
-function WorkPanel({ work, active, variant }: { work: Work; active: boolean; variant: 'side' | 'stacked' }) {
+function WorkPanel({ work, index, active, variant }: { work: Work; index: number; active: boolean; variant: 'side' | 'stacked' }) {
   const typed = useTypewriter(work.panel_text, active);
   if (!work.panel_text) return null;
   const done = typed.length >= work.panel_text.length;
@@ -93,6 +93,12 @@ function WorkPanel({ work, active, variant }: { work: Work; active: boolean; var
         {typed}
         {!done && <span className="gallery-panel-caret" />}
       </p>
+      {variant === 'side' && (
+        <div className="bp-titleblock gallery-panel-block" aria-hidden="true">
+          <span>Plate <b>{String(index + 1).padStart(2, '0')}</b></span>
+          <span>Formats <b>{String(work.image_count).padStart(2, '0')}</b></span>
+        </div>
+      )}
     </div>
   );
 }
@@ -120,6 +126,9 @@ function Plate({
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const isVideo = Boolean(work.video_url);
+  // The work's real pixel size, read off the loaded media rather than stored —
+  // no admin field, no schema, and it can never disagree with the file.
+  const [dim, setDim] = useState<{ w: number; h: number } | null>(null);
 
   // Only the plate in preview plays. Several simultaneous decodes behind 3D
   // transforms is exactly the thing that makes a coverflow stutter, and a
@@ -164,6 +173,7 @@ function Plate({
                no controls and no audio track by contract — it is wallpaper. */
             <video
               ref={videoRef}
+              onLoadedMetadata={e => setDim({ w: e.currentTarget.videoWidth, h: e.currentTarget.videoHeight })}
               src={work.video_url}
               poster={work.thumbnail_url || undefined}
               muted
@@ -174,7 +184,13 @@ function Plate({
               draggable={false}
             />
           ) : work.thumbnail_url ? (
-            <img src={work.thumbnail_url} alt={work.title} loading="lazy" draggable={false} />
+            <img
+              src={work.thumbnail_url}
+              alt={work.title}
+              loading="lazy"
+              draggable={false}
+              onLoad={e => setDim({ w: e.currentTarget.naturalWidth, h: e.currentTarget.naturalHeight })}
+            />
           ) : (
             <div className="gallery-plate-fallback" />
           )}
@@ -185,10 +201,18 @@ function Plate({
           {active && <span className="gallery-plate-view">View</span>}
         </div>
       </div>
+      {/* The work's measured size, in the drawing's own language. */}
+      {active && dim && (
+        <div className="gallery-dim" aria-hidden="true">
+          <span className="bp-dim-rule bp-dim-rule--start" />
+          <span className="bp-dim-value">{dim.w} × {dim.h}</span>
+          <span className="bp-dim-rule bp-dim-rule--end" />
+        </div>
+      )}
       {/* Attached to the frame's right edge from INSIDE the transformed plate,
           so it tilts, scales and moves with the artwork instead of floating
           over it. Click-through so it never steals the plate's own click. */}
-      {active && showPanel && <WorkPanel work={work} active={active} variant="side" />}
+      {active && showPanel && <WorkPanel work={work} index={index} active={active} variant="side" />}
     </div>
   );
 }
@@ -238,6 +262,9 @@ export default function Portfolio() {
   const [loadingImages, setLoadingImages] = useState(false);
 
   const trackRef = useRef<HTMLDivElement>(null);
+  const corridorRef = useRef<HTMLDivElement>(null);
+  /** measured box of the active plate, grown by MARK_INSET — drives the focus marks */
+  const [frame, setFrame] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
 
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 640px)');
@@ -390,6 +417,42 @@ export default function Portfolio() {
     else setActive(i);
   };
 
+  // Focus marks: measure the active plate against the corridor rather than
+  // re-deriving the coverflow's 3D maths here — two sources of truth for one
+  // position is how they drift apart. The plate transition is 600ms, so track it
+  // with rAF for a little longer than that and the marks FOLLOW the plate in
+  // instead of teleporting. Under reduced motion the plate transition is
+  // disabled, so the first frame is already the final position and the loop
+  // simply settles; no special-casing needed.
+  const MARK_INSET = 14;
+  useEffect(() => {
+    if (isMobile || works.length === 0) return;
+    let raf = 0;
+    const start = performance.now();
+    const measure = () => {
+      const corridor = corridorRef.current;
+      const plate = corridor?.querySelector('.gallery-plate.is-active .gallery-plate-inner');
+      if (corridor && plate) {
+        const p = plate.getBoundingClientRect();
+        const c = corridor.getBoundingClientRect();
+        setFrame({
+          x: p.left - c.left - MARK_INSET,
+          y: p.top - c.top - MARK_INSET,
+          w: p.width + MARK_INSET * 2,
+          h: p.height + MARK_INSET * 2,
+        });
+      }
+      if (performance.now() - start < 750) raf = requestAnimationFrame(measure);
+    };
+    raf = requestAnimationFrame(measure);
+    const onResize = () => { if (!raf) raf = requestAnimationFrame(measure); };
+    window.addEventListener('resize', onResize);
+    return () => {
+      if (raf) cancelAnimationFrame(raf);
+      window.removeEventListener('resize', onResize);
+    };
+  }, [active, isMobile, works.length, loaded]);
+
   // The corridor's ambient light + whether the coverflow makes room for a panel.
   //
   // --work-tint is the artwork's own colour spilling into the room. It is the ONE
@@ -476,34 +539,34 @@ export default function Portfolio() {
                 </div>
               ))}
             </div>
-            <WorkPanel work={works[active]} active variant="stacked" />
+            <WorkPanel work={works[active]} index={active} active variant="stacked" />
             <Plaque work={works[active]} index={active} />
-            <div className="gallery-dots">
+            <div className="gallery-register">
               {works.map((_, i) => (
                 <button
                   key={i}
-                  className={`gallery-dot ${i === active ? 'is-active' : ''}`}
+                  className={`gallery-register-item ${i === active ? 'is-active' : ''}`}
                   aria-label={`Go to plate ${i + 1}`}
+                  aria-current={i === active ? 'true' : undefined}
                   onClick={() => {
                     const el = trackRef.current;
                     if (el) el.scrollTo({ left: (el.scrollWidth / works.length) * i, behavior: 'smooth' });
                   }}
-                />
+                >
+                  {String(i + 1).padStart(2, '0')}
+                </button>
               ))}
             </div>
           </div>
         ) : (
           /* ── Desktop: 3D gallery corridor ── */
           <div className="reveal">
-            <div className="gallery-corridor" style={corridorStyle}>
+            <div className="gallery-corridor" ref={corridorRef} style={corridorStyle}>
+              {/* Grid paper, same device as Sheet 02 — the gallery is a drawing
+                  sheet like every other section now, not a dark museum room.
+                  .bp-grid is radially masked, so it cannot reintroduce an edge. */}
+              <div className="bp-grid absolute inset-0 pointer-events-none" aria-hidden />
               <div className="gallery-vignette" aria-hidden />
-              <svg className="gallery-guides" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden>
-                <line x1="0" y1="100" x2="50" y2="46" /><line x1="100" y1="100" x2="50" y2="46" />
-                <line x1="0" y1="0" x2="50" y2="46" /><line x1="100" y1="0" x2="50" y2="46" />
-              </svg>
-              <span className="gallery-mote m1" aria-hidden /><span className="gallery-mote m2" aria-hidden />
-              <span className="gallery-mote m3" aria-hidden /><span className="gallery-mote m4" aria-hidden />
-              <span className="gallery-mote m5" aria-hidden /><span className="gallery-mote m6" aria-hidden />
 
               <div
                 className="gallery-stage"
@@ -519,6 +582,18 @@ export default function Portfolio() {
                 ))}
               </div>
 
+              {/* four corners that lock onto whichever plate is centred */}
+              {frame && (
+                <div
+                  className="gallery-marks"
+                  aria-hidden
+                  style={{ left: frame.x, top: frame.y, width: frame.w, height: frame.h }}
+                >
+                  <span className="gallery-mark tl" /><span className="gallery-mark tr" />
+                  <span className="gallery-mark bl" /><span className="gallery-mark br" />
+                </div>
+              )}
+
               <button className="gallery-arrow left" onClick={() => go(-1)} disabled={active === 0} aria-label="Previous work">
                 <ChevronLeft size={20} />
               </button>
@@ -528,9 +603,17 @@ export default function Portfolio() {
             </div>
 
             <Plaque work={works[active]} index={active} />
-            <div className="gallery-dots">
+            <div className="gallery-register">
               {works.map((_, i) => (
-                <button key={i} className={`gallery-dot ${i === active ? 'is-active' : ''}`} aria-label={`Go to plate ${i + 1}`} onClick={() => setActive(i)} />
+                <button
+                  key={i}
+                  className={`gallery-register-item ${i === active ? 'is-active' : ''}`}
+                  aria-label={`Go to plate ${i + 1}`}
+                  aria-current={i === active ? 'true' : undefined}
+                  onClick={() => setActive(i)}
+                >
+                  {String(i + 1).padStart(2, '0')}
+                </button>
               ))}
             </div>
           </div>

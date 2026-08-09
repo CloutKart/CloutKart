@@ -92,7 +92,30 @@ The coverflow corridor carries three things beyond the artwork:
   low alpha; every piece of chrome around it — frame, crosshairs, panel, caret, plaque —
   stays on the existing tokens. Empty `accent_hex` falls back to the site accent.
 
+The corridor itself is a **drawing sheet**, not the V2 dark museum room it used to be:
+grid paper (the same `.bp-grid` as Sheet 02), the plate's measured pixel size stated as a
+`.bp-dim` dimension line, a `.bp-titleblock` in the notes panel, a numbered plate register
+in place of dots, and four focus marks that lock onto whichever plate is centred. The
+museum devices — drifting dust motes and perspective vanishing-point guides — are gone.
+
 Traps paid for here:
+
+- **`.gallery-vignette` was painting an opaque box.** It ramped to solid `var(--bg)` from
+  38% outward, washing most of the corridor in flat near-black, blocking the page's ambient
+  and reading as a dark rectangle bounding the whole section. It is now a *horizontal* fade
+  capped at `0.82` alpha, which still finishes off plates sliding past the clipped edges
+  (they are already at ~42% opacity by then) without sealing the section off. It cannot
+  simply be deleted — without it the plates hard-clip. Measured either side of the corridor
+  edge: worst-case channel delta went from a visible box to ≤ 7/255.
+- **The focus marks are positioned from a measured rect**, not from re-deriving the
+  coverflow's 3D transform. Two sources of truth for one position drift apart. They track
+  the plate with rAF for ~750ms because the plate transition is 600ms, so the marks follow
+  it in rather than teleporting; under reduced motion that transition is disabled, so the
+  first frame is already final and no special-casing is needed.
+- The plate dimension is read off the loaded media (`naturalWidth` / `videoWidth`), so it
+  needs no admin field and can never disagree with the file.
+- `.gallery-register-item` sits on `--ink-muted` for the same 4.5:1 reason as everything
+  else on this page.
 
 - **Sample the colour in the admin, from the local `File`** — never from the published
   Supabase URL in a visitor's browser. Painting a canvas from a cross-origin image taints

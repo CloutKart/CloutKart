@@ -1068,39 +1068,24 @@ html[data-theme-transition] .hero-fingertip-shimmer {
 }
 
 /* corridor atmosphere */
+/* Softens plates as they slide off the corridor's clipped edges — and NOTHING
+   else. The original radial ramped to opaque var(--bg) from 38% outward, which
+   washed most of the corridor in flat near-black, blocked the page's ambient
+   and read as a dark box bounding the whole section. Horizontal, and tight. */
 .gallery-vignette {
   position: absolute; inset: -1px; z-index: 0; pointer-events: none;
-  background: radial-gradient(ellipse 72% 92% at 50% 46%, transparent 38%, var(--bg) 90%);
+  /* Capped below full opacity and narrowed: at a solid var(--bg) the outer band
+     still measured an 11/255 seam against the page's violet ambient on the right.
+     Plates reaching the edge are already down to ~42% opacity and steeply
+     rotated, so 0.82 is more than enough to finish them off. */
+  background: linear-gradient(
+    90deg,
+    rgb(var(--bg-rgb) / 0.82) 0%,
+    rgb(var(--bg-rgb) / 0) 9%,
+    rgb(var(--bg-rgb) / 0) 91%,
+    rgb(var(--bg-rgb) / 0.82) 100%
+  );
 }
-.gallery-guides {
-  position: absolute; inset: 0; z-index: 0; width: 100%; height: 100%;
-  pointer-events: none; opacity: 0.5;
-}
-.gallery-guides line { stroke: var(--frame-line); stroke-width: 0.15; vector-effect: non-scaling-stroke; }
-.gallery-mote {
-  position: absolute; width: 3px; height: 3px; border-radius: 50%; z-index: 1;
-  background: radial-gradient(circle, rgba(237,233,254,0.9), rgba(167,139,250,0.35) 60%, transparent);
-  box-shadow: 0 0 6px rgba(167,139,250,0.45);
-  opacity: 0; pointer-events: none; will-change: transform, opacity;
-}
-[data-theme="light"] .gallery-mote {
-  background: radial-gradient(circle, rgba(109,40,217,0.55), rgba(109,40,217,0.2) 60%, transparent);
-  box-shadow: 0 0 5px rgba(109,40,217,0.25);
-}
-.gallery-mote.m1 { left: 18%; bottom: 14%; animation: moteDrift 9s ease-in-out infinite; }
-.gallery-mote.m2 { left: 34%; bottom: 22%; animation: moteDrift 11s ease-in-out 1.4s infinite; }
-.gallery-mote.m3 { left: 62%; bottom: 12%; animation: moteDrift 8.5s ease-in-out 0.6s infinite; }
-.gallery-mote.m4 { left: 78%; bottom: 26%; animation: moteDrift 12s ease-in-out 2.1s infinite; }
-.gallery-mote.m5 { left: 48%; bottom: 8%;  animation: moteDrift 10s ease-in-out 3.2s infinite; }
-.gallery-mote.m6 { left: 88%; bottom: 18%; animation: moteDrift 9.5s ease-in-out 1.9s infinite; }
-@keyframes moteDrift {
-  0%   { opacity: 0; transform: translateY(0) translateX(0); }
-  20%  { opacity: 0.8; }
-  80%  { opacity: 0.5; }
-  100% { opacity: 0; transform: translateY(-120px) translateX(14px); }
-}
-
-/* the 3D stage */
 .gallery-stage {
   position: absolute; inset: 0; z-index: 2;
   perspective: 1400px;
@@ -1236,7 +1221,6 @@ a.gallery-plaque-handle:hover { color: var(--accent-ink); text-decoration: under
 .gallery-mobile-cell .gallery-plate { width: 100%; cursor: zoom-in; }
 
 @media (prefers-reduced-motion: reduce) {
-  .gallery-mote { animation: none !important; opacity: 0 !important; }
   .gallery-stage .gallery-plate { transition: none !important; }
   .gallery-plaque { animation: none !important; }
 }
@@ -1572,6 +1556,58 @@ a.gallery-plaque-handle:hover { color: var(--accent-ink); text-decoration: under
   animation: galleryCaret 900ms steps(1, end) infinite;
 }
 @keyframes galleryCaret { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
+
+/* the title block drops to the bottom of the panel, filling what was dead space */
+.gallery-panel--side { display: flex; flex-direction: column; }
+.gallery-panel-block { margin-top: auto; align-self: flex-start; }
+
+/* ── The measured size of the work, stated as a dimension. Read off the loaded
+   media, so it needs no admin field. Travels with the plate. ──────────────── */
+.gallery-dim {
+  display: flex; align-items: center; gap: 8px;
+  margin-top: 10px; padding: 0 2px;
+  animation: galleryPanelIn 460ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* ── Focus marks — four corners that lock onto whichever plate is centred.
+   Offset OUTWARD from the frame so they read as a camera lock rather than
+   duplicating the plate's own .plate-cross corners. Positioned from a measured
+   rect (see Portfolio.tsx) because re-deriving the coverflow's 3D maths here
+   would be two sources of truth for one position. ─────────────────────────── */
+.gallery-marks { position: absolute; z-index: 3; pointer-events: none; }
+.gallery-mark {
+  position: absolute; width: 13px; height: 13px;
+  background:
+    linear-gradient(var(--frame-mark), var(--frame-mark)) no-repeat,
+    linear-gradient(var(--frame-mark), var(--frame-mark)) no-repeat;
+}
+.gallery-mark.tl { top: 0; left: 0; background-size: 13px 1px, 1px 13px; background-position: 0 0, 0 0; }
+.gallery-mark.tr { top: 0; right: 0; background-size: 13px 1px, 1px 13px; background-position: 100% 0, 100% 0; }
+.gallery-mark.bl { bottom: 0; left: 0; background-size: 13px 1px, 1px 13px; background-position: 0 100%, 0 100%; }
+.gallery-mark.br { bottom: 0; right: 0; background-size: 13px 1px, 1px 13px; background-position: 100% 100%, 100% 100%; }
+
+/* ── The plate register — the sheet index, applied to the corridor. Replaces
+   generic dots with the site's own numbering. ─────────────────────────────── */
+.gallery-register {
+  display: flex; gap: 14px; justify-content: center; flex-wrap: wrap;
+  margin-top: 20px;
+}
+.gallery-register-item {
+  position: relative; padding: 2px 1px;
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-size: 11px; letter-spacing: 0.16em;
+  font-variant-numeric: tabular-nums;
+  /* --ink-muted, not --ink-dim: small mono text needs 4.5:1 and --ink-dim
+     measures ~4.1 on this canvas. Same trap as the diagram label ramp. */
+  color: var(--ink-muted);
+  transition: color 0.25s ease;
+}
+.gallery-register-item:hover { color: var(--ink); }
+.gallery-register-item.is-active { color: var(--accent-ink); }
+.gallery-register-item.is-active::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: -3px;
+  height: 1px; background: var(--accent);
+}
 
 /* mobile: the copy stacks under the plate, above the plaque */
 .gallery-panel--stacked {
