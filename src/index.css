@@ -1531,12 +1531,28 @@ a.gallery-plaque-handle:hover { color: var(--accent-ink); text-decoration: under
    this area, and a 24px source needs far less of it than a full-res frame would.
 
    Transparent enough to stay light in a room rather than a picture on a wall. ── */
+/* The box and the light around it. The ambient sits in here rather than in the
+   corridor, because the corridor clips — which it must, to stop plates
+   hard-cutting at its edges — and light that is meant to leak past the outline
+   cannot live inside the thing that clips it. */
+.gallery-lightbox { position: relative; }
+.gallery-lightbox > .gallery-corridor,
+.gallery-lightbox > .gallery-mobile-ambient-wrap { position: relative; z-index: 1; }
+
 .gallery-ambient {
   position: absolute;
-  inset: 0;
+  /* Bleeds past the box so the light spills onto the page around it. No mask
+     needed out here: filter: blur() already feathers the element's own edges,
+     so the leak fades out on its own. */
+  top: -58px; left: -44px;
+  /* Size is stated explicitly rather than left to the insets, because this is a
+     REPLACED element: on an absolutely positioned <canvas>/<img>/<video>, an
+     auto width resolves to the element's INTRINSIC size (here 24px) instead of
+     stretching between left and right the way a <div> would. So the bleed is
+     added to the box's own size by hand — 2x44 across, 2x58 down. */
+  width: calc(100% + 88px);
+  height: calc(100% + 116px);
   z-index: 0;
-  width: 100%;
-  height: 100%;
   object-fit: cover;
   pointer-events: none;
   filter: blur(56px) saturate(1.7);
@@ -1547,7 +1563,6 @@ a.gallery-plaque-handle:hover { color: var(--accent-ink); text-decoration: under
 
 /* mobile has no corridor, so the track gets its own box to fill */
 .gallery-mobile-ambient-wrap {
-  position: relative;
   isolation: isolate;
   border: 1px solid var(--frame-line);
   border-radius: 2px;

@@ -641,8 +641,9 @@ export default function Portfolio() {
         ) : isMobile ? (
           /* ── Mobile: scroll-snap swipe carousel ── */
           <div className="reveal">
-            <div className="gallery-mobile-ambient-wrap">
+            <div className="gallery-lightbox">
             <canvas className="gallery-ambient" ref={ambientRef} width={24} height={32} aria-hidden />
+            <div className="gallery-mobile-ambient-wrap">
             <div
               ref={trackRef}
               className="gallery-mobile-track"
@@ -657,6 +658,7 @@ export default function Portfolio() {
                   <Plate work={w} index={i} active={i === active} onClick={() => openLightbox(w)} ambientRef={ambientRef} />
                 </div>
               ))}
+            </div>
             </div>
             </div>
             <WorkPanel work={works[active]} index={active} active variant="stacked" />
@@ -681,13 +683,15 @@ export default function Portfolio() {
         ) : (
           /* ── Desktop: 3D gallery corridor ── */
           <div className="reveal">
+            {/* The ambient sits OUTSIDE the corridor. The corridor clips — it has
+                to, that is what stops plates hard-cutting at its edges — so light
+                meant to spill past the outline cannot live inside it. */}
+            <div className="gallery-lightbox">
+            <canvas className="gallery-ambient" ref={ambientRef} width={24} height={32} aria-hidden />
             <div className="gallery-corridor" ref={corridorRef} style={corridorStyle}>
               {/* Grid paper, same device as Sheet 02 — the gallery is a drawing
                   sheet like every other section now, not a dark museum room.
                   .bp-grid is radially masked, so it cannot reintroduce an edge. */}
-              {/* The artwork, blurred, filling the whole box — the light in the
-                  room rather than a halo around the frame. */}
-              <canvas className="gallery-ambient" ref={ambientRef} width={24} height={32} aria-hidden />
               <div className="bp-grid absolute inset-0 pointer-events-none" aria-hidden />
               <div className="gallery-vignette" aria-hidden />
 
@@ -723,6 +727,7 @@ export default function Portfolio() {
               <button className="gallery-arrow right" onClick={() => go(1)} disabled={active === works.length - 1} aria-label="Next work">
                 <ChevronRight size={20} />
               </button>
+            </div>
             </div>
 
             <Plaque work={works[active]} index={active} />
