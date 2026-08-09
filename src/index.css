@@ -1539,11 +1539,11 @@ a.gallery-plaque-handle:hover { color: var(--accent-ink); text-decoration: under
   height: 100%;
   object-fit: cover;
   pointer-events: none;
-  filter: blur(56px) saturate(1.9);
-  opacity: 0.4;
+  filter: blur(56px) saturate(1.7);
+  opacity: 0.13;
   transform: translateZ(0);
 }
-[data-theme="light"] .gallery-ambient { opacity: 0.34; }
+[data-theme="light"] .gallery-ambient { opacity: 0.11; }
 
 /* mobile has no corridor, so the track gets its own box to fill */
 .gallery-mobile-ambient-wrap {
