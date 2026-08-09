@@ -91,6 +91,16 @@ The coverflow corridor carries three things beyond the artwork:
   (falling back to rAF). Because it is the picture rather than an average of it, it is
   continuous by construction and its colour lines up with the artwork's own edges.
 
+  **It leaks out of the box.** The ambient lives in a `.gallery-lightbox` wrapper *outside*
+  `.gallery-corridor`, not inside it: the corridor has `overflow: hidden` and must keep it
+  (that is what stops plates hard-cutting at the edges), so light meant to spill past the
+  outline cannot live in the thing that clips it. It bleeds 58px vertically and 44px
+  horizontally, and `blur()` feathers the element's own edges so the spill fades on its own
+  with no mask. **The bleed is stated as an explicit `width`/`height`, not left to `inset`:**
+  on an absolutely positioned REPLACED element (`<canvas>`/`<img>`/`<video>`) an `auto` width
+  resolves to the element's *intrinsic* size — 24px here — instead of stretching between
+  `left` and `right` the way a `<div>` would. Left to the insets it collapsed to 24×32.
+
   **It fills the box.** The projection is a corridor-level `<canvas>` (`.gallery-ambient`)
   that whichever plate is active paints into, `object-fit: cover` across the whole outlined
   viewing box, blurred and held at low opacity — light in the room rather than a halo round
