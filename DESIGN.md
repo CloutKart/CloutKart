@@ -91,18 +91,25 @@ The coverflow corridor carries three things beyond the artwork:
   (falling back to rAF). Because it is the picture rather than an average of it, it is
   continuous by construction and its colour lines up with the artwork's own edges.
 
-  **It carries no `blur()`.** Two jobs were being done by one expensive filter — softening
-  the interior and feathering the edges — and only the second was hard. The interior is free
-  (a 14px source scaled ~65× *is* the blur); the edges are a radial **mask**, a composite
-  rather than a convolution. Measured per video frame under software rendering against a
-  ~17ms floor: `blur(96px)` cost ~72ms/frame (~14fps), `blur(26px)` ~48ms, none ~39ms.
-  Throttling the repaint to 15fps saved **nothing** — a large semi-transparent layer over a
-  playing video is re-composited every video frame regardless of whether its contents
-  changed, so the cost tracks AREA, not paint rate. Which is also why the spread is
-  generous: −30% and −70% both measure ~38ms, so a timid glow would cost the same.
-  `inset` is the one number to turn down if it ever needs to be cheaper.
+  **It fills the box.** The projection is a corridor-level `<canvas>` (`.gallery-ambient`)
+  that whichever plate is active paints into, `object-fit: cover` across the whole outlined
+  viewing box, blurred and held at low opacity — light in the room rather than a halo round
+  the frame. It sizes itself to the active work's ratio on each navigation. Mobile gets the
+  same treatment behind its swipe track.
 
-  **This replaced a sampler that averaged the frame to one colour every 500ms.** That
+  **The blur is load-bearing and stays.** An earlier pass removed it and leaned on the
+  upscale alone; that left visible bilinear banding, which is exactly what a raw 24px
+  upscale looks like. What *was* removed for good is the idea of raising it: cost tracks the
+  layer's AREA, not the radius — `blur(38px)` and `blur(24px)` measure 49ms and 47ms.
+
+  **Repaint rate is irrelevant, so continuity is free.** Freezing the canvas entirely —
+  zero paint cost — measured 46.7ms against 47.8ms painting every frame, on a 17ms floor.
+  The whole cost is compositing a large blurred layer; the painting is noise. Throttling was
+  tried twice and removed twice. Numbers are headless software rendering with no GPU, which
+  exaggerates exactly this; the dials, in order, are `opacity`, then blur radius, then
+  dropping the effect on video only.
+
+  **This replaced a sampler that averaged the frame to one colour every 500ms.**  **This replaced a sampler that averaged the frame to one colour every 500ms.** That
   approach was visibly stepped and lagged the footage — no amount of easing fixes polling a
   scalar at 2Hz. Measured on a continuous hue-sweep clip, the projection produced 23 distinct
   values across 24 samples taken 80ms apart, with the longest identical run being 160ms (the
