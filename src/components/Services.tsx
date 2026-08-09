@@ -1,36 +1,39 @@
 import { useEffect, useRef } from 'react';
 import { ArrowUpRight } from 'lucide-react';
 
+// V3 — the scope of automation, not a menu of formats. Each row is a stretch of
+// the line the system runs; the right-hand column keeps the formats it produces,
+// so nothing that used to be here is lost, it just stopped being the headline.
 const services = [
   {
-    title: 'Static Ads',
-    desc: 'Feed-stopping images built around a single converting message. Every crop, every frame, every text placement is intentional.',
-    formats: 'Instagram · Facebook · LinkedIn',
+    title: 'Brief Intake',
+    desc: 'Brand, product, audience, and goal arrive as structured fields rather than a thread. Runs start from the same shape every time, which is what makes the rest of the line repeatable.',
+    formats: 'Every run',
   },
   {
-    title: 'Video Ads',
-    desc: 'Hook in 3 seconds or it gets scrolled. Fast cuts, product truth, directional close. No filler.',
-    formats: 'Reels · TikTok · YouTube',
+    title: 'Hook & Message',
+    desc: 'Six psychological triggers, one scroll-stopper per brief, written by Pixie against your product rather than pulled from a bank of interchangeable lines.',
+    formats: 'Static · Video · UGC · Story',
   },
   {
-    title: 'UGC Style',
-    desc: 'Authentic-feeling content that converts like organic. Real product, real voice, engineered for performance.',
-    formats: 'TikTok · Instagram · Meta',
+    title: 'Format Mapping',
+    desc: 'The approved message is mapped to every format and placement your account runs, before production starts. The map is the production plan.',
+    formats: 'Instagram · Meta · TikTok · YouTube',
   },
   {
-    title: 'Story & Vertical',
-    desc: 'Platform-native formats that fill the frame and demand attention. Full-bleed, full-conversion.',
-    formats: 'Stories · Reels · Shorts',
+    title: 'Concept & Variant Production',
+    desc: 'Visual concepts and copy variants for the entire map produced in one pass, so a batch arrives whole instead of trickling in asset by asset.',
+    formats: 'Static · Video · UGC · Story',
   },
   {
-    title: 'Performance Packs',
-    desc: 'Multiple angles, copy variants, and hooks from the same brief. Built for testing. Optimised for scale.',
-    formats: 'All platforms',
+    title: 'Brand & Spec QC',
+    desc: 'Brand rules, legibility, and platform specs checked across the batch before anything reaches you. You review a clean set, not a pile of near-misses.',
+    formats: 'Every placement',
   },
   {
-    title: 'Hook Writing',
-    desc: 'Six psychological triggers. One scroll-stopper per brief. Powered by Pixie — never interchangeable, always specific.',
-    formats: 'Every format',
+    title: 'Resize, Export & Deliver',
+    desc: 'Every approved concept resized, exported, versioned, and delivered ready to upload. No reformatting round trip, no chasing final files.',
+    formats: 'Feed · Story · Reels · Email · Store',
   },
 ];
 
@@ -61,21 +64,18 @@ export default function Services() {
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-14 md:mb-16">
           <div>
-            <div className="reveal eyebrow-pill mb-7">
-              <span className="w-1 h-1 rounded-full bg-brand-purple" />
-              Every Format
-            </div>
+            <p className="reveal mono-label mb-7" style={{ letterSpacing: '0.3em' }}>Sheet 05 · The Scope</p>
             <h2
               className="reveal delay-100 font-heading font-bold leading-[1.04] tracking-tight"
-              style={{ fontSize: 'clamp(2.2rem, 5vw, 4rem)' }}
+              style={{ fontSize: 'clamp(2.2rem, 5vw, 4rem)', color: 'var(--ink)', textWrap: 'balance' }}
             >
-              <span className="text-white">One message.</span>
+              What the line
               <br />
-              <span style={{ color: 'var(--ink)' }}>Every format that converts.</span>
+              <span style={{ color: 'var(--accent-ink)' }}>actually handles.</span>
             </h2>
           </div>
           <p className="reveal delay-200 text-ink-dim text-sm leading-relaxed max-w-xs md:text-right">
-            We translate your core message into every format, on every platform, at every stage of the funnel.
+            Six stretches of creative production, run as one system. Formats are the output, listed on the right of each row.
           </p>
         </div>
 
@@ -99,7 +99,7 @@ export default function Services() {
               </div>
 
               {/* Title */}
-              <div className="flex-shrink-0 sm:w-44 relative">
+              <div className="flex-shrink-0 sm:w-56 relative">
                 <span className="font-heading font-bold text-base sm:text-lg text-white leading-tight">
                   {service.title}
                 </span>
@@ -118,7 +118,7 @@ export default function Services() {
 
               {/* Formats + arrow */}
               <div className="flex items-center gap-3 flex-shrink-0">
-                <span className="text-[11px] font-mono text-ink-dim group-hover:text-ink-dim transition-colors duration-300 hidden sm:block">
+                <span className="text-[11px] font-mono text-ink-dim leading-relaxed hidden sm:block sm:w-44 sm:text-right">
                   {service.formats}
                 </span>
                 <ArrowUpRight

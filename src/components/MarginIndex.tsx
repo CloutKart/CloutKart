@@ -1,17 +1,18 @@
 import { useEffect, useState } from 'react';
 
-// V2 kit — the margin index: roman-numeral chapter marks (I–VII) down the right
-// edge of the viewport, one per major section, lighting up in purple as the
-// reader passes. Replaces nothing (the scroll progress bar stays); it reads like
-// chapter marks in a bound book and doubles as navigation. Desktop only (CSS).
+// V3 kit — the sheet index down the right edge of the viewport, one mark per
+// sheet, lighting up in violet as the reader passes. Set in ROMAN numerals: the
+// index is a running position mark, and roman keeps it from reading as a second,
+// competing set of figures next to the arabic sheet numbers printed inside each
+// section. Position n still maps 1:1 to Sheet 0n. Desktop only (CSS).
 const CHAPTERS: { numeral: string; id: string; label: string }[] = [
-  { numeral: 'I', id: 'hero', label: 'The Contact' },
-  { numeral: 'II', id: 'about', label: 'The Movement' },
-  { numeral: 'III', id: 'pixie', label: 'The Muse' },
-  { numeral: 'IV', id: 'process', label: 'The Workshop' },
-  { numeral: 'V', id: 'portfolio', label: 'The Gallery' },
-  { numeral: 'VI', id: 'patrons', label: 'The Patrons' },
-  { numeral: 'VII', id: 'letters', label: 'The Correspondence' },
+  { numeral: 'I', id: 'about', label: 'The Offering' },
+  { numeral: 'II', id: 'assembly', label: 'The Assembly' },
+  { numeral: 'III', id: 'pixie', label: 'The Engine' },
+  { numeral: 'IV', id: 'story', label: 'The Run' },
+  { numeral: 'V', id: 'services', label: 'The Scope' },
+  { numeral: 'VI', id: 'process', label: 'The Stations' },
+  { numeral: 'VII', id: 'portfolio', label: 'The Gallery' },
 ];
 
 export default function MarginIndex() {
@@ -52,7 +53,7 @@ export default function MarginIndex() {
           key={c.id}
           className={active === c.id ? 'is-active' : ''}
           title={c.label}
-          aria-label={`${c.label} — chapter ${c.numeral}`}
+          aria-label={`${c.label} — sheet ${c.numeral}`}
           aria-current={active === c.id ? 'true' : undefined}
           onClick={() => document.getElementById(c.id)?.scrollIntoView({ behavior: 'smooth' })}
         >

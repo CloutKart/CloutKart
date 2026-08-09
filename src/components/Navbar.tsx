@@ -32,11 +32,11 @@ export default function Navbar({ onSignupOpen }: Props) {
   }, []);
 
   const navLinks = [
-    { label: 'About', href: '#about' },
-    { label: 'Services', href: '#services' },
-    { label: 'How We Work', href: '#process' },
+    { label: 'The Pipeline', href: '#assembly' },
+    { label: 'What We Automate', href: '#services' },
+    { label: 'The Stations', href: '#process' },
     { label: 'Portfolio', href: '#portfolio' },
-    { label: 'Pricing', href: '#pricing' },
+    { label: 'Capacity', href: '#pricing' },
   ];
 
   type FanItem = { label: string; href?: string; onClick?: () => void; cta?: boolean };

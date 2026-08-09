@@ -1,5 +1,35 @@
 import { useEffect, useRef } from 'react';
-import { Brain, Zap, Target, BarChart3, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
+
+// V3 "The Drawing Sheet" — the offering, stated as a spec. The right column is a
+// parts list, not a card grid: the reader can count which stages the machine runs
+// (AUTO) and which ones a human signs (GATE). Every figure here is a figure the
+// site already claims elsewhere; nothing new is asserted.
+
+const SPEC = [
+  { label: 'Cycle time', value: '48h' },
+  { label: 'Formats per run', value: '6' },
+  { label: 'Platform sizes', value: '4' },
+  { label: 'Brands scaled', value: '500+' },
+];
+
+// Mirrors the six stations in Process.tsx / ProductionLine.tsx — same order, same
+// AUTO/GATE split, so the three sections read as one drawing at three zoom levels.
+const STAGES = [
+  { name: 'Research', auto: true },
+  { name: 'Winning message', auto: false },
+  { name: 'Format map', auto: true },
+  { name: 'Concepting', auto: true },
+  { name: 'Polish & QC', auto: false },
+  { name: 'Export & deliver', auto: true },
+];
+
+const OUTCOMES = [
+  'Briefs structured and routed automatically',
+  'Concepts, variants, and resizes in a single run',
+  'Human approval at the two gates that change the outcome',
+  "Each run tuned by the last run's numbers",
+];
 
 export default function About() {
   const sectionRef = useRef<HTMLElement>(null);
@@ -21,110 +51,96 @@ export default function About() {
     return () => observer.disconnect();
   }, []);
 
-  const highlights = [
-    { icon: Brain, label: 'AI-Powered', desc: 'Cutting-edge AI tools for concept generation' },
-    { icon: Target, label: 'Message-First', desc: 'Strategy before pixels, always' },
-    { icon: Zap, label: 'Fast Delivery', desc: 'Production-ready in 48 hours' },
-    { icon: BarChart3, label: 'Data-Driven', desc: 'Creatives built on performance data' },
-  ];
-
-  const features = [
-    'High-converting ad creatives',
-    'Cinematic video campaigns',
-    'Platform-specific formats',
-    'Rapid iteration cycles',
-  ];
-
   return (
     <section ref={sectionRef} className="relative py-20 md:py-36 [overflow-x:clip]" id="about" style={{ background: 'transparent' }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
 
-          {/* Left */}
+          {/* Left — what the offering is */}
           <div>
-            <p className="reveal mono-label mb-7" style={{ letterSpacing: '0.3em' }}>The Movement</p>
+            <p className="reveal mono-label mb-7" style={{ letterSpacing: '0.3em' }}>Sheet 01 · The Offering</p>
 
-            <h2 className="reveal delay-100 font-authored font-semibold leading-[1.06] mb-5 sm:mb-7" style={{ fontSize: 'clamp(2.2rem, 5vw, 3.8rem)', color: 'var(--ink)' }}>
-              A studio built for{' '}
-              <span style={{ color: 'var(--accent-ink)' }}>the second Renaissance.</span>
+            <h2 className="reveal delay-100 font-heading font-bold leading-[1.06] mb-5 sm:mb-7 tracking-tight" style={{ fontSize: 'clamp(2.2rem, 5vw, 3.8rem)', color: 'var(--ink)', textWrap: 'balance' }}>
+              The line that turns one brief{' '}
+              <span style={{ color: 'var(--accent-ink)' }}>into a full campaign.</span>
             </h2>
 
-            <p className="reveal delay-200 drop-cap text-ink-body text-sm sm:text-lg leading-[1.75] mb-5 sm:mb-7">
-              CloutKart is a creative advertising studio that helps brands sell more with scroll-stopping ads, strategic messaging, AI-powered design, and high-conversion creative systems.
+            <p className="reveal delay-200 text-ink-body text-sm sm:text-lg leading-[1.75] mb-6 sm:mb-8" style={{ maxWidth: '62ch' }}>
+              CloutKart operates the creative production process end to end. Briefs come in structured,
+              concepts and variants are produced in one pass, your team approves at the two points where
+              judgement actually matters, and finished assets land export-ready for every platform you run.
             </p>
 
-            <div className="reveal delay-300 space-y-3 mb-8 sm:mb-10">
-              {features.map((feature) => (
-                <div key={feature} className="flex items-center gap-3">
-                  <CheckCircle2 size={16} className="text-brand-cyan flex-shrink-0" />
-                  <span className="text-ink-body text-sm sm:text-base">{feature}</span>
+            <div className="reveal delay-300 mb-8 sm:mb-10" style={{ borderTop: '1px solid var(--border-subtle)' }}>
+              {OUTCOMES.map((outcome) => (
+                <div
+                  key={outcome}
+                  className="flex items-baseline gap-3.5 py-3"
+                  style={{ borderBottom: '1px solid var(--border-subtle)' }}
+                >
+                  <span className="w-1 h-1 rounded-full flex-shrink-0 translate-y-[-2px]" style={{ background: 'var(--accent)' }} />
+                  <span className="text-ink-body text-sm sm:text-[15px] leading-relaxed">{outcome}</span>
                 </div>
               ))}
             </div>
 
             <div className="reveal delay-400">
               <a href="#contact" className="btn-primary text-sm sm:text-base">
-                Work With Us
+                Map Your Pipeline
                 <ArrowRight size={15} />
               </a>
             </div>
           </div>
 
-          {/* Right: workflow diagram */}
-          <div className="reveal-scale delay-200">
-            <div className="glass-card rounded-3xl p-6 sm:p-8">
-              <div className="relative z-10">
-                <div className="text-[11px] text-ink-muted font-mono font-medium uppercase tracking-widest mb-6">Creative Workflow</div>
+          {/* Right — the spec sheet */}
+          <div className="reveal-scale delay-200 bp-sheet" style={{ ['--bp-sheet-inset' as string]: '18px' }}>
+            <div
+              className="rounded-sm p-6 sm:p-8"
+              style={{ background: 'var(--bg-elev)', border: '1px solid var(--border)', boxShadow: 'var(--shadow-card)' }}
+            >
+              <div className="mono-label mb-6" style={{ color: 'var(--ink-dim)' }}>Production spec</div>
 
-                {/* Steps */}
-                {[
-                  { step: '01', label: 'Creative Brief', sub: 'Brand DNA + goals' },
-                  { step: '02', label: 'Winning Message', sub: 'Core hook identified' },
-                  { step: '03', label: 'Format Map', sub: 'Every channel covered' },
-                  { step: '04', label: 'Delivery', sub: 'Production-ready in 48h' },
-                ].map((item, i, arr) => (
-                  <div key={item.step} className="relative">
-                    <div className="flex items-center gap-4 py-3">
-                      <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 font-mono text-xs font-bold text-brand-purple" style={{ background: 'rgb(var(--accent-rgb) / 0.12)', border: '1px solid rgb(var(--accent-rgb) / 0.25)' }}>
-                        {item.step}
-                      </div>
-                      <div className="flex-1">
-                        <div className="text-sm font-semibold text-white font-heading">{item.label}</div>
-                        <div className="text-xs text-ink-muted font-mono mt-0.5">{item.sub}</div>
-                      </div>
-                      <div className="w-2 h-2 rounded-full" style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent))' }} />
-                    </div>
-                    {i < arr.length - 1 && (
-                      <div className="ml-[18px] w-px h-4 bg-gradient-to-b from-brand-purple/30 to-brand-cyan/20" />
-                    )}
+              {/* parts list — dotted leaders, drawing-office style */}
+              <div className="space-y-3.5 mb-7">
+                {SPEC.map((row) => (
+                  <div key={row.label} className="flex items-baseline gap-3">
+                    <span className="text-sm" style={{ color: 'var(--ink-body)' }}>{row.label}</span>
+                    <span className="flex-1 self-end mb-1" style={{ borderBottom: '1px dashed var(--frame-line)' }} />
+                    <span
+                      className="font-mono text-base font-medium tabular-nums"
+                      style={{ color: 'var(--ink)' }}
+                    >
+                      {row.value}
+                    </span>
                   </div>
                 ))}
+              </div>
 
-                <div className="mt-6 pt-5 border-t border-white/[0.07]">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-ink-muted font-mono">Avg delivery time</span>
-                    <span className="font-mono text-lg font-bold gradient-text">48h</span>
-                  </div>
+              <div className="mono-label mb-4 pt-6" style={{ color: 'var(--ink-dim)', borderTop: '1px solid var(--border-subtle)' }}>
+                Stage allocation
+              </div>
+              <ul className="space-y-2.5 mb-7">
+                {STAGES.map((stage, i) => (
+                  <li key={stage.name} className="flex items-center gap-3">
+                    <span className="font-mono text-[10px] tabular-nums w-5 flex-shrink-0" style={{ color: 'var(--ink-dim)' }}>
+                      {String(i + 1).padStart(2, '0')}
+                    </span>
+                    <span className="text-sm flex-1" style={{ color: 'var(--ink-body)' }}>{stage.name}</span>
+                    <span className={`bp-tag ${stage.auto ? 'bp-tag--auto' : ''}`}>
+                      <span className="bp-tag-dot" />
+                      {stage.auto ? 'Auto' : 'Gate'}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+
+              <div className="flex justify-end">
+                <div className="bp-titleblock">
+                  <span>Sheet <b>01</b></span>
+                  <span>Rev <b>C</b></span>
+                  <span>Scale <b>1:1</b></span>
                 </div>
               </div>
-            </div>
-
-            {/* Highlight grid */}
-            <div className="grid grid-cols-2 gap-3 sm:gap-4 mt-4">
-              {highlights.map((item, i) => (
-                <div
-                  key={item.label}
-                  className={`reveal-scale delay-${(i + 3) * 100} glass-card rounded-2xl p-4 sm:p-5 group`}
-                >
-                  <div className="relative z-10">
-                    <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl icon-gradient flex items-center justify-center mb-3">
-                      <item.icon size={18} className="text-brand-purple" />
-                    </div>
-                    <h3 className="text-sm sm:text-base font-semibold font-heading text-white mb-1">{item.label}</h3>
-                    <p className="text-xs sm:text-sm text-ink-body leading-relaxed">{item.desc}</p>
-                  </div>
-                </div>
-              ))}
             </div>
           </div>
         </div>

@@ -2,20 +2,20 @@ import { Instagram, Twitter, Linkedin, Youtube, Mail, ArrowUpRight } from 'lucid
 
 export default function Footer() {
   const links = {
-    Agency: [
-      { label: 'About', href: '#about' },
-      { label: 'Services', href: '#services' },
-      { label: 'How We Work', href: '#process' },
+    Platform: [
+      { label: 'The Offering', href: '#about' },
+      { label: 'The Pipeline', href: '#assembly' },
+      { label: 'The Stations', href: '#process' },
       { label: 'Portfolio', href: '#portfolio' },
     ],
-    Services: [
-      { label: 'AI Image Ads', href: '#services' },
-      { label: 'TikTok Creatives', href: '#services' },
-      { label: 'Video Ads', href: '#services' },
-      { label: 'UGC Concepts', href: '#services' },
+    Automates: [
+      { label: 'Brief Intake', href: '#services' },
+      { label: 'Concepting', href: '#services' },
+      { label: 'Variant Fan-Out', href: '#services' },
+      { label: 'Resize & Export', href: '#services' },
     ],
     Contact: [
-      { label: 'Free Creatives', href: '#pricing' },
+      { label: 'First Run Free', href: '#pricing' },
       { label: 'Send Inquiry', href: '#contact' },
       { label: 'shivam@clout-kart.com', href: 'mailto:shivam@clout-kart.com' },
     ],
@@ -49,7 +49,7 @@ export default function Footer() {
               className="h-10 sm:h-12 w-auto object-contain mb-4 sm:mb-5 opacity-80"
             />
             <p className="text-ink-muted text-sm leading-relaxed max-w-xs mb-5 sm:mb-6">
-              Modern advertising for modern brands. We build the winning message first — everything else scales from there.
+              Creative production, run as a system. One pipeline from brief to live campaign, tuned by what the last run returned.
             </p>
             <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
               {socials.map((s) => (

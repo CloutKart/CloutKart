@@ -10,6 +10,7 @@ import {
   Radio, Activity, Bell
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { dominantColorFromFile } from '../lib/dominantColor';
 import { supabase } from '../lib/supabase';
 import { edgeFunctionError } from '../lib/edgeError';
 import { NotificationBell } from '../components/NotificationBell';
@@ -81,6 +82,12 @@ interface PortfolioSection {
   is_visible: boolean;
   created_at: string;
   image_count?: number;
+  /** copy typed out beside the plate in the gallery */
+  panel_text?: string;
+  /** non-empty => the work is a video; thumbnail_url stays as its poster */
+  video_url?: string;
+  /** dominant colour sampled from the media; drives the gallery ambient */
+  accent_hex?: string;
 }
 
 interface PortfolioImage {
@@ -1140,6 +1147,10 @@ export default function Admin() {
   const [deletingImageId, setDeletingImageId] = useState<string | null>(null);
   const [savingCaptionId, setSavingCaptionId] = useState<string | null>(null);
   const imageUploadRef = useRef<HTMLInputElement>(null);
+  // gallery panel copy / video / tint editors
+  const [savingPanelId, setSavingPanelId] = useState<string | null>(null);
+  const [uploadingVideoId, setUploadingVideoId] = useState<string | null>(null);
+  const [mediaError, setMediaError] = useState<{ id: string; msg: string } | null>(null);
 
   const [overviewStats, setOverviewStats] = useState({ totalUsers: 0, requestsToday: 0, totalRevenue: 0, paidUsers: 0, conversionUsers: 0 });
   const [recentUsers, setRecentUsers] = useState<Profile[]>([]);
@@ -1364,8 +1375,9 @@ export default function Admin() {
   async function loadPortfolio() {
     setLoadingTab(true);
     const { data: sections } = await supabase.from('portfolio_sections').select('*, portfolio_images(count)').order('display_order', { ascending: true });
-    const mapped = (sections ?? []).map((s: { id: string; title: string; thumbnail_url: string; instagram_handle: string; instagram_link: string; display_order: number; is_visible: boolean; created_at: string; portfolio_images: { count: number }[] }) => ({
+    const mapped = (sections ?? []).map((s: { id: string; title: string; thumbnail_url: string; instagram_handle: string; instagram_link: string; display_order: number; is_visible: boolean; created_at: string; panel_text?: string; video_url?: string; accent_hex?: string; portfolio_images: { count: number }[] }) => ({
       id: s.id, title: s.title, thumbnail_url: s.thumbnail_url, instagram_handle: s.instagram_handle ?? '', instagram_link: s.instagram_link ?? '', display_order: s.display_order, is_visible: s.is_visible, created_at: s.created_at, image_count: s.portfolio_images?.[0]?.count ?? 0,
+      panel_text: s.panel_text ?? '', video_url: s.video_url ?? '', accent_hex: s.accent_hex ?? '',
     }));
     setPortfolioSections(mapped);
     setLoadingTab(false);
@@ -1500,7 +1512,11 @@ export default function Admin() {
     if (!newSectionName.trim()) return;
     setAddingSection(true);
     let thumbnail_url = '';
+    let accent_hex = '';
     if (thumbnailFile) {
+      // Sample the tint from the local File, before upload — the published URL
+      // is cross-origin and would taint the canvas.
+      accent_hex = await dominantColorFromFile(thumbnailFile);
       const ext = thumbnailFile.name.split('.').pop();
       const path = `sections/${Date.now()}.${ext}`;
       const { error: uploadError } = await supabase.storage.from('portfolio').upload(path, thumbnailFile);
@@ -1509,12 +1525,79 @@ export default function Admin() {
     const { data } = await supabase.from('portfolio_sections').insert({
       title: newSectionName.trim(),
       thumbnail_url,
+      accent_hex,
       instagram_handle: newSectionHandle.trim(),
       instagram_link: newSectionLink.trim(),
       display_order: portfolioSections.length,
     }).select().single();
     if (data) setPortfolioSections(prev => [...prev, { ...data, instagram_handle: data.instagram_handle ?? '', instagram_link: data.instagram_link ?? '', image_count: 0 }]);
     setNewSectionName(''); setNewSectionHandle(''); setNewSectionLink(''); setThumbnailFile(null); setShowAddSection(false); setAddingSection(false);
+  }
+
+  // ── Gallery panel copy / video / ambient tint ──────────────────────────────
+  // Mirrors the caption + Instagram editors above: optimistic local state,
+  // write on blur/change, no modal.
+
+  const VIDEO_MAX_BYTES = 50 * 1024 * 1024;      // matches the storage bucket
+  const VIDEO_TYPES = ['video/mp4', 'video/webm'];
+
+  async function savePanelText(id: string, panel_text: string) {
+    setSavingPanelId(id);
+    await supabase.from('portfolio_sections').update({ panel_text }).eq('id', id);
+    setPortfolioSections(prev => prev.map(s => s.id === id ? { ...s, panel_text } : s));
+    setSavingPanelId(null);
+  }
+
+  async function saveAccentHex(id: string, accent_hex: string) {
+    await supabase.from('portfolio_sections').update({ accent_hex }).eq('id', id);
+    setPortfolioSections(prev => prev.map(s => s.id === id ? { ...s, accent_hex } : s));
+  }
+
+  async function uploadSectionVideo(section: PortfolioSection, file: File) {
+    // Guard before hitting storage: the bucket rejects on type and size, but its
+    // error is opaque, and the upload has already been sent by then.
+    if (!VIDEO_TYPES.includes(file.type)) {
+      setMediaError({ id: section.id, msg: 'Use an MP4 or WebM file.' });
+      return;
+    }
+    if (file.size > VIDEO_MAX_BYTES) {
+      setMediaError({ id: section.id, msg: `That file is ${(file.size / 1048576).toFixed(0)}MB — the limit is 50MB.` });
+      return;
+    }
+    setMediaError(null);
+    setUploadingVideoId(section.id);
+
+    // Sample the tint from the actual frame before uploading — reading pixels
+    // back off the published URL later would taint the canvas (cross-origin).
+    const tint = await dominantColorFromFile(file);
+
+    const ext = file.name.split('.').pop() || 'mp4';
+    const path = `sections/video-${section.id}-${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from('portfolio').upload(path, file, { upsert: true });
+    if (error) {
+      setMediaError({ id: section.id, msg: error.message });
+      setUploadingVideoId(null);
+      return;
+    }
+    const { data: urlData } = supabase.storage.from('portfolio').getPublicUrl(path);
+    const video_url = urlData.publicUrl;
+
+    // Replace rather than accumulate: drop the previous clip from storage.
+    const oldPath = section.video_url ? storagePathFromUrl(section.video_url) : null;
+    if (oldPath) await supabase.storage.from('portfolio').remove([oldPath]);
+
+    const patch: Record<string, string> = { video_url };
+    if (tint) patch.accent_hex = tint;
+    await supabase.from('portfolio_sections').update(patch).eq('id', section.id);
+    setPortfolioSections(prev => prev.map(s => s.id === section.id ? { ...s, video_url, ...(tint ? { accent_hex: tint } : {}) } : s));
+    setUploadingVideoId(null);
+  }
+
+  async function removeSectionVideo(section: PortfolioSection) {
+    const path = section.video_url ? storagePathFromUrl(section.video_url) : null;
+    if (path) await supabase.storage.from('portfolio').remove([path]);
+    await supabase.from('portfolio_sections').update({ video_url: '' }).eq('id', section.id);
+    setPortfolioSections(prev => prev.map(s => s.id === section.id ? { ...s, video_url: '' } : s));
   }
 
   async function saveInstagramInfo(id: string, handle: string, link: string) {
@@ -1910,7 +1993,7 @@ export default function Admin() {
           <div className="flex items-center gap-2.5 mb-5 rounded-xl px-4 py-2.5 text-sm font-semibold"
             style={{ background: 'rgb(250 204 21 / 0.10)', border: '1px solid rgb(250 204 21 / 0.35)', color: '#facc15' }}>
             <AlertCircle size={15} className="flex-shrink-0" />
-            <span>Demo mode — sample figures for presentation, not real revenue or actual client payments.
+            <span>Demo mode — sample figures, not real revenue or actual client payments.
               Remove <code className="font-mono">?demo=1</code> from the URL to see live data.</span>
           </div>
         )}
@@ -2299,7 +2382,14 @@ export default function Admin() {
                   : <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">{portfolioSections.map(sec => (
                     <div key={sec.id} className="glass-card rounded-2xl overflow-hidden">
                       <div className="relative bg-white/[0.04] h-36 flex items-center justify-center border-b border-white/[0.06]">
-                        {sec.thumbnail_url ? <img src={sec.thumbnail_url} alt={sec.title} className="w-full h-full object-cover" /> : <Image size={28} className="text-ink-dim" />}
+                        {sec.video_url
+                          ? <video src={sec.video_url} poster={sec.thumbnail_url || undefined} muted loop playsInline autoPlay className="w-full h-full object-cover" />
+                          : sec.thumbnail_url
+                            ? <img src={sec.thumbnail_url} alt={sec.title} className="w-full h-full object-cover" />
+                            : <Image size={28} className="text-ink-dim" />}
+                        {sec.video_url && (
+                          <span className="absolute top-2 left-2 px-2 py-0.5 rounded text-[9px] font-mono uppercase tracking-[0.16em]" style={{ background: 'rgba(0,0,0,0.7)', color: 'var(--accent-ink)', border: '1px solid rgb(var(--accent-rgb) / 0.35)' }}>Video</span>
+                        )}
                         <button onClick={() => toggleSectionVisibility(sec.id, sec.is_visible)} className="absolute top-2 right-2 w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.65)', border: '1px solid rgb(var(--white-rgb) / 0.1)' }}>
                           {sec.is_visible ? <Eye size={13} className="text-white/60" /> : <EyeOff size={13} className="text-ink-dim" />}
                         </button>
@@ -2358,7 +2448,67 @@ export default function Admin() {
                           </button>
                         )}
 
-                        {!sec.is_visible && <p className="text-[10px] text-[#F59E0B] mb-2 font-semibold uppercase tracking-wider">Hidden from public</p>}
+                        {/* ── Gallery panel copy — types itself out beside the plate ── */}
+                        <label className="flex items-center justify-between gap-2 mt-3 mb-1 text-[10px] font-semibold text-ink-dim uppercase tracking-[0.08em]">
+                          Gallery notes
+                          {savingPanelId === sec.id && <Loader size={11} className="animate-spin text-accent-ink" />}
+                        </label>
+                        <textarea
+                          defaultValue={sec.panel_text ?? ''}
+                          onBlur={e => { const v = e.target.value.trim(); if (v !== (sec.panel_text ?? '')) savePanelText(sec.id, v); }}
+                          onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) e.currentTarget.blur(); }}
+                          placeholder="Shown beside this work in the gallery…"
+                          rows={3}
+                          className="w-full resize-none rounded-xl px-3 py-2 text-xs text-white placeholder-[var(--ink-dim)] focus:outline-none bg-white/[0.05] border border-white/[0.10] focus:border-accent/50"
+                        />
+
+                        {/* ── Video + ambient tint ── */}
+                        <div className="flex items-center gap-2 mt-2.5">
+                          <label
+                            className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-[11px] font-semibold cursor-pointer transition-colors"
+                            style={{ background: 'rgb(var(--white-rgb) / 0.05)', border: '1px solid rgb(var(--white-rgb) / 0.10)', color: 'var(--ink-muted)' }}
+                          >
+                            {uploadingVideoId === sec.id
+                              ? <><Loader size={11} className="animate-spin" /> Uploading…</>
+                              : <><Upload size={11} /> {sec.video_url ? 'Replace video' : 'Upload video'}</>}
+                            <input
+                              type="file"
+                              accept="video/mp4,video/webm"
+                              className="hidden"
+                              disabled={uploadingVideoId === sec.id}
+                              onChange={e => { const f = e.target.files?.[0]; if (f) uploadSectionVideo(sec, f); e.target.value = ''; }}
+                            />
+                          </label>
+                          {sec.video_url && (
+                            <button
+                              onClick={() => removeSectionVideo(sec)}
+                              title="Remove video"
+                              className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                              style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}
+                            >
+                              <X size={12} className="text-red-400" />
+                            </button>
+                          )}
+                          {/* auto-filled from the uploaded media; click to override */}
+                          <label
+                            title={`Ambient tint${sec.accent_hex ? ` · ${sec.accent_hex}` : ' · auto'}`}
+                            className="w-8 h-8 rounded-lg flex-shrink-0 cursor-pointer relative overflow-hidden"
+                            style={{ background: sec.accent_hex || 'transparent', border: '1px solid rgb(var(--white-rgb) / 0.14)' }}
+                          >
+                            {!sec.accent_hex && <span className="absolute inset-0 flex items-center justify-center text-[8px] font-mono text-ink-dim">auto</span>}
+                            <input
+                              type="color"
+                              value={sec.accent_hex || '#7c3aed'}
+                              onChange={e => saveAccentHex(sec.id, e.target.value)}
+                              className="opacity-0 w-full h-full cursor-pointer"
+                            />
+                          </label>
+                        </div>
+                        {mediaError?.id === sec.id && (
+                          <p className="text-[10px] text-red-400 mt-1.5">{mediaError.msg}</p>
+                        )}
+
+                        {!sec.is_visible && <p className="text-[10px] text-[#F59E0B] mt-2 mb-2 font-semibold uppercase tracking-wider">Hidden from public</p>}
                         <div className="flex gap-2 mt-3">
                           <button onClick={() => deleteSection(sec.id)} className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}><Trash2 size={14} className="text-red-400" /></button>
                           <button onClick={() => openImageManager(sec)} className="btn-primary flex-1 justify-center text-xs py-2">Manage Images <ArrowRight size={11} /></button>

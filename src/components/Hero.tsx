@@ -167,11 +167,22 @@ export default function Hero({ onSignupOpen }: Props) {
     <section ref={heroRef} id="hero" className="hero-static relative overflow-hidden">
 
       {/* z-0 — headline sits BEHIND the hands (3D depth): the reaching hands cross
-          the two lines. "Reimagined." is the accent payoff. */}
-      <div className="absolute inset-0 z-0 flex items-start justify-center px-4 pt-[17vh] sm:pt-[18vh] pointer-events-none">
+          the two lines. "Reimagined." is the accent payoff.
+
+          The forearm used to swallow the "Re" entirely. The fix is composition, not
+          effects: the block is pushed up hard so line 2 clears most of the arm, and
+          the type is larger so what still gets crossed stays readable. Note the two
+          pull against each other — a bigger face makes line 1 taller, which pushes
+          line 2 back down into the arm — so the size increase is deliberately modest
+          and the upward push does most of the work.
+
+          The desktop padding has a rem floor via max(): pure vh would collide with
+          the navbar on short viewports. Mobile keeps its own larger padding, because
+          down there the hands sit below the headline and there is nothing to clear. */}
+      <div className="absolute inset-0 z-0 flex items-start justify-center px-4 pt-[15vh] sm:pt-[max(4.8rem,8.5vh)] pointer-events-none">
         <h1
           className="hero-headline font-gasdrifo font-normal text-center leading-[0.96] tracking-[-0.005em]"
-          style={{ color: 'var(--ink)', fontSize: 'clamp(3.7rem, 11vw, 9rem)' }}
+          style={{ color: 'var(--ink)', fontSize: 'clamp(3.9rem, 11.6vw, 9.6rem)' }}
         >
           <span className="reveal-clip block overflow-hidden" style={{ transitionDelay: '0ms' }}>Creation,</span>
           <span className="reveal-clip block overflow-hidden" style={{ transitionDelay: '120ms', color: 'var(--accent-ink)' }}>Reimagined.</span>
@@ -182,11 +193,20 @@ export default function Hero({ onSignupOpen }: Props) {
           recompose the reference art full-width; on scroll they APPROACH. The human
           hand is a STATIC grayscale etching; a colored vines/flowers layer fades in
           on approach (only the botanicals bloom) AND gently sways (the vines come
-          alive) while the hand itself stays still. Light mode adds a dark backing. */}
+          alive) while the hand itself stays still. Light mode adds a dark backing.
+
+          On `top`: the wrap is centred (translate-y-1/2), so the art's TOP edge sits at
+          (top − half its height), and its height is width-driven — 100vw × 1882/3344 ≈
+          56.28vw, hence the 28.14vw half. A bare 55% therefore lets the artwork ride UP
+          as the window gets shorter: at 1440×700 the forearm climbed back over the
+          headline and "Reimagined." read as "nagined" again. The max() floors the art's
+          top edge near 90px from the viewport top — exactly where it lands at 1440×900 —
+          so the headline/artwork relationship no longer depends on window height. It is
+          neutral at 1440×900 and only bites when 55% would push the art too high. */}
       <div className="absolute inset-0 z-10 pointer-events-none" aria-hidden="true">
         <div
           className="hero-hands-wrap absolute left-1/2 -translate-x-1/2 -translate-y-1/2"
-          style={{ top: '55%', width: '100vw', aspectRatio: '3344 / 1882' }}
+          style={{ top: 'max(55%, calc(28.14vw + 90px))', width: '100vw', aspectRatio: '3344 / 1882' }}
         >
           {/* small soft accent halo at the fingertip touch point */}
           <div className="hero-glow absolute" aria-hidden="true" />
@@ -204,19 +224,31 @@ export default function Hero({ onSignupOpen }: Props) {
       </div>
 
 
+
       <div className="absolute inset-x-0 bottom-0 z-20 flex flex-col items-center text-center px-4 pb-12 sm:pb-16 pointer-events-none">
+        {/* The measured span of the process, stated as a dimension. One sanctioned
+            number, above the fold, in the drawing's own language. */}
+        <div className="bp-dim w-full max-w-[19rem] sm:max-w-lg mb-5 sm:mb-7 animate-fade-up delay-100" aria-hidden="true">
+          <span className="bp-dim-end">Brief</span>
+          <span className="bp-dim-rule bp-dim-rule--start" />
+          <span className="bp-dim-value">Total cycle 48h</span>
+          <span className="bp-dim-rule bp-dim-rule--end" />
+          <span className="bp-dim-end">Live</span>
+        </div>
+
         <p className="hero-frost text-sm sm:text-lg leading-relaxed max-w-2xl mb-5 sm:mb-6 px-5 py-3.5 sm:px-8 sm:py-5 animate-fade-up delay-200" style={{ color: 'var(--ink)' }}>
-          The Renaissance redefined art. <span className="font-semibold" style={{ color: 'var(--accent-ink)' }}>AI is redefining creativity.</span> CloutKart
-          brings both together to build campaigns that feel human and perform at scale.
+          Your creative output runs on a production line: brief, concept, variants, review, export.
+          CloutKart <span className="font-semibold" style={{ color: 'var(--accent-ink)' }}>automates the
+          repetitive stretches of it</span> and tunes every run against what converted last time.
         </p>
 
         <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 animate-fade-up delay-300 pointer-events-auto">
           <button onClick={handlePrimary} className="btn-primary text-sm sm:text-base">
-            Get Your Free Creative
+            Start a Production Run
             <ArrowRight size={15} />
           </button>
-          <a href="#portfolio" className="btn-secondary text-sm sm:text-base">
-            See Our Work
+          <a href="#assembly" className="btn-secondary text-sm sm:text-base">
+            See the Pipeline
           </a>
         </div>
       </div>
