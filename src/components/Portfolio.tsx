@@ -47,8 +47,14 @@ function hexToTriple(hex: string): string | null {
   return `${(n >> 16) & 255} ${(n >> 8) & 255} ${n & 255}`;
 }
 
-/** Projection source width. Tiny on purpose — see .gallery-ambient in index.css. */
-const GLOW_W = 24;
+/**
+ * Projection source width, in pixels. This — not the blur radius — is what
+ * decides whether the ambient reads as LIGHT or as a blurry video still. At 24px
+ * each source pixel lands ~50px wide on a 1200px box, so the composition was
+ * still legible as shapes. At 10px it is ~120px per source pixel: the colours
+ * stay where they belong, the subject stops being recognisable.
+ */
+const GLOW_W = 10;
 
 const prefersReducedMotion = () =>
   typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
