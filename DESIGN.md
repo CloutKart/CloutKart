@@ -112,8 +112,21 @@ Traps paid for here:
   the plate with rAF for ~750ms because the plate transition is 600ms, so the marks follow
   it in rather than teleporting; under reduced motion that transition is disabled, so the
   first frame is already final and no special-casing is needed.
-- The plate dimension is read off the loaded media (`naturalWidth` / `videoWidth`), so it
-  needs no admin field and can never disagree with the file.
+- **Plates hang at a constant height and take their width from the media's own ratio**, the
+  way work is hung on a wall. `--art-ratio` is set per plate from the loaded media, so a
+  9:16 upload gets a 9:16 frame and the dimension label under it is never a lie. The plate
+  dimension is read off the media (`naturalWidth` / `videoWidth`) — no admin field, and it
+  cannot disagree with the file.
+- **The focus marks need a ResizeObserver, not just the rAF tracking loop.** The plate
+  resizes *after* the 750ms window closes — the media loads, its ratio lands on
+  `--art-ratio`, and the frame width changes underneath the marks, leaving them ~11px wide
+  on each side. Observing the frame catches that without polling forever.
+- **`.gallery-dim` is positioned out of flow.** In flow it added its own height to
+  `.gallery-plate`, and the panel's `height: 100%` then overshot the bottom of the artwork
+  by exactly that much.
+- The corridor is now a deliberate, outlined viewing box. That is what licenses the much
+  stronger artwork tint inside it: once the boundary is intentional, a tinted interior
+  reads as the light in a lightbox rather than as the accidental seam it used to be.
 - `.gallery-register-item` sits on `--ink-muted` for the same 4.5:1 reason as everything
   else on this page.
 
