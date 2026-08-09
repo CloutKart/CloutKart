@@ -1078,24 +1078,6 @@ html[data-theme-transition] .hero-fingertip-shimmer {
 }
 
 /* corridor atmosphere */
-/* Softens plates as they slide off the corridor's clipped edges — and NOTHING
-   else. The original radial ramped to opaque var(--bg) from 38% outward, which
-   washed most of the corridor in flat near-black, blocked the page's ambient
-   and read as a dark box bounding the whole section. Horizontal, and tight. */
-.gallery-vignette {
-  position: absolute; inset: -1px; z-index: 0; pointer-events: none;
-  /* Capped below full opacity and narrowed: at a solid var(--bg) the outer band
-     still measured an 11/255 seam against the page's violet ambient on the right.
-     Plates reaching the edge are already down to ~42% opacity and steeply
-     rotated, so 0.82 is more than enough to finish them off. */
-  background: linear-gradient(
-    90deg,
-    rgb(var(--bg-rgb) / 0.82) 0%,
-    rgb(var(--bg-rgb) / 0) 9%,
-    rgb(var(--bg-rgb) / 0) 91%,
-    rgb(var(--bg-rgb) / 0.82) 100%
-  );
-}
 .gallery-stage {
   position: absolute; inset: 0; z-index: 2;
   perspective: 1400px;
