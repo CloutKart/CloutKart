@@ -47,6 +47,9 @@ function hexToTriple(hex: string): string | null {
   return `${(n >> 16) & 255} ${(n >> 8) & 255} ${n & 255}`;
 }
 
+/** Projection source width. Tiny on purpose — see .gallery-glow in index.css. */
+const GLOW_W = 14;
+
 const prefersReducedMotion = () =>
   typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -126,8 +129,9 @@ function Plate({
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const isVideo = Boolean(work.video_url);
-  /** the blurred projection behind the plate — canvas for video, <img> for stills */
+  /** the projection source behind the plate — a deliberately TINY canvas */
   const glowRef = useRef<HTMLCanvasElement>(null);
+  const artImgRef = useRef<HTMLImageElement>(null);
   // The work's real pixel size, read off the loaded media rather than stored —
   // no admin field, no schema, and it can never disagree with the file.
   const [dim, setDim] = useState<{ w: number; h: number } | null>(null);
@@ -176,6 +180,11 @@ function Plate({
     let handle = 0;
     let usingRvfc = false;
 
+    // Painted per decoded frame, deliberately un-throttled. Throttling to 15fps
+    // was measured and saved nothing: a large semi-transparent layer sitting over
+    // a PLAYING video is re-composited every video frame whether or not its own
+    // contents changed, so the cost tracks the layer's AREA, not the paint rate.
+    // Given that, the paint is free and continuity is worth keeping.
     const paint = () => {
       if (stopped) return;
       if (v.readyState >= 2) ctx.drawImage(v, 0, 0, c.width, c.height);
@@ -203,6 +212,22 @@ function Plate({
     };
   }, [isVideo, active, dim]);
 
+  // Stills project through the SAME tiny canvas rather than a full-resolution
+  // <img>. Blurring a 2000px photo enough to read as light is expensive and
+  // needs an enormous radius; blurring a 14px one barely costs anything.
+  useEffect(() => {
+    if (isVideo || !active) return;
+    const c = glowRef.current;
+    const img = artImgRef.current;
+    if (!c || !img) return;
+    const ctx = c.getContext('2d');
+    if (!ctx) return;
+    const draw = () => { try { ctx.drawImage(img, 0, 0, c.width, c.height); } catch { /* not decoded yet */ } };
+    if (img.complete) draw();
+    img.addEventListener('load', draw);
+    return () => img.removeEventListener('load', draw);
+  }, [isVideo, active, dim, work.thumbnail_url]);
+
   const onArtMove = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!active || e.pointerType !== 'mouse') return;
     const r = e.currentTarget.getBoundingClientRect();
@@ -222,11 +247,11 @@ function Plate({
           preview projects, so the corridor never carries several at once. */}
       {active && (
         <div className="gallery-glow" aria-hidden="true">
-          {isVideo ? (
-            <canvas ref={glowRef} width={48} height={dim ? Math.max(1, Math.round((48 * dim.h) / dim.w)) : 60} />
-          ) : work.thumbnail_url ? (
-            <img src={work.thumbnail_url} alt="" />
-          ) : null}
+          {/* 14px wide on purpose. Scaled ~65x by CSS, the browser's own bilinear
+              upscale does nearly all of the softening for free, so the filter
+              only has to clean up the interpolation rather than manufacture the
+              whole blur — which is what made this affordable per video frame. */}
+          <canvas ref={glowRef} width={GLOW_W} height={dim ? Math.max(1, Math.round((GLOW_W * dim.h) / dim.w)) : 18} />
         </div>
       )}
       <div className="gallery-plate-inner">
@@ -260,6 +285,7 @@ function Plate({
             />
           ) : work.thumbnail_url ? (
             <img
+              ref={artImgRef}
               src={work.thumbnail_url}
               alt={work.title}
               loading="lazy"
