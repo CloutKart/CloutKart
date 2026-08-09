@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { X, ChevronLeft, ChevronRight, Instagram } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { dominantFromPixels } from '../lib/dominantColor';
 
 interface Work {
   id: string;
@@ -114,6 +115,7 @@ function Plate({
   className = '',
   style,
   showPanel = false,
+  onTint,
 }: {
   work: Work;
   index: number;
@@ -123,9 +125,18 @@ function Plate({
   style?: React.CSSProperties;
   /** desktop corridor only — mobile stacks the copy under the plate instead */
   showPanel?: boolean;
+  /** live ambilight colour, reported while this video plate is in preview */
+  onTint?: (hex: string) => void;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const isVideo = Boolean(work.video_url);
+  // Reading pixels out of a cross-origin video taints the canvas and throws, so
+  // the element opts into CORS. If the host does NOT send the headers, that
+  // attribute stops the video loading AT ALL — a far worse failure than losing
+  // the live tint — so an error flips this and we re-render without it: the clip
+  // plays, and the ambient falls back to the colour stored at upload.
+  const [noCors, setNoCors] = useState(false);
+  const taintedRef = useRef(false);
   // The work's real pixel size, read off the loaded media rather than stored —
   // no admin field, no schema, and it can never disagree with the file.
   const [dim, setDim] = useState<{ w: number; h: number } | null>(null);
@@ -145,6 +156,55 @@ function Plate({
       if (!active) el.currentTime = 0;
     }
   }, [active]);
+
+  // ── Ambilight: while this clip is the one in preview, sample its current
+  //    frame and report the dominant colour up, so the room's light drifts with
+  //    the footage instead of sitting on one colour picked at upload.
+  //    Deliberately slow (500ms) and eased toward the target: the tint paints a
+  //    full-width gradient, and chasing every frame would strobe and repaint hot.
+  useEffect(() => {
+    if (!isVideo || !active || !onTint) return;
+    if (prefersReducedMotion()) return;          // the clip is paused anyway
+    if (taintedRef.current) return;              // canvas already refused once
+
+    const canvas = document.createElement('canvas');
+    canvas.width = 16; canvas.height = 16;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    if (!ctx) return;
+
+    let prev: [number, number, number] | null = null;
+    const toRgb = (hex: string): [number, number, number] | null => {
+      const m = /^#([\da-f]{6})$/i.exec(hex);
+      if (!m) return null;
+      const n = parseInt(m[1], 16);
+      return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+    };
+
+    const sample = () => {
+      const v = videoRef.current;
+      if (!v || v.paused || v.readyState < 2 || document.hidden) return;
+      let hex = '';
+      try {
+        ctx.drawImage(v, 0, 0, 16, 16);
+        hex = dominantFromPixels(ctx.getImageData(0, 0, 16, 16).data);
+      } catch {
+        // SecurityError: the frame is cross-origin without CORS. Stop for good
+        // and leave the stored tint in place.
+        taintedRef.current = true;
+        window.clearInterval(id);
+        return;
+      }
+      const next = hex ? toRgb(hex) : null;
+      if (!next) return;
+      // ease toward the new colour so a cut in the footage becomes a drift
+      prev = prev ? (prev.map((c, i) => Math.round(c + (next[i] - c) * 0.4)) as [number, number, number]) : next;
+      onTint(`#${prev.map(c => c.toString(16).padStart(2, '0')).join('')}`);
+    };
+
+    const id = window.setInterval(sample, 500);
+    sample();
+    return () => window.clearInterval(id);
+  }, [isVideo, active, onTint]);
 
   const onArtMove = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!active || e.pointerType !== 'mouse') return;
@@ -180,6 +240,8 @@ function Plate({
                no controls and no audio track by contract — it is wallpaper. */
             <video
               ref={videoRef}
+              {...(noCors ? {} : { crossOrigin: 'anonymous' as const })}
+              onError={() => { if (!noCors) setNoCors(true); }}
               onLoadedMetadata={e => setDim({ w: e.currentTarget.videoWidth, h: e.currentTarget.videoHeight })}
               src={work.video_url}
               poster={work.thumbnail_url || undefined}
@@ -272,6 +334,12 @@ export default function Portfolio() {
   const corridorRef = useRef<HTMLDivElement>(null);
   /** measured box of the active plate, grown by MARK_INSET — drives the focus marks */
   const [frame, setFrame] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
+  /** ambilight: colour sampled live from the playing clip, overrides accent_hex */
+  const [liveTint, setLiveTint] = useState<string | null>(null);
+  // Drop it the moment the plate changes, or the previous clip's colour would
+  // linger over the next work until its own first sample lands.
+  useEffect(() => { setLiveTint(null); }, [active]);
+  const handleTint = useCallback((hex: string) => setLiveTint(hex), []);
 
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 640px)');
@@ -482,7 +550,10 @@ export default function Portfolio() {
   // migration light the room exactly as they do today.
   const corridorStyle = (() => {
     const current = works[active];
-    const tint = current ? hexToTriple(current.accent_hex) : null;
+    // A playing clip outranks the still colour picked at upload: the room should
+    // follow the footage. Falls back the instant sampling stops or is refused.
+    const tint = (liveTint ? hexToTriple(liveTint) : null)
+      ?? (current ? hexToTriple(current.accent_hex) : null);
     const style: React.CSSProperties = {};
     if (tint) (style as Record<string, string>)['--work-tint'] = tint;
     // No copy on this work → no panel → don't shift the coverflow for nothing.
@@ -554,7 +625,7 @@ export default function Portfolio() {
             >
               {works.map((w, i) => (
                 <div className="gallery-mobile-cell" key={w.id}>
-                  <Plate work={w} index={i} active={i === active} onClick={() => openLightbox(w)} />
+                  <Plate work={w} index={i} active={i === active} onClick={() => openLightbox(w)} onTint={handleTint} />
                 </div>
               ))}
             </div>
@@ -597,7 +668,7 @@ export default function Portfolio() {
               >
                 <div className="gallery-spotlight" aria-hidden />
                 {works.map((w, i) => (
-                  <Plate key={w.id} work={w} index={i} active={i === active} onClick={() => handlePlateClick(i, w)} style={plateStyle(i)} showPanel />
+                  <Plate key={w.id} work={w} index={i} active={i === active} onClick={() => handlePlateClick(i, w)} style={plateStyle(i)} showPanel onTint={handleTint} />
                 ))}
               </div>
 

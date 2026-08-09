@@ -84,8 +84,20 @@ The coverflow corridor carries three things beyond the artwork:
   **Only the plate in preview plays** — several simultaneous decodes behind 3D transforms
   is what makes a coverflow stutter — and `muted` + `playsInline` are both required or iOS
   refuses to autoplay at all.
-- **Ambient tint matched to the artwork.** `--work-tint` comes from `accent_hex`, sampled
-  from the media at upload time by `src/lib/dominantColor.ts`. **This is the one place on
+- **Ambient tint matched to the artwork — and, for video, live.** `--work-tint` comes from
+  `accent_hex`, sampled from the media at upload time by `src/lib/dominantColor.ts`. While a
+  clip is the one in preview it is additionally **sampled frame by frame** (16×16 canvas,
+  every 500ms, eased 40% toward each new reading) so the room's light drifts with the
+  footage. Both paths share `dominantFromPixels`, so the live and stored tints have the same
+  character rather than looking like two different algorithms.
+
+  The video element carries `crossOrigin="anonymous"` because reading pixels out of a
+  cross-origin frame taints the canvas and throws. **That attribute is a risk, not a
+  freebie**: against a host that does *not* send CORS headers it stops the clip loading at
+  all, which is far worse than losing a colour effect. So an `error` on the element flips
+  `noCors` and re-renders without it — the clip plays, the ambilight goes quiet, and the
+  stored `accent_hex` carries the room. A `SecurityError` from `getImageData` likewise
+  retires the sampler for good instead of throwing every 500ms. **This is the one place on
   the site a non-token hue is allowed**, and it needs its own rule or the violet-means-
   automated system quietly stops meaning anything: *the tint is the artwork's own light
   spilling into the room*. It is confined to the corridor's ambient wash and spotlight at
