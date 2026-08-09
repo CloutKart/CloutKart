@@ -1668,7 +1668,9 @@ a.gallery-plaque-handle:hover { color: var(--accent-ink); text-decoration: under
     rgb(var(--work-tint, var(--accent-rgb)) / 0.05) 75%,
     transparent 100%
   );
-  transition: background 700ms ease;
+  /* 500ms: long enough to cross-fade between plates, short enough that the
+     ambilight follows a playing clip instead of trailing a beat behind it. */
+  transition: background 500ms ease;
 }
 [data-theme="light"] .gallery-corridor::after {
   background: radial-gradient(
@@ -1679,7 +1681,9 @@ a.gallery-plaque-handle:hover { color: var(--accent-ink); text-decoration: under
     transparent 100%
   );
 }
-.gallery-spotlight { transition: background 700ms ease; }
+.gallery-spotlight { /* 500ms: long enough to cross-fade between plates, short enough that the
+     ambilight follows a playing clip instead of trailing a beat behind it. */
+  transition: background 500ms ease; }
 
 /* ═══ V2 Phase 2 devices ══════════════════════════════════════════════════ */
 
