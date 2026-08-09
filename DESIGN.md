@@ -84,25 +84,28 @@ The coverflow corridor carries three things beyond the artwork:
   **Only the plate in preview plays** — several simultaneous decodes behind 3D transforms
   is what makes a coverflow stutter — and `muted` + `playsInline` are both required or iOS
   refuses to autoplay at all.
-- **Ambient tint matched to the artwork — and, for video, live.** `--work-tint` comes from
-  `accent_hex`, sampled from the media at upload time by `src/lib/dominantColor.ts`. While a
-  clip is the one in preview it is additionally **sampled frame by frame** (16×16 canvas,
-  every 500ms, eased 40% toward each new reading) so the room's light drifts with the
-  footage. Both paths share `dominantFromPixels`, so the live and stored tints have the same
-  character rather than looking like two different algorithms.
+- **Ambient light projected from the artwork itself.** A copy of the media sits behind the
+  active plate, bleeding past its edges, scaled up and blurred — the way YouTube's ambient
+  mode works. For stills that is just an `<img>` and needs no JS at all; for video it is a
+  48px-wide `<canvas>` repainted **per decoded frame** via `requestVideoFrameCallback`
+  (falling back to rAF). Because it is the picture rather than an average of it, it is
+  continuous by construction and its colour lines up with the artwork's own edges.
 
-  The video element carries `crossOrigin="anonymous"` because reading pixels out of a
-  cross-origin frame taints the canvas and throws. **That attribute is a risk, not a
-  freebie**: against a host that does *not* send CORS headers it stops the clip loading at
-  all, which is far worse than losing a colour effect. So an `error` on the element flips
-  `noCors` and re-renders without it — the clip plays, the ambilight goes quiet, and the
-  stored `accent_hex` carries the room. A `SecurityError` from `getImageData` likewise
-  retires the sampler for good instead of throwing every 500ms. **This is the one place on
-  the site a non-token hue is allowed**, and it needs its own rule or the violet-means-
-  automated system quietly stops meaning anything: *the tint is the artwork's own light
-  spilling into the room*. It is confined to the corridor's ambient wash and spotlight at
-  low alpha; every piece of chrome around it — frame, crosshairs, panel, caret, plaque —
-  stays on the existing tokens. Empty `accent_hex` falls back to the site accent.
+  **This replaced a sampler that averaged the frame to one colour every 500ms.** That
+  approach was visibly stepped and lagged the footage — no amount of easing fixes polling a
+  scalar at 2Hz. Measured on a continuous hue-sweep clip, the projection produced 23 distinct
+  values across 24 samples taken 80ms apart, with the longest identical run being 160ms (the
+  clip's own frame cadence); the old poll would have shown runs of ~6.
+
+  **It also removed a real risk.** `drawImage()` from a cross-origin video is allowed —
+  only `getImageData()` is blocked. Dropping the pixel read dropped `crossOrigin="anonymous"`
+  with it, and with it the failure mode where a host without CORS headers stopped the clip
+  loading at all. Nothing in the gallery reads pixels back any more.
+
+  `accent_hex`, still sampled at upload by `src/lib/dominantColor.ts`, now drives only the
+  corridor's broad room wash and the admin swatch. **This remains the one place a non-token
+  hue is allowed** (DESIGN.md: violet means automated, never decoration): the rule is that
+  the colour is the artwork's own light in the room, and all chrome stays on tokens.
 
 The corridor itself is a **drawing sheet**, not the V2 dark museum room it used to be:
 grid paper (the same `.bp-grid` as Sheet 02), the plate's measured pixel size stated as a
