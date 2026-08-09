@@ -1062,9 +1062,19 @@ html[data-theme-transition] .hero-fingertip-shimmer {
    ═══════════════════════════════════════════════════════════════════════════ */
 .gallery-corridor {
   position: relative;
-  height: clamp(380px, 50vw, 520px);
+  height: clamp(460px, 58vw, 660px);
   isolation: isolate;
   overflow: hidden;
+  /* An explicit viewing box. Once the boundary is deliberate, tinting the
+     interior with the artwork's colour reads as the light inside a lightbox
+     rather than as the accidental seam it used to be. */
+  border: 1px solid var(--frame-line);
+  border-radius: 2px;
+  /* Plates hang at a CONSTANT height and take their width from the media's own
+     ratio — the way work is hung on a wall — so the frame always matches the
+     file and the dimension label under it is never a lie. */
+  --plate-art-h: clamp(300px, 39vw, 470px);
+  --plate-art-max-w: clamp(240px, 30vw, 430px);
 }
 
 /* corridor atmosphere */
@@ -1102,7 +1112,8 @@ html[data-theme-transition] .hero-fingertip-shimmer {
 
 /* one framed plate */
 .gallery-plate {
-  width: clamp(220px, 24vw, 320px);
+  /* content-sized: the art below drives the width from the media's ratio */
+  width: max-content;
   cursor: pointer;
   user-select: none;
 }
@@ -1139,8 +1150,19 @@ html[data-theme-transition] .hero-fingertip-shimmer {
 
 .gallery-plate-art {
   position: relative; overflow: hidden;
-  aspect-ratio: 4 / 5; background: #0a0a0a;
+  /* --art-ratio is set per plate from the loaded media's natural size
+     (Portfolio.tsx). 4/5 is only the placeholder until it loads. */
+  aspect-ratio: var(--art-ratio, 4 / 5);
+  background: #0a0a0a;
 }
+/* desktop corridor: fixed height, width follows the ratio */
+.gallery-stage .gallery-plate-art {
+  height: var(--plate-art-h);
+  width: auto;
+  max-width: var(--plate-art-max-w);
+}
+/* mobile carousel: fixed width, height follows the ratio */
+.gallery-mobile-cell .gallery-plate-art { width: 100%; height: auto; }
 .gallery-plate-art img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .gallery-plate-fallback { width: 100%; height: 100%; background: linear-gradient(135deg, #1a1327, #0a0a0a); }
 .gallery-plate-view {
@@ -1563,7 +1585,11 @@ a.gallery-plaque-handle:hover { color: var(--accent-ink); text-decoration: under
 
 /* ── The measured size of the work, stated as a dimension. Read off the loaded
    media, so it needs no admin field. Travels with the plate. ──────────────── */
+/* Positioned OUT of flow beneath the frame. In flow it added its own height to
+   .gallery-plate, and the panel's `height: 100%` then overshot the bottom of the
+   artwork by exactly that much. */
 .gallery-dim {
+  position: absolute; top: 100%; left: 0; right: 0;
   display: flex; align-items: center; gap: 8px;
   margin-top: 10px; padding: 0 2px;
   animation: galleryPanelIn 460ms cubic-bezier(0.16, 1, 0.3, 1) both;
@@ -1636,19 +1662,21 @@ a.gallery-plaque-handle:hover { color: var(--accent-ink); text-decoration: under
      past the right edge and `overflow: hidden` sliced it into a visible
      rectangle of lighter ground. */
   background: radial-gradient(
-    ellipse 46% 50% at 40% 50%,
-    rgb(var(--work-tint, var(--accent-rgb)) / 0.18) 0%,
-    rgb(var(--work-tint, var(--accent-rgb)) / 0.07) 42%,
-    transparent 78%
+    ellipse 58% 62% at 42% 50%,
+    rgb(var(--work-tint, var(--accent-rgb)) / 0.42) 0%,
+    rgb(var(--work-tint, var(--accent-rgb)) / 0.18) 45%,
+    rgb(var(--work-tint, var(--accent-rgb)) / 0.05) 75%,
+    transparent 100%
   );
   transition: background 700ms ease;
 }
 [data-theme="light"] .gallery-corridor::after {
   background: radial-gradient(
-    ellipse 46% 50% at 40% 50%,
-    rgb(var(--work-tint, var(--accent-rgb)) / 0.15) 0%,
-    rgb(var(--work-tint, var(--accent-rgb)) / 0.06) 42%,
-    transparent 78%
+    ellipse 58% 62% at 42% 50%,
+    rgb(var(--work-tint, var(--accent-rgb)) / 0.26) 0%,
+    rgb(var(--work-tint, var(--accent-rgb)) / 0.12) 45%,
+    rgb(var(--work-tint, var(--accent-rgb)) / 0.04) 75%,
+    transparent 100%
   );
 }
 .gallery-spotlight { transition: background 700ms ease; }

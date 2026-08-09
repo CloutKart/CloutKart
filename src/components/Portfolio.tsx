@@ -167,7 +167,14 @@ function Plate({
         <span className="plate-cross bl" />
         <span className="plate-cross br" />
         <span className="accession">Plate {String(index + 1).padStart(3, '0')}</span>
-        <div className="gallery-plate-art" data-theme="dark" onPointerMove={onArtMove}>
+        <div
+          className="gallery-plate-art"
+          data-theme="dark"
+          onPointerMove={onArtMove}
+          /* The frame takes the media's own ratio, so the dimension label under
+             it describes what you are actually looking at. */
+          style={dim ? ({ ['--art-ratio']: `${dim.w} / ${dim.h}` } as React.CSSProperties) : undefined}
+        >
           {isVideo ? (
             /* muted + playsInline are both required or iOS refuses to autoplay;
                no controls and no audio track by contract — it is wallpaper. */
@@ -428,28 +435,40 @@ export default function Portfolio() {
   useEffect(() => {
     if (isMobile || works.length === 0) return;
     let raf = 0;
-    const start = performance.now();
     const measure = () => {
       const corridor = corridorRef.current;
       const plate = corridor?.querySelector('.gallery-plate.is-active .gallery-plate-inner');
-      if (corridor && plate) {
-        const p = plate.getBoundingClientRect();
-        const c = corridor.getBoundingClientRect();
-        setFrame({
-          x: p.left - c.left - MARK_INSET,
-          y: p.top - c.top - MARK_INSET,
-          w: p.width + MARK_INSET * 2,
-          h: p.height + MARK_INSET * 2,
-        });
-      }
-      if (performance.now() - start < 750) raf = requestAnimationFrame(measure);
+      if (!corridor || !plate) return;
+      const p = plate.getBoundingClientRect();
+      const c = corridor.getBoundingClientRect();
+      setFrame({
+        x: p.left - c.left - MARK_INSET,
+        y: p.top - c.top - MARK_INSET,
+        w: p.width + MARK_INSET * 2,
+        h: p.height + MARK_INSET * 2,
+      });
     };
-    raf = requestAnimationFrame(measure);
-    const onResize = () => { if (!raf) raf = requestAnimationFrame(measure); };
-    window.addEventListener('resize', onResize);
+
+    const start = performance.now();
+    const track = () => {
+      measure();
+      if (performance.now() - start < 750) raf = requestAnimationFrame(track);
+    };
+    raf = requestAnimationFrame(track);
+
+    // The plate RESIZES after the tracking window closes: the media loads, its
+    // natural ratio lands on --art-ratio, and the frame's width changes under
+    // the marks. Without this the marks keep the placeholder 4/5 width and sit
+    // ~11px wide on each side. Observing the frame catches that, plus window
+    // resizes, without polling forever.
+    const plate = corridorRef.current?.querySelector('.gallery-plate.is-active .gallery-plate-inner');
+    const ro = plate ? new ResizeObserver(measure) : null;
+    if (plate && ro) ro.observe(plate);
+    window.addEventListener('resize', measure);
     return () => {
       if (raf) cancelAnimationFrame(raf);
-      window.removeEventListener('resize', onResize);
+      ro?.disconnect();
+      window.removeEventListener('resize', measure);
     };
   }, [active, isMobile, works.length, loaded]);
 
@@ -500,7 +519,7 @@ export default function Portfolio() {
 
   return (
     <section ref={sectionRef} className="relative py-20 md:py-32 [overflow-x:clip]" id="portfolio" data-cursor-zone="loupe" style={{ background: 'transparent' }}>
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-8 md:mb-12">
           <p className="reveal mono-label mb-6" style={{ letterSpacing: '0.3em' }}>Sheet 07 · The Gallery</p>
           <h2 className="reveal delay-100 font-heading font-bold leading-[1.04] mb-3 sm:mb-4 tracking-tight" style={{ fontSize: 'clamp(2.2rem, 5.2vw, 4.2rem)', color: 'var(--ink)', textWrap: 'balance' }}>
