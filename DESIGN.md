@@ -91,6 +91,17 @@ The coverflow corridor carries three things beyond the artwork:
   (falling back to rAF). Because it is the picture rather than an average of it, it is
   continuous by construction and its colour lines up with the artwork's own edges.
 
+  **It carries no `blur()`.** Two jobs were being done by one expensive filter — softening
+  the interior and feathering the edges — and only the second was hard. The interior is free
+  (a 14px source scaled ~65× *is* the blur); the edges are a radial **mask**, a composite
+  rather than a convolution. Measured per video frame under software rendering against a
+  ~17ms floor: `blur(96px)` cost ~72ms/frame (~14fps), `blur(26px)` ~48ms, none ~39ms.
+  Throttling the repaint to 15fps saved **nothing** — a large semi-transparent layer over a
+  playing video is re-composited every video frame regardless of whether its contents
+  changed, so the cost tracks AREA, not paint rate. Which is also why the spread is
+  generous: −30% and −70% both measure ~38ms, so a timid glow would cost the same.
+  `inset` is the one number to turn down if it ever needs to be cheaper.
+
   **This replaced a sampler that averaged the frame to one colour every 500ms.** That
   approach was visibly stepped and lagged the footage — no amount of easing fixes polling a
   scalar at 2Hz. Measured on a continuous hue-sweep clip, the projection produced 23 distinct
