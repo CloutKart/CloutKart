@@ -1518,6 +1518,35 @@ a.gallery-plaque-handle:hover { color: var(--accent-ink); text-decoration: under
   .gallery-plate.is-active:hover .gallery-plate-inner { transform: none; }
 }
 
+/* ── The ambient projection — the frame itself, scaled up and blurred behind the
+   plate. This is what YouTube's ambient mode does, and why it feels continuous:
+   nothing is being averaged or polled, it IS the picture, so it updates per
+   decoded frame and its colour lines up with the artwork's own edges.
+   For video the source is a tiny <canvas> repainted per frame (Portfolio.tsx);
+   for stills it is just the <img>, which needs no JS at all. ───────────────── */
+.gallery-glow {
+  position: absolute;
+  /* bleeds past the frame so the colour spills into the room around it */
+  inset: -16% -20%;
+  z-index: 0;
+  pointer-events: none;
+  filter: blur(44px) saturate(1.85);
+  opacity: 0.6;
+  transform: translateZ(0);          /* keep the blur on its own layer */
+}
+.gallery-glow > * {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
+}
+/* the frame itself has to sit above its own glow */
+.gallery-plate-inner { z-index: 1; }
+
+@media (prefers-reduced-motion: reduce) {
+  /* still projected, just never repainted — see the paint loop */
+  .gallery-glow { filter: blur(44px) saturate(1.5); }
+}
+
 /* ── Video works — wallpaper, not a player. Muted, looping, no controls; the
    poster carries the frame while a neighbour is paused. ───────────────────── */
 .gallery-plate-art video {

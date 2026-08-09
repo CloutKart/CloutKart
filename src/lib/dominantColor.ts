@@ -43,17 +43,13 @@ function hslToHex(h: number, s: number, l: number) {
 /**
  * Pick the dominant hue from already-drawn canvas pixels.
  *
- * Exported so the gallery can reuse it to sample a PLAYING video frame by frame
- * (the ambilight), which keeps the live tint and the stored upload-time tint
- * the same character rather than two different-looking algorithms.
- *
  * Near-black, near-white and near-grey pixels are discarded first. They almost
  * always dominate the raw counts (backgrounds, paper, shadow) and average out
  * to a muddy beige that tells you nothing about the artwork. What is left is
  * bucketed by hue and weighted by saturation, so a small area of strong colour
  * beats a large area of washed-out colour — which is what the eye does too.
  */
-export function dominantFromPixels(data: Uint8ClampedArray): string {
+function dominantFromPixels(data: Uint8ClampedArray): string {
   const weight = new Float64Array(HUE_BUCKETS);
   const satSum = new Float64Array(HUE_BUCKETS);
   const lumSum = new Float64Array(HUE_BUCKETS);
