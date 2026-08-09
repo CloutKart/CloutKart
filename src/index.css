@@ -1539,7 +1539,7 @@ a.gallery-plaque-handle:hover { color: var(--accent-ink); text-decoration: under
   height: 100%;
   object-fit: cover;
   pointer-events: none;
-  filter: blur(38px) saturate(1.9);
+  filter: blur(56px) saturate(1.9);
   opacity: 0.4;
   transform: translateZ(0);
 }
@@ -1558,7 +1558,7 @@ a.gallery-plaque-handle:hover { color: var(--accent-ink); text-decoration: under
 
 @media (prefers-reduced-motion: reduce) {
   /* still projected, just never repainted — see the paint loop */
-  .gallery-ambient { filter: blur(38px) saturate(1.6); }
+  .gallery-ambient { filter: blur(56px) saturate(1.6); }
 }
 
 /* ── Video works — wallpaper, not a player. Muted, looping, no controls; the

@@ -97,6 +97,13 @@ The coverflow corridor carries three things beyond the artwork:
   the frame. It sizes itself to the active work's ratio on each navigation. Mobile gets the
   same treatment behind its swipe track.
 
+  **`GLOW_W` is the ambience dial, not the blur radius.** The source canvas width is what
+  decides whether this reads as light or as a blurry video still: at 24px each source pixel
+  landed ~50px wide on a 1200px box and the subject was still legible. At **10px** it is
+  ~120px per source pixel — colours stay where they belong, the subject stops being
+  recognisable. Once the source was that small, `blur(40px)` and `blur(64px)` were
+  indistinguishable, which is the tell that the radius had stopped being the lever.
+
   **The blur is load-bearing and stays.** An earlier pass removed it and leaned on the
   upscale alone; that left visible bilinear banding, which is exactly what a raw 24px
   upscale looks like. What *was* removed for good is the idea of raising it: cost tracks the
