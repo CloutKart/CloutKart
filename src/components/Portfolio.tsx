@@ -693,7 +693,6 @@ export default function Portfolio() {
                   sheet like every other section now, not a dark museum room.
                   .bp-grid is radially masked, so it cannot reintroduce an edge. */}
               <div className="bp-grid absolute inset-0 pointer-events-none" aria-hidden />
-              <div className="gallery-vignette" aria-hidden />
 
               <div
                 className="gallery-stage"

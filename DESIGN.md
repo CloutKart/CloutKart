@@ -150,13 +150,14 @@ museum devices — drifting dust motes and perspective vanishing-point guides �
 
 Traps paid for here:
 
-- **`.gallery-vignette` was painting an opaque box.** It ramped to solid `var(--bg)` from
-  38% outward, washing most of the corridor in flat near-black, blocking the page's ambient
-  and reading as a dark rectangle bounding the whole section. It is now a *horizontal* fade
-  capped at `0.82` alpha, which still finishes off plates sliding past the clipped edges
-  (they are already at ~42% opacity by then) without sealing the section off. It cannot
-  simply be deleted — without it the plates hard-clip. Measured either side of the corridor
-  edge: worst-case channel delta went from a visible box to ≤ 7/255.
+- **`.gallery-vignette` is gone.** It began as a radial that ramped to opaque `var(--bg)`,
+  washing most of the corridor in flat near-black and reading as a dark box bounding the
+  whole section. Narrowing it to a horizontal edge fade fixed that, but once the box was
+  filled with the artwork's own light those outer bands became visible dark borders down
+  both sides, so the element was removed outright. Its job — softening plates as they slide
+  off the clipped edges — is now carried by the plates themselves: by the time one reaches
+  the border it is at ~42% opacity and steeply rotated, and the corridor has a deliberate
+  outline for it to meet.
 - **The focus marks are positioned from a measured rect**, not from re-deriving the
   coverflow's 3D transform. Two sources of truth for one position drift apart. They track
   the plate with rAF for ~750ms because the plate transition is 600ms, so the marks follow
