@@ -47,8 +47,8 @@ function hexToTriple(hex: string): string | null {
   return `${(n >> 16) & 255} ${(n >> 8) & 255} ${n & 255}`;
 }
 
-/** Projection source width. Tiny on purpose — see .gallery-glow in index.css. */
-const GLOW_W = 14;
+/** Projection source width. Tiny on purpose — see .gallery-ambient in index.css. */
+const GLOW_W = 24;
 
 const prefersReducedMotion = () =>
   typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -117,6 +117,7 @@ function Plate({
   className = '',
   style,
   showPanel = false,
+  ambientRef,
 }: {
   work: Work;
   index: number;
@@ -126,11 +127,11 @@ function Plate({
   style?: React.CSSProperties;
   /** desktop corridor only — mobile stacks the copy under the plate instead */
   showPanel?: boolean;
+  /** the box-filling ambient canvas, owned by the section and painted by whichever plate is active */
+  ambientRef?: React.RefObject<HTMLCanvasElement>;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const isVideo = Boolean(work.video_url);
-  /** the projection source behind the plate — a deliberately TINY canvas */
-  const glowRef = useRef<HTMLCanvasElement>(null);
   const artImgRef = useRef<HTMLImageElement>(null);
   // The work's real pixel size, read off the loaded media rather than stored —
   // no admin field, no schema, and it can never disagree with the file.
@@ -166,7 +167,7 @@ function Plate({
   useEffect(() => {
     if (!isVideo || !active) return;
     const v = videoRef.current;
-    const c = glowRef.current;
+    const c = ambientRef?.current;
     if (!v || !c) return;
     const ctx = c.getContext('2d');
     if (!ctx) return;
@@ -201,6 +202,7 @@ function Plate({
       }
     };
 
+    if (dim) { c.width = GLOW_W; c.height = Math.max(1, Math.round((GLOW_W * dim.h) / dim.w)); }
     // paint once immediately so there is a glow even while paused / reduced-motion
     if (v.readyState >= 2) ctx.drawImage(v, 0, 0, c.width, c.height);
     schedule();
@@ -210,23 +212,26 @@ function Plate({
       if (usingRvfc) vf.cancelVideoFrameCallback?.(handle);
       else cancelAnimationFrame(handle);
     };
-  }, [isVideo, active, dim]);
+  }, [isVideo, active, dim, ambientRef]);
 
   // Stills project through the SAME tiny canvas rather than a full-resolution
   // <img>. Blurring a 2000px photo enough to read as light is expensive and
   // needs an enormous radius; blurring a 14px one barely costs anything.
   useEffect(() => {
     if (isVideo || !active) return;
-    const c = glowRef.current;
+    const c = ambientRef?.current;
     const img = artImgRef.current;
     if (!c || !img) return;
     const ctx = c.getContext('2d');
     if (!ctx) return;
-    const draw = () => { try { ctx.drawImage(img, 0, 0, c.width, c.height); } catch { /* not decoded yet */ } };
+    const draw = () => {
+      if (dim) { c.width = GLOW_W; c.height = Math.max(1, Math.round((GLOW_W * dim.h) / dim.w)); }
+      try { ctx.drawImage(img, 0, 0, c.width, c.height); } catch { /* not decoded yet */ }
+    };
     if (img.complete) draw();
     img.addEventListener('load', draw);
     return () => img.removeEventListener('load', draw);
-  }, [isVideo, active, dim, work.thumbnail_url]);
+  }, [isVideo, active, dim, work.thumbnail_url, ambientRef]);
 
   const onArtMove = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!active || e.pointerType !== 'mouse') return;
@@ -243,17 +248,6 @@ function Plate({
       aria-label={active ? `View ${work.title}` : `Bring ${work.title} to centre`}
       data-cursor="card"
     >
-      {/* Sits behind the frame and bleeds past its edges. Only the plate in
-          preview projects, so the corridor never carries several at once. */}
-      {active && (
-        <div className="gallery-glow" aria-hidden="true">
-          {/* 14px wide on purpose. Scaled ~65x by CSS, the browser's own bilinear
-              upscale does nearly all of the softening for free, so the filter
-              only has to clean up the interpolation rather than manufacture the
-              whole blur — which is what made this affordable per video frame. */}
-          <canvas ref={glowRef} width={GLOW_W} height={dim ? Math.max(1, Math.round((GLOW_W * dim.h) / dim.w)) : 18} />
-        </div>
-      )}
       <div className="gallery-plate-inner">
         <span className="plate-cross tl" />
         <span className="plate-cross tr" />
@@ -364,6 +358,8 @@ export default function Portfolio() {
 
   const trackRef = useRef<HTMLDivElement>(null);
   const corridorRef = useRef<HTMLDivElement>(null);
+  /** the box-filling ambient projection; whichever plate is active paints into it */
+  const ambientRef = useRef<HTMLCanvasElement>(null);
   /** measured box of the active plate, grown by MARK_INSET — drives the focus marks */
   const [frame, setFrame] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
 
@@ -639,6 +635,8 @@ export default function Portfolio() {
         ) : isMobile ? (
           /* ── Mobile: scroll-snap swipe carousel ── */
           <div className="reveal">
+            <div className="gallery-mobile-ambient-wrap">
+            <canvas className="gallery-ambient" ref={ambientRef} width={24} height={32} aria-hidden />
             <div
               ref={trackRef}
               className="gallery-mobile-track"
@@ -650,9 +648,10 @@ export default function Portfolio() {
             >
               {works.map((w, i) => (
                 <div className="gallery-mobile-cell" key={w.id}>
-                  <Plate work={w} index={i} active={i === active} onClick={() => openLightbox(w)} />
+                  <Plate work={w} index={i} active={i === active} onClick={() => openLightbox(w)} ambientRef={ambientRef} />
                 </div>
               ))}
+            </div>
             </div>
             <WorkPanel work={works[active]} index={active} active variant="stacked" />
             <Plaque work={works[active]} index={active} />
@@ -680,6 +679,9 @@ export default function Portfolio() {
               {/* Grid paper, same device as Sheet 02 — the gallery is a drawing
                   sheet like every other section now, not a dark museum room.
                   .bp-grid is radially masked, so it cannot reintroduce an edge. */}
+              {/* The artwork, blurred, filling the whole box — the light in the
+                  room rather than a halo around the frame. */}
+              <canvas className="gallery-ambient" ref={ambientRef} width={24} height={32} aria-hidden />
               <div className="bp-grid absolute inset-0 pointer-events-none" aria-hidden />
               <div className="gallery-vignette" aria-hidden />
 
@@ -693,7 +695,7 @@ export default function Portfolio() {
               >
                 <div className="gallery-spotlight" aria-hidden />
                 {works.map((w, i) => (
-                  <Plate key={w.id} work={w} index={i} active={i === active} onClick={() => handlePlateClick(i, w)} style={plateStyle(i)} showPanel />
+                  <Plate key={w.id} work={w} index={i} active={i === active} onClick={() => handlePlateClick(i, w)} style={plateStyle(i)} showPanel ambientRef={ambientRef} />
                 ))}
               </div>
 
