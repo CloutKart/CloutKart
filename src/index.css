@@ -1074,7 +1074,7 @@ html[data-theme-transition] .hero-fingertip-shimmer {
      ratio — the way work is hung on a wall — so the frame always matches the
      file and the dimension label under it is never a lie. */
   --plate-art-h: clamp(300px, 39vw, 470px);
-  --plate-art-max-w: clamp(240px, 30vw, 430px);
+  --plate-art-max-w: clamp(260px, 36vw, 540px);
 }
 
 /* corridor atmosphere */
@@ -1138,10 +1138,18 @@ html[data-theme-transition] .hero-fingertip-shimmer {
   background: #0a0a0a;
 }
 /* desktop corridor: fixed height, width follows the ratio */
+/* WIDTH is the authoritative dimension, and it is the smaller of "the width a
+   full-height plate would need" and the hard cap. Height then follows from
+   aspect-ratio, so it lands at or under --plate-art-h automatically.
+
+   The obvious spelling — fixed `height` plus `max-width` — is broken for
+   landscape media: a 1920x1080 clip wants 836px at 470px tall, max-width clamps
+   it to 430, the height stays 470, and the frame silently becomes PORTRAIT while
+   object-fit: cover crops the video to match. Constraining one axis and capping
+   the other cannot preserve a ratio; the cap has to be inside the sizing term. */
 .gallery-stage .gallery-plate-art {
-  height: var(--plate-art-h);
-  width: auto;
-  max-width: var(--plate-art-max-w);
+  width: min(var(--plate-art-max-w), calc(var(--plate-art-h) * var(--art-ratio-num, 0.8)));
+  height: auto;
 }
 /* mobile carousel: fixed width, height follows the ratio */
 .gallery-mobile-cell .gallery-plate-art { width: 100%; height: auto; }
@@ -1577,7 +1585,12 @@ a.gallery-plaque-handle:hover { color: var(--accent-ink); text-decoration: under
   left: 100%;
   top: 0;
   width: var(--gallery-panel-w);
-  height: 100%;
+  /* Matches the frame's height, but grows past it when the copy needs more room.
+     A fixed `height: 100%` was fine while every plate was portrait; a landscape
+     work is short (a 16:9 clip is ~292px tall against a portrait's 470px) and the
+     notes were being cut off mid-sentence by the overflow. */
+  height: auto;
+  min-height: 100%;
   margin-left: 10px;
   padding: 16px 16px 18px;
   background: var(--bg-elev);

@@ -266,7 +266,16 @@ function Plate({
           onPointerMove={onArtMove}
           /* The frame takes the media's own ratio, so the dimension label under
              it describes what you are actually looking at. */
-          style={dim ? ({ ['--art-ratio']: `${dim.w} / ${dim.h}` } as React.CSSProperties) : undefined}
+          style={
+            dim
+              ? ({
+                  '--art-ratio': `${dim.w} / ${dim.h}`,
+                  // the same ratio as a plain number, because calc() cannot
+                  // multiply a length by an `a / b` aspect-ratio token
+                  '--art-ratio-num': String(dim.w / dim.h),
+                } as React.CSSProperties)
+              : undefined
+          }
         >
           {isVideo ? (
             /* muted + playsInline are both required or iOS refuses to autoplay;
