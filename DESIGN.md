@@ -163,6 +163,18 @@ Traps paid for here:
   the plate with rAF for ~750ms because the plate transition is 600ms, so the marks follow
   it in rather than teleporting; under reduced motion that transition is disabled, so the
   first frame is already final and no special-casing is needed.
+- **Width is the authoritative dimension** — `min(--plate-art-max-w, --plate-art-h *
+  --art-ratio-num)`, with height following from `aspect-ratio`. The obvious spelling, a
+  fixed `height` plus a `max-width` cap, silently breaks for landscape: a 1920×1080 clip
+  wants 836px at 470px tall, `max-width` clamps it to 430, the height stays 470, and the
+  frame becomes PORTRAIT while `object-fit: cover` crops the video to match — with the
+  dimension label underneath still truthfully reading 1920 × 1080. Constraining one axis
+  and capping the other cannot preserve a ratio; the cap has to live inside the sizing
+  term. `--art-ratio-num` carries the ratio as a plain number because `calc()` cannot
+  multiply a length by an `a / b` aspect-ratio token.
+- **The side panel is `height: auto; min-height: 100%`** for the same reason: a landscape
+  plate is short (~292px against a portrait's 470px) and a fixed `height: 100%` cut the
+  notes off mid-sentence.
 - **Plates hang at a constant height and take their width from the media's own ratio**, the
   way work is hung on a wall. `--art-ratio` is set per plate from the loaded media, so a
   9:16 upload gets a 9:16 frame and the dimension label under it is never a lie. The plate
