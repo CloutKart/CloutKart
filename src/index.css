@@ -1074,7 +1074,12 @@ html[data-theme-transition] .hero-fingertip-shimmer {
      ratio — the way work is hung on a wall — so the frame always matches the
      file and the dimension label under it is never a lie. */
   --plate-art-h: clamp(300px, 39vw, 470px);
-  --plate-art-max-w: clamp(260px, 36vw, 540px);
+  /* Landscape work is bound by WIDTH, not height: a 16:9 clip hits this cap long
+     before it reaches --plate-art-h, so this number alone decides how big video
+     reads. It cannot simply be maximised — the plate and its notes panel centre
+     as one unit, so the panel (~240px) plus its 10px gap has to keep clearing
+     the corridor with room for the neighbouring plates to show. */
+  --plate-art-max-w: clamp(280px, 46vw, 660px);
 }
 
 /* corridor atmosphere */
