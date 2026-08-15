@@ -1158,6 +1158,11 @@ html[data-theme-transition] .hero-fingertip-shimmer {
 }
 /* mobile carousel: fixed width, height follows the ratio */
 .gallery-mobile-cell .gallery-plate-art { width: 100%; height: auto; }
+/* Back IN flow on mobile. .gallery-dim is absolute on desktop purely so it stops
+   adding its height to the plate, which the side panel's `min-height: 100%` would
+   then inherit — and there is no side panel here. Absolute, it escaped the swipe
+   track's padding entirely and gave the track a 26px vertical scroll. */
+.gallery-mobile-cell .gallery-dim { position: static; margin-top: 10px; }
 .gallery-plate-art img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .gallery-plate-fallback { width: 100%; height: 100%; background: linear-gradient(135deg, #1a1327, #0a0a0a); }
 .gallery-plate-view {
@@ -1230,7 +1235,13 @@ a.gallery-plaque-handle:hover { color: var(--accent-ink); text-decoration: under
 /* mobile scroll-snap carousel */
 .gallery-mobile-track {
   display: flex; gap: 16px; overflow-x: auto; scroll-snap-type: x mandatory;
-  padding: 8px 16px 16px; margin: 0 -16px;
+  /* 34px of headroom, not 8: the plate number now sits ~31px above the frame,
+     and `overflow-x: auto` forces overflow-y to compute as auto too — so without
+     the room the label was clipped AND the track grew a vertical scrollbar. */
+  /* 34px of headroom, not 8: the plate number now sits ~31px above the frame,
+     and `overflow-x: auto` forces overflow-y to compute as auto too — so without
+     the room the label was clipped AND the track grew a vertical scrollbar. */
+  padding: 34px 16px 16px; margin: 0 -16px;
   -ms-overflow-style: none; scrollbar-width: none;
 }
 .gallery-mobile-track::-webkit-scrollbar { display: none; }
@@ -1569,6 +1580,18 @@ a.gallery-plaque-handle:hover { color: var(--accent-ink); text-decoration: under
 @media (prefers-reduced-motion: reduce) {
   /* still projected, just never repainted — see the paint loop */
   .gallery-ambient { filter: blur(56px) saturate(1.6); }
+}
+
+/* The plate number belongs on the mount, not printed across the artwork. It sits
+   above the frame, and far enough above to clear the focus marks that bracket the
+   top two corners 14px out. --ink-muted rather than the base rule's white/38%,
+   which was only legible because it sat on the picture. ─────────────────────── */
+.gallery-plate .accession {
+  top: auto;
+  bottom: 100%;
+  right: 2px;
+  margin-bottom: 20px;
+  color: var(--ink-muted);
 }
 
 /* ── Video works — wallpaper, not a player. Muted, looping, no controls; the
