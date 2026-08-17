@@ -5,22 +5,44 @@ services are, and how they call each other. Keep it in sync with the code and
 with what actually arrives in `otel.{spans,metrics,logs}` — when the two
 disagree, the disagreement is the story.
 
-> **Status — no instrumentation yet (first-pass map).** As of this writing the
-> application ships **no OpenTelemetry instrumentation**: there is no OTel SDK in
-> `package.json`, no tracer/meter setup in the SPA, and no spans, metrics, or
-> logs emitted from the Supabase edge functions. A live query of
-> `otel.{spans,metrics,logs}` returns **zero rows from CloutKart** (the only data
-> present is OnePatch's own internal runtime/monitor telemetry). The service map
-> below is therefore derived from the **code** — it is the topology that *should*
-> appear once instrumentation lands, not a reflection of live spans. See
+> **Status — no instrumentation yet (code-derived map).** The application ships
+> **no OpenTelemetry instrumentation**: there is no OTel SDK in `package.json`, no
+> tracer/meter setup in the SPA, and no spans, metrics, or logs emitted from the
+> Supabase edge functions. A live query of `otel.{spans,metrics,logs,histograms}`
+> returns **zero rows from CloutKart's own code**. The service map below is
+> therefore derived from the **code** — it is the topology that *should* appear
+> once instrumentation lands, not a reflection of live spans. See
 > [Instrumentation gap](#instrumentation-gap) for what to add and the naming
-> this map assumes.
+> this map assumes. (verified 2026-08-17)
+
+## Facts
+
+- **CloutKart emits nothing.** No customer-instrumented signal has ever arrived
+  in `otel.*`. Any query written against this repo returns zero rows until
+  instrumentation lands. (verified 2026-08-17)
+- `onepatch_source != 'internal'` is **not** enough to isolate app telemetry
+  here: it also keeps the OnePatch repo-activity stream. Use
+  `onepatch_source NOT IN ('internal', 'cicd')` when presence of data means
+  health. (verified 2026-08-17)
+- Repo activity (pushes, PR opens/merges) arrives as **logs** under
+  `service_name = 'github'`, `scope_name = 'onepatch.github'`, with
+  `onepatch_source = ''`. It is OnePatch synthesizing GitHub webhooks, not
+  CloutKart instrumentation. (verified 2026-08-17)
+- Everything else in the store is OnePatch's monitor-runner
+  (`service_name = 'onepatch-monitor-runner'`, `onepatch_source = 'internal'`).
+  (verified 2026-08-17)
+- `env` is empty on every row — nothing sets `deployment.environment.name` yet,
+  so do not filter on it. Expected values once instrumented: `production`, and
+  `preview` for the SPA's Vercel preview deploys. (verified 2026-08-17)
 
 ## Stack at a glance
 
-CloutKart is a creative-operations platform for D2C brands (submit a brief →
-"Pixie" the AI creative director returns hook / color story / visual direction →
-ad creatives delivered). The system is two tiers:
+CloutKart automates and optimises the creative production process for D2C brands
+(submit a brief → "Pixie" the AI creative director returns hook / color story /
+visual direction → ad creatives delivered). The public site was repositioned to
+that framing in August 2026 — the landing page is now a technical-drawing "sheet"
+walk-through plus a gallery of delivered work, but no backend or edge function
+changed with it. The system is two tiers:
 
 - **Web (`cloutkart-web`)** — a client-only React 18 + TypeScript SPA built with
   Vite, routed with `react-router-dom` v7, deployed on Vercel (`vercel.json`).
@@ -43,9 +65,8 @@ runs. "Services", for telemetry purposes, means the SPA plus the edge functions.
 | **Metrics** | Edge-function invocation count / duration / error rate; Web Vitals from the SPA | **None arriving** |
 | **Logs** | Edge functions already `console.error`/`console.warn` on failure (Supabase captures these to its own log stream) — not yet exported to OTel | **None in OTel** |
 
-`resource_attrs['deployment.environment.name']` is **not yet set** by anything.
-Once instrumentation lands, expect `production` (and `preview` for the SPA's
-Vercel preview deploys).
+Environment labelling is covered in [Facts](#facts): nothing sets
+`deployment.environment.name` yet, so the `env` column is empty on every row.
 
 ## Service map
 
@@ -70,6 +91,16 @@ currently empty, so no counts are shown.
 - **Realtime subscribers:** `NotificationBell`, `Dashboard`, `Admin`,
   `usePushNotifications` subscribe to Postgres-changes channels (`messages`,
   `notifications`).
+- **Storage reads:** the landing-page gallery (`Portfolio`, `ProductionLine`)
+  reads `portfolio_sections` / `portfolio_images` and streams plate media —
+  images and, since 2026-08-10, video — from the `portfolio` bucket, sampling a
+  dominant colour client-side (`src/lib/dominantColor.ts`) to drive the ambient
+  tint. Heavy media on an unauthenticated route, so it is the natural first
+  target for Web Vitals once the SPA is instrumented.
+- **Demo mode:** `/admin?demo=1` renders illustrative payments and revenue that
+  live only in React state and are never written to Postgres. Figures from that
+  view are not real, and once the SPA is instrumented its spans will not be
+  either — check for the flag before reading anything from `/admin`.
 
 ### `create-razorpay-order` — edge function
 - **Incoming:** `POST` (checkout: create a Razorpay order from `amount_paise`).
@@ -131,7 +162,10 @@ currently empty, so no counts are shown.
   `notifications`, `push_subscriptions`, `portfolio_sections`,
   `portfolio_images`. RLS enforced; edge functions that mutate use the
   service-role key.
-- **Supabase Storage** — portfolio image bucket.
+- **Supabase Storage** — two buckets, both written from `Admin`: `portfolio`
+  (gallery plates; widened to 50MB and mp4/webm in the 2026-08-10 migration, so
+  gallery works are now images *or* video) and `creatives` (delivered creative
+  files).
 - **MongoDB** (`MONGODB_URI`) — external vector store used by the vision
   functions for embedding retrieval.
 
