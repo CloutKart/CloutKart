@@ -21,12 +21,21 @@ function DemoMock() {
 
   return (
     <div className="w-full rounded-2xl overflow-hidden border border-white/[0.08]" style={{ background: 'var(--bg-elev)', boxShadow: 'var(--shadow-card-hover)' }}>
-      {/* top bar */}
-      <div className="flex items-center gap-1.5 px-4 py-3 border-b border-white/[0.06]" style={{ background: 'rgb(var(--white-rgb) / 0.02)' }}>
-        {['#EF4444','#F59E0B','var(--success)'].map(c => (
-          <div key={c} className="w-2.5 h-2.5 rounded-full" style={{ background: c, opacity: 0.7 }} />
-        ))}
-        <span className="ml-2 text-[10px] text-ink-dim font-mono">clout-kart.com/dashboard</span>
+      {/* run header — the drawing's own chrome, not a browser's */}
+      <div
+        className="flex items-center gap-3 px-4 py-2.5 border-b border-white/[0.06] flex-wrap"
+        style={{ background: 'rgb(var(--white-rgb) / 0.02)' }}
+      >
+        <span className="font-mono text-[9px] uppercase tracking-[0.2em]" style={{ color: 'var(--ink-dim)' }}>
+          Run <b className="font-medium" style={{ color: 'var(--ink-muted)' }}>04</b>
+        </span>
+        <span className="font-mono text-[9px] uppercase tracking-[0.2em]" style={{ color: 'var(--ink-dim)' }}>
+          Station <b className="font-medium" style={{ color: 'var(--ink-muted)' }}>02</b>
+        </span>
+        <span className="bp-tag ml-auto" style={{ padding: '2px 6px' }}>
+          <span className="bp-tag-dot" style={{ background: 'var(--success)' }} />
+          Awaiting sign-off
+        </span>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-0">
@@ -204,32 +213,26 @@ export default function PixieSection({ onSignupOpen }: Props) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section header */}
         <div className="relative text-center mb-14 md:mb-20">
-          <p className="reveal mono-label mb-6" style={{ letterSpacing: '0.3em' }}>The Muse</p>
-          <h2 className="reveal delay-100 font-authored font-semibold leading-[1.04] mb-5"
-            style={{ fontSize: 'clamp(2.4rem, 5.6vw, 4.8rem)', color: 'var(--ink)' }}>
-            Meet Pixie —
+          <p className="reveal mono-label mb-6" style={{ letterSpacing: '0.3em' }}>Sheet 03 · The Engine</p>
+          <h2 className="reveal delay-100 font-heading font-bold leading-[1.04] mb-5 tracking-tight"
+            style={{ fontSize: 'clamp(2.2rem, 5.2vw, 4.2rem)', color: 'var(--ink)', textWrap: 'balance' }}>
+            Pixie is what
             <br />
-            <span style={{ color: 'var(--accent-ink)' }}>inspiration that talks back.</span>
+            <span style={{ color: 'var(--accent-ink)' }}>runs the line.</span>
           </h2>
           <p className="reveal delay-200 text-ink-body text-sm sm:text-lg max-w-2xl mx-auto leading-relaxed">
-            <span className="font-authored italic" style={{ fontSize: '1.15em', color: 'var(--ink)' }}>
-              Every masterpiece begins with inspiration. In 2045, inspiration started talking back.
-            </span>
-            <br />
-            <span className="inline-block mt-3">
-              Submit a brief. Pixie drafts your entire creative vision in seconds — vibe, color story, hook, and
-              deliverables. <span className="text-white font-medium">Your team starts at 80% instead of zero.</span>
-            </span>
+            Submit a brief and Pixie drafts the run before it starts: vibe, colour story, hook, and the
+            full deliverable list. That draft is what the first gate approves, which is why the four
+            automated stations downstream have something unambiguous to build from.
           </p>
 
-          {/* the Muse's margin note — appears only if the reader lingers */}
+          {/* a pencilled note in the margin — appears only if the reader lingers */}
           <div
-            className={`artifact muse-note hidden lg:block px-4 py-2.5 ${notePresent ? 'is-present' : ''}`}
+            className={`bp-margin-note muse-note hidden lg:block text-left ${notePresent ? 'is-present' : ''}`}
             aria-hidden="true"
           >
-            <span className="font-authored italic block" style={{ fontSize: '14.5px', color: '#3a3128' }}>
-              — the hook could lead with the feeling.&nbsp;&nbsp;·&nbsp;&nbsp;P.
-            </span>
+            <b>Pixie · pending</b>
+            the hook could lead with the feeling.
           </div>
         </div>
 
@@ -239,9 +242,9 @@ export default function PixieSection({ onSignupOpen }: Props) {
           <div>
             <div className="space-y-5 mb-8">
               {[
-                { headline: 'Brief submitted → Vision generated instantly',    sub: 'No back-and-forth. No waiting for a strategist to have bandwidth.' },
-                { headline: 'Hooks written by creative psychology, not generic AI', sub: 'Six proven psychological triggers. One scroll-stopper. Every time.' },
-                { headline: 'Every output tailored to your product',            sub: 'Your audience, your platform, your brand. Nothing interchangeable.' },
+                { headline: 'The run is drafted the moment the brief lands', sub: 'No kickoff call, no waiting for a strategist to have bandwidth.' },
+                { headline: 'Hooks written by creative psychology', sub: 'Six proven triggers, one scroll-stopper, argued for against your product.' },
+                { headline: 'The deliverable list is set before production', sub: 'Every format and size the run owes you, agreed at the gate rather than discovered later.' },
               ].map((item, i) => (
                 <div key={i} className="reveal flex items-start gap-3.5"
                   style={{ transitionDelay: `${i * 80}ms` }}>
@@ -259,7 +262,7 @@ export default function PixieSection({ onSignupOpen }: Props) {
 
             <div className="reveal" style={{ transitionDelay: '280ms' }}>
               <button onClick={onSignupOpen} className="btn-primary text-sm">
-                Try Pixie Free <ArrowRight size={13} />
+                Draft a Run With Pixie <ArrowRight size={13} />
               </button>
             </div>
           </div>
@@ -273,9 +276,9 @@ export default function PixieSection({ onSignupOpen }: Props) {
         {/* Closer */}
         <div className="reveal text-center">
           <p className="text-sm sm:text-base max-w-xl mx-auto" style={{ color: 'var(--ink-muted)' }}>
-            Pixie isn't a chatbot.{' '}
+            Pixie is a production engine built for ad work,{' '}
             <span className="text-white font-medium">
-              It's a creative engine built specifically for ad production.
+              scoped to one job and accountable to the gate that follows it.
             </span>
           </p>
         </div>

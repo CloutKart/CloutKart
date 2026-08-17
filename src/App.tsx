@@ -10,16 +10,14 @@ import MarginIndex from './components/MarginIndex';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import About from './components/About';
-import MessageFirst from './components/MessageFirst';
 import Services from './components/Services';
 import Process from './components/Process';
 import Marquee from './components/Marquee';
+import ProductionLine from './components/ProductionLine';
 import ScrollStory from './components/ScrollStory';
 import PixieSection from './components/PixieSection';
 import Pricing from './components/Pricing';
 import Portfolio from './components/Portfolio';
-import Patrons from './components/Patrons';
-import Testimonials from './components/Testimonials';
 import FAQ from './components/FAQ';
 import Contact from './components/Contact';
 import Footer from './components/Footer';
@@ -93,15 +91,13 @@ function LandingPage({ onSignupOpen }: { onSignupOpen: () => void }) {
           <Hero onSignupOpen={onSignupOpen} />
           <Marquee />
           <About />
-          <MessageFirst />
+          <ProductionLine />
           <PixieSection onSignupOpen={onSignupOpen} />
           <ScrollStory />
           <Services />
           <Process />
           <Pricing onSignupOpen={onSignupOpen} />
           <Portfolio />
-          <Patrons />
-          <Testimonials />
           <FAQ />
           <Contact />
         </main>

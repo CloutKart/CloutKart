@@ -1,20 +1,23 @@
 import { useEffect, useRef } from 'react';
 import { ArrowRight } from 'lucide-react';
 
+// Capacity, not price. The page has never shown a rupee figure and does not start
+// here: what a plan buys is throughput (runs, formats, cycle time), and the two
+// CTAs are unchanged.
 const step1Features = [
-  '3 production-ready ad creatives',
-  'Built around your winning message',
-  'All formats included',
-  'Delivered in 48 hours',
-  'Zero commitment required',
+  'One full production run, start to delivery',
+  'Every station on the line, including both gates',
+  'All formats in the map, each at every placement size',
+  '48-hour cycle time',
+  'No card, no commitment',
 ];
 
 const step2Features = [
-  'Monthly creative production',
-  'Fresh ad concepts for campaigns',
-  'Hook, caption, and message support',
-  'Priority creative turnaround',
-  'Built for brands ready to scale',
+  'Recurring runs on a schedule you set',
+  'Standing format map across your placements',
+  'Hook, caption, and message support each run',
+  'Priority position in the production queue',
+  'Campaign signal fed back into the next brief',
 ];
 
 interface Props {
@@ -47,17 +50,14 @@ export default function Pricing({ onSignupOpen }: Props) {
 
         {/* Heading */}
         <div className="text-center mb-12 md:mb-16">
-          <div className="reveal eyebrow-pill mb-7">
-            <span className="w-1 h-1 rounded-full bg-brand-purple" />
-            HOW IT WORKS
-          </div>
-          <h2 className="reveal delay-100 font-heading font-bold leading-[1.06] tracking-tight mb-3 sm:mb-4" style={{ fontSize: 'clamp(2rem, 5vw, 4.5rem)' }}>
-            Start Free.
+          <p className="reveal mono-label mb-7" style={{ letterSpacing: '0.3em' }}>Capacity</p>
+          <h2 className="reveal delay-100 font-heading font-bold leading-[1.06] tracking-tight mb-3 sm:mb-4" style={{ fontSize: 'clamp(2rem, 5vw, 4.2rem)', color: 'var(--ink)', textWrap: 'balance' }}>
+            Run the line once.
             <br />
-            <span style={{ color: 'var(--ink)' }}>Scale When Ready.</span>
+            <span style={{ color: 'var(--accent-ink)' }}>Then keep it running.</span>
           </h2>
           <p className="reveal delay-200 text-ink-body text-sm sm:text-lg max-w-xl mx-auto leading-relaxed">
-            No subscriptions. No upfront cost. Just results first.
+            You are buying production capacity, measured in runs and cycle time. The first one costs nothing.
           </p>
         </div>
 
@@ -69,9 +69,10 @@ export default function Pricing({ onSignupOpen }: Props) {
             <div className="glass-card animate-border-pulse rounded-[20px] p-6 sm:p-8 flex flex-col h-full">
               <div className="relative z-10 mb-6">
                 <span className="eyebrow-pill text-[10px] px-3 py-1 mb-4 inline-flex">STEP 01</span>
-                <h3 className="font-heading font-bold text-white text-2xl mb-3">Get 3 Free Creatives</h3>
+                <h3 className="font-heading font-bold text-white text-2xl mb-3">Your First Run, Free</h3>
                 <p className="text-ink-muted text-sm leading-relaxed">
-                  We build 3 premium ad creatives for your brand — no credit card, no commitment. See the quality before you ever spend a rupee.
+                  We open a run on your brand and take it all the way through the line. You see the whole
+                  process working, on your own product, before you spend a rupee.
                 </p>
               </div>
               <div className="relative z-10 space-y-3 flex-1 mb-8">
@@ -84,7 +85,7 @@ export default function Pricing({ onSignupOpen }: Props) {
               </div>
               <div className="relative z-10">
                 <button onClick={onSignupOpen} className="btn-primary w-full justify-center text-sm">
-                  Claim Free Creatives
+                  Claim Your Free Run
                   <ArrowRight size={14} />
                 </button>
               </div>
@@ -121,7 +122,8 @@ export default function Pricing({ onSignupOpen }: Props) {
                 </span>
                 <h3 className="font-heading font-bold text-white text-2xl mb-3">Clout Club</h3>
                 <p className="text-ink-muted text-sm leading-relaxed">
-                  After your free creatives, Clout Club gives your brand a steady creative engine: recurring ad concepts, campaign-ready assets, and message-led production.
+                  The line stays open. Runs go out on a schedule, the format map stands from one run to the
+                  next, and each brief starts from what the last campaign returned.
                 </p>
               </div>
               <div className="relative z-10 space-y-3 flex-1 mb-8">
@@ -144,7 +146,7 @@ export default function Pricing({ onSignupOpen }: Props) {
 
         {/* Reassurance line */}
         <p className="reveal delay-400 text-center mt-8" style={{ color: 'var(--ink-muted)', fontSize: 14 }}>
-          No pushy sales. Just a conversation about what you need.
+          Volume, cadence, and cycle time are set per brand. Tell us what you run and we will size it with you.
         </p>
       </div>
     </section>

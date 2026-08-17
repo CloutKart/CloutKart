@@ -1,15 +1,15 @@
 const items = [
-  'Static Ads', 'Video Ads', 'UGC Concepts', 'Story Format',
-  'Hook Writing', 'Performance Creative', 'D2C Growth', 'Reels',
-  'Email Creative', 'Brand Campaigns', '500+ Brands Scaled', '48h Turnaround',
-  'Message-First Strategy', 'Pixie AI', 'Conversion-Led Design',
+  'Brief Intake', 'Automated Briefing', 'Concept Generation', 'Variant Fan-Out',
+  'Brand QC', 'Approval Gates', 'Resize & Export', 'Asset Versioning',
+  'Platform Delivery', 'Cycle Time 48h', '500+ Brands Scaled', 'Run Scheduling',
+  'Creative Operations', 'Pixie Engine', 'Production Throughput',
 ];
 
 const itemsRow2 = [
-  'ROAS Growth', 'Brief to Creative', 'D2C Expertise', 'Fast Iteration',
-  'Pixie Engine', 'Hook Engineering', 'Message Strategy', 'Performance Ads',
-  'Creative Operations', 'Brand Scaling', 'CTR Improvement', 'Ad Production',
-  'Creative Testing', 'Campaign Assets', 'Result-Driven',
+  'Signal Capture', 'Winner Detection', 'Auto Re-Brief', 'Batch Production',
+  'Format Mapping', 'Spec Compliance', 'Handoff Removal', 'Queue Management',
+  'Message Strategy', 'Run History', 'Performance Feedback', 'Creative Testing',
+  'Pipeline Visibility', 'Export-Ready Assets', 'Continuous Optimisation',
 ];
 
 export default function Marquee() {
