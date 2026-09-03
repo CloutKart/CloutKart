@@ -7,12 +7,13 @@ disagree, the disagreement is the story.
 
 > **Status — browser instrumented in this PR, backend still bare.** This branch
 > adds `@onepatch/rum` to the SPA (see [Browser (RUM)](#browser-rum)), so
-> `cloutkart-web` will emit browser spans **once `VITE_ONEPATCH_INGEST_TOKEN` is
-> set on the Vercel project** — until that variable exists the SDK is dropped from
-> the build and nothing is sent. The **8 Supabase edge functions remain
-> uninstrumented**: no OTel in the Deno handlers, no server spans, no outbound
-> client spans. A live query of `otel.{spans,metrics,logs,histograms}` still
-> returns **zero rows from CloutKart's own code**. The service map below is
+> `cloutkart-web` **starts emitting browser spans as soon as this merges and
+> Vercel redeploys** — the write-only ingest token is committed, so there is no
+> environment variable to set and no dashboard to visit. The **8 Supabase edge
+> functions remain uninstrumented**: no OTel in the Deno handlers, no server
+> spans, no outbound client spans. A live query of
+> `otel.{spans,metrics,logs,histograms}` still returns **zero rows from
+> CloutKart's own code**. The service map below is
 > therefore derived from the **code** — it is the topology that *should* appear
 > as instrumentation lands, not a reflection of live spans. See
 > [Instrumentation gap](#instrumentation-gap) for what is left. (verified
@@ -22,8 +23,8 @@ disagree, the disagreement is the story.
 
 - **CloutKart emits nothing yet.** No customer-instrumented signal has ever
   arrived in `otel.*`. Any query written against this repo returns zero rows
-  until the SPA's ingest token is set and the edge functions are instrumented.
-  (verified 2026-08-19)
+  until this PR merges and Vercel redeploys (which turns the browser half on)
+  and the edge functions are instrumented. (verified 2026-08-19)
 - `onepatch_source != 'internal'` is **not** enough to isolate app telemetry
   here: it also keeps the OnePatch repo-activity stream. Use
   `onepatch_source NOT IN ('internal', 'cicd')` when presence of data means
@@ -68,7 +69,7 @@ runs. "Services", for telemetry purposes, means the SPA plus the edge functions.
 
 | Signal | Source (once instrumented) | Current state |
 | --- | --- | --- |
-| **Spans** | `cloutkart-web` browser spans — page load, route change, click, fetch/XHR, JS error, Web Vitals (`@onepatch/rum`, [below](#browser-rum)) | **Wired, dormant** — waiting on the Vercel ingest token |
+| **Spans** | `cloutkart-web` browser spans — page load, route change, click, fetch/XHR, JS error, Web Vitals (`@onepatch/rum`, [below](#browser-rum)) | **Wired; live on merge** — the ingest token is committed, so the first Vercel deploy after merge starts sending |
 | **Spans** | Edge-function server spans (`kind=2`) and outbound HTTP client spans (`kind=3`) to Razorpay / Resend / AI / Stability / enrichment APIs / MongoDB | **None arriving** — not instrumented |
 | **Metrics** | Edge-function invocation count / duration / error rate | **None arriving** — not instrumented |
 | **Logs** | Edge functions already `console.error`/`console.warn` on failure (Supabase captures these to its own log stream) — not yet exported to OTel | **None in OTel** |
@@ -89,11 +90,16 @@ changing it:
 - **Two files, one purpose.** `telemetry.ts` is the guard and the scheduler and
   imports nothing heavy; `telemetry-rum.ts` holds the SDK and the config. Merging
   them would drag ~130kB gzipped back into the main chunk.
-- **Off by default, at build time.** `VITE_ONEPATCH_INGEST_TOKEN` is inlined by
-  Vite, so a build without it makes the guard statically false and Rollup drops
-  the SDK entirely — a no-token build is **byte-identical** to one without this
-  code (verified: same chunk hash, 2026-08-19). Set it on the Vercel project to
-  turn telemetry on; unset it to turn telemetry off.
+- **On by default; the token is committed.** The ingest token is a write-only
+  key — it can only append telemetry to CloutKart's own store, reads nothing, and
+  grants no access — so it ships in the source the way a Sentry DSN does, and no
+  environment variable is needed to turn telemetry on.
+  `VITE_ONEPATCH_INGEST_TOKEN` still overrides it if a build should report
+  somewhere else. Because the guard is no longer statically false, the SDK is now
+  always in the build as its own lazily-fetched chunk (411kB raw / 131kB gzipped,
+  `dist/assets/telemetry-rum-*.js`, verified 2026-09-03) — separate from the main
+  chunk and off the critical path. To turn telemetry off, delete the
+  `startTelemetry()` call in `src/main.tsx`.
 - **`VITE_ONEPATCH_INGEST_URL`** overrides the ingest host; it defaults to
   `https://clout-kart.logger.onepatch.dev`.
 - **On idle, not on load.** The page draws first. The cost is that a JS error
@@ -253,10 +259,18 @@ currently empty, so no counts are shown.
   `notifications`, `push_subscriptions`, `portfolio_sections`,
   `portfolio_images`. RLS enforced; edge functions that mutate use the
   service-role key.
-- **Supabase Storage** — two buckets, both written from `Admin`: `portfolio`
-  (gallery plates; widened to 50MB and mp4/webm in the 2026-08-10 migration, so
-  gallery works are now images *or* video) and `creatives` (delivered creative
-  files).
+- **Supabase Storage** — three buckets. `portfolio` (gallery plates; widened to
+  50MB and mp4/webm in the 2026-08-10 migration, so gallery works are now images
+  *or* video) and `creatives` (delivered creative files) are both written from
+  `Admin`. `creative-previews` (added by the 2026-07-14 migration) holds the
+  AI-generated hero frame a client approved alongside their free-creative brief
+  — the one bucket written from the client side, by `Dashboard` on submit, as a
+  JPEG under a folder named after the uploader's uid. It is a public bucket
+  because its URL is read back by `Admin` and embedded in the creative-brief
+  email, and email clients cannot fetch an authenticated URL. (The client's own
+  dashboard renders the in-memory base64 copy, not this URL.) An upload failure
+  is swallowed with a `console.warn` so the brief still submits — so a gap here
+  is invisible without telemetry.
 - **MongoDB** (`MONGODB_URI`) — external vector store used by the vision
   functions for embedding retrieval.
 
