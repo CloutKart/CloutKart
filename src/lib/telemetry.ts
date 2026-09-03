@@ -6,13 +6,23 @@
  * main chunk: it is a dynamic import, fetched when the browser is next idle,
  * after the page has drawn. Telemetry must never be the reason a page is slow.
  *
- * It is OFF unless `VITE_ONEPATCH_INGEST_TOKEN` is set at build time. Vite
- * inlines that variable, so without it the check below is statically false, the
- * import is unreachable, and the SDK is dropped from the build entirely — a
- * no-token build is byte-identical to one without this file.
+ * The ingest token below is committed on purpose. It is a write-only ingest
+ * key: it can append telemetry to CloutKart's own store and nothing else — it
+ * reads no data, grants no access, and is scoped to this one destination. That
+ * is the same shape as a Sentry DSN, which ships in the frontend bundle for the
+ * same reason. Configuring it as a build-time secret would buy nothing and
+ * would mean telemetry silently stays off until someone remembers to set it, so
+ * it lives in the source instead. `VITE_ONEPATCH_INGEST_TOKEN` still overrides
+ * it, for pointing a build at a different store.
+ *
+ * Consequence worth stating: the guard is no longer statically false, so the
+ * SDK is now always part of the build. It is a separate lazily-fetched chunk,
+ * not main-chunk weight, and it is still off the critical path.
  */
 
-const INGEST_TOKEN = import.meta.env.VITE_ONEPATCH_INGEST_TOKEN as string | undefined;
+const INGEST_TOKEN =
+  (import.meta.env.VITE_ONEPATCH_INGEST_TOKEN as string | undefined) ||
+  'op_urt67f-z-9juIqMHVLChr6wY4ZTEjXpAis3E0wHmN8U';
 
 export function startTelemetry(): void {
   if (!INGEST_TOKEN) return;
