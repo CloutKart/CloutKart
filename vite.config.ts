@@ -43,6 +43,12 @@ ${urls.map(u => `  <url>
 
 export default defineConfig({
   plugins: [react(), sitemapPlugin()],
+  // Vercel sets both of these on every build, so telemetry can say which
+  // environment and which commit it came from without anyone configuring it.
+  define: {
+    __DEPLOY_ENV__: JSON.stringify(process.env.VERCEL_ENV ?? 'development'),
+    __COMMIT_SHA__: JSON.stringify(process.env.VERCEL_GIT_COMMIT_SHA ?? 'dev'),
+  },
   optimizeDeps: {
     exclude: ['lucide-react'],
   },

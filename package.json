@@ -11,6 +11,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.app.json"
   },
   "dependencies": {
+    "@onepatch/rum": "^0.3.0",
     "@supabase/supabase-js": "^2.57.4",
     "animejs": "^4.5.0",
     "lucide-react": "^0.344.0",
